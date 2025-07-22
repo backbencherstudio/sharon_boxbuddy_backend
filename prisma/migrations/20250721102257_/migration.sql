@@ -1,0 +1,7 @@
+-- AlterTable
+ALTER TABLE "Package" ALTER COLUMN "length" DROP NOT NULL,
+ALTER COLUMN "depth" DROP NOT NULL,
+ALTER COLUMN "width" DROP NOT NULL,
+ALTER COLUMN "is_electronic" SET DEFAULT false,
+ALTER COLUMN "drop_off_parson" DROP NOT NULL,
+ALTER COLUMN "publish" SET DEFAULT false;
