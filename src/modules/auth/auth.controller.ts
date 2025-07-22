@@ -38,9 +38,7 @@ export class AuthController {
   async me(@Req() req: Request) {
     try {
       const user_id = req.user.userId;
-
       const response = await this.authService.me(user_id);
-
       return response;
     } catch (error) {
       return {
@@ -207,8 +205,6 @@ export class AuthController {
         last_name,
         facebook_id,
       );
-
-      
 
       if (response.success) {
         res.redirect(

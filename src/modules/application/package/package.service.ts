@@ -5,7 +5,7 @@ import { UpdatePackageDto } from './dto/update-package.dto';
 
 @Injectable()
 export class PackageService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   async create(createPackageDto: CreatePackageDto) {
     try {
@@ -25,11 +25,75 @@ export class PackageService {
     }
   }
 
-  async findAll(owner_id: string) {
+  async findMyPackages(owner_id: string) {
     try {
       const packages = await this.prisma.package.findMany({
         where: {
           owner_id: owner_id,
+        },
+      });
+      return {
+        success: true,
+        message: 'packages fetched successfully',
+        data: packages,
+      };
+    } catch (err) {
+      return {
+        success: false,
+        message: 'packages fetch failed',
+      };
+    }
+  }
+
+  async findAll() {
+    try {
+      const packages = await this.prisma.package.findMany({
+        where: {
+          publish: true,
+          status: 'new'
+        },
+      });
+      return {
+        success: true,
+        message: 'packages fetched successfully',
+        data: packages,
+      };
+    } catch (err) {
+      return {
+        success: false,
+        message: 'packages fetch failed',
+      };
+    }
+  }
+
+  async findRegisteredPackages(userId: string) {
+    try {
+      const packages = await this.prisma.package.findMany({
+        where: {
+          owner_id: userId,
+          publish: false,
+        },
+      });
+      return {
+        success: true,
+        message: 'packages fetched successfully',
+        data: packages,
+      };
+    } catch (err) {
+      return {
+        success: false,
+        message: 'packages fetch failed',
+      };
+    }
+
+  }
+
+  async findProcessingPackages(userId: string) {
+    try {
+      const packages = await this.prisma.package.findMany({
+        where: {
+          owner_id: userId,
+          publish: true,
         },
       });
       return {

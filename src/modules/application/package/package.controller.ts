@@ -19,7 +19,7 @@ import { PackageService } from './package.service';
 @ApiTags('Package')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
-@Controller('package')
+@Controller('packages')
 export class PackageController {
   constructor(private readonly packageService: PackageService) {}
 
@@ -40,9 +40,21 @@ export class PackageController {
   }
 
   @Get()
-  async findAll(@Req() req: Request) {
+  async findAll() {
     try {
-      return await this.packageService.findAll(req?.user?.userId);
+     return await this.packageService.findAll();
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Retrive packages fail',
+      };
+    }
+  }
+
+  @Get('/my-packages')
+  async findMyPackages(@Req() req: Request) {
+    try {
+      return await this.packageService.findMyPackages(req?.user?.userId);
     } catch (error) {
       throw {
         success: false,
@@ -50,6 +62,38 @@ export class PackageController {
       };
     }
   }
+
+  // registered packages
+  @Get('/registered-packages')
+  async findRegisteredPackages(@Req() req: Request) {
+    try {
+      return await this.packageService.findRegisteredPackages(
+        req?.user?.userId,
+      );
+    } catch (error) {
+      throw {
+        success: false,
+        message: 'packages fetch failed',
+      };
+    }
+  }
+
+
+  // packages being processed
+  @Get('/processing-packages')
+  async findProcessingPackages(@Req() req: Request) {
+    try {
+      return await this.packageService.findProcessingPackages(
+        req?.user?.userId,
+      );
+    } catch (error) {
+      throw {
+        success: false,
+        message: 'packages fetch failed',
+      };
+    }
+  }
+
 
   @Get(':id')
   async findOne(@Param('id') id: string) {
