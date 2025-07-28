@@ -11,6 +11,7 @@ import { AppModule } from './app.module';
 import { CustomExceptionFilter } from './common/exception/custom-exception.filter';
 import { SojebStorage } from './common/lib/Disk/SojebStorage';
 import appConfig from './config/app.config';
+import { PrismaExceptionFilter } from './common/exception/prisma-exception-filter';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
@@ -45,7 +46,8 @@ async function bootstrap() {
       whitelist: true,
     }),
   );
-  app.useGlobalFilters(new CustomExceptionFilter());
+  
+  app.useGlobalFilters(new PrismaExceptionFilter(), new CustomExceptionFilter());
 
   // storage setup
   SojebStorage.config({

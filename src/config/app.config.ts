@@ -79,6 +79,8 @@ export default () => ({
     blog: '/blog/',
     avatar: '/avatar/',
     websiteInfo: '/website-info/',
+    problem: '/problem/',
+    pickUp: '/pick-up/',
     // chat
     attachment: '/attachment/',
   },

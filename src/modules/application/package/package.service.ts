@@ -113,6 +113,19 @@ export class PackageService {
     try {
       const packageData = await this.prisma.package.findUnique({
         where: { id: id },
+        include: {
+          owner: {
+            select: {
+              id: true,
+              first_name: true,
+              last_name: true,
+              name: true,
+              email: true,
+              phone_number: true,
+            },
+          },
+          bookings: true,
+        },
       });
       if (!packageData) {
         return {
@@ -120,6 +133,14 @@ export class PackageService {
           message: 'package not found',
         };
       }
+
+      // packageData.bookings = packageData.bookings.filter(
+      //   (booking) => booking.status === 'in_progress',
+      // );
+
+      const bookings = packageData.bookings?.length > 0 ? packageData.bookings[packageData.bookings.length - 1] : {};
+      delete packageData.bookings;
+      packageData['booking'] = bookings;
       return {
         success: true,
         message: 'package fetched successfully',

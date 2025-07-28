@@ -6,6 +6,7 @@ import {
   Param,
   Delete,
   UseGuards,
+  Req,
 } from '@nestjs/common';
 import { ConversationService } from './conversation.service';
 import { CreateConversationDto } from './dto/create-conversation.dto';
@@ -14,7 +15,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { Role } from 'src/common/guard/role/role.enum';
 import { Roles } from 'src/common/guard/role/roles.decorator';
-
+import { Request } from 'express';
 @ApiBearerAuth()
 @ApiTags('Conversation')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -24,8 +25,9 @@ export class ConversationController {
 
   @ApiOperation({ summary: 'Create conversation' })
   @Post()
-  async create(@Body() createConversationDto: CreateConversationDto) {
+  async create(@Body() createConversationDto: CreateConversationDto, @Req() req: Request) {
     try {
+      createConversationDto.creator_id = req?.user?.userId;
       const conversation = await this.conversationService.create(
         createConversationDto,
       );

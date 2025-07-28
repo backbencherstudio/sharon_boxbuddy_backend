@@ -77,16 +77,16 @@ model User {
   receiver_notifications    Notification[] @relation("receiver")
   sender_notifications      Notification[] @relation("sender")
 
+  // packages           Package[] @relation("UserPackagesTraveller")
+  packages_owner     Package[] @relation("UserPackagesOwner")
+  reports            Report[]  @relation("UserReports")
+  bookings           Booking[] @relation("UserBookingsTraveller")
+  reviews_given      Review[]  @relation("ReviewGiven")
+  reviews_for        Review[]  @relation("ReviewFor")
+  travels            Travel[]  @relation("UserTravels")
 
-  packages      Package[] @relation("UserPackagesTraveller")
-  packages_owner Package[] @relation("UserPackagesOwner")
-  reports       Report[]  @relation("UserReports")
-  bookings      Booking[] @relation("UserBookingsTraveller")
-  reviews_given Review[]  @relation("ReviewGiven")
-  reviews_for   Review[]  @relation("ReviewFor")
-  travels       Travel[]  @relation("UserTravels")
   bookings_cancel_by Booking[] @relation("UserBookingsCancelBy")
-  bookings_owner Booking[] @relation("UserBookingsOwner")
+  bookings_owner     Booking[] @relation("UserBookingsOwner")
 
   user_payment_methods UserPaymentMethod[]
   user_settings        UserSetting[]
@@ -95,10 +95,13 @@ model User {
   role_users           RoleUser[]
   payment_transactions PaymentTransaction[]
 
-
-
   @@map("users")
 }
+
+// travellerShipments    Shipment[] @relation("TravellerShipments")
+// cancelledShipments    Shipment[] @relation("CancelledShipments")
+// ownerShipments        Shipment[] @relation("OwnerShipments")
+
 
 model Ucode {
   id         String   @id @default(cuid())
@@ -330,6 +333,12 @@ model Conversation {
   participant_id String?
   participant    User?   @relation("participant", fields: [participant_id], references: [id])
 
+  package_id String?
+  package    Package? @relation(fields: [package_id], references: [id], onDelete: SetNull)
+
+  travel_id String?
+  travel    Travel? @relation(fields: [travel_id], references: [id], onDelete: SetNull)
+
   messages Message[]
 
   @@map("conversations")
@@ -449,131 +458,212 @@ model UserSetting {
 //   @@map("posts")
 // }
 
-
-
 model Package {
-  id                   String   @id @default(uuid())
-  category             String
-  weight               String
-  value                String
-  length               String?
-  depth                String?
-  width                String?
-  is_electronic        Boolean? @default(false)
-  photo                String?
-  pick_up_location     String
-  pick_up_parson       String
-  drop_off_location    String
-  drop_off_parson      String
-  publish              Boolean @default(false)
-  created_at           DateTime @default(now())
-  updated_at           DateTime @updatedAt
+  id                String   @id @default(uuid())
+  category          String
+  weight            String
+  value             String
+  length            String?
+  depth             String?
+  width             String?
+  is_electronic     Boolean? @default(false)
+  photo             String?
+  pick_up_location  String
+  pick_up_parson    String
+  drop_off_location String
+  drop_off_parson   String
+  publish           Boolean  @default(false)
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
 
-  status               String? @default("new")
+  status String? @default("new")
 
-  traveller            User?     @relation("UserPackagesTraveller", fields: [traveller_id], references: [id])
-  owner                User     @relation("UserPackagesOwner", fields: [owner_id], references: [id])
+  // traveller_id String?
+  owner_id     String
+  // traveller User? @relation("UserPackagesTraveller", fields: [traveller_id], references: [id])
+  owner     User  @relation("UserPackagesOwner", fields: [owner_id], references: [id])
 
-  traveller_id          String?
-  owner_id              String
+  announcement_requests AnnouncementRequest[]
+  conversations         Conversation[]
+
+  bookings         Booking[]
+  
+  @@map("packages")
 }
 
 model Report {
-  id                   String   @id @default(uuid())
-  reported_by          User     @relation("UserReports", fields: [reportedById], references: [id])
-  shot_description     String
-  details_description  String
-  created_at           DateTime @default(now())
-  updated_at           DateTime @updatedAt
+  id                  String   @id @default(cuid())
 
-  reportedById         String
+  reported_by_id      String
+  reported_by         User     @relation("UserReports", fields: [reported_by_id], references: [id])
+  shot_description    String?
+  details_description String?
+
+  created_at          DateTime @default(now())
+  updated_at          DateTime @updatedAt
+
+  @@map("reports")
 }
 
-model Booking {
-  id                      String   @id @default(uuid())
-  package_id              String
-  status                  BookingStatus
-  pick_up_photo          String
-  pick_up_owner_sign     String
-  pick_up_traveller_sign String
-  delivery_photo         String
-  delivery_time_owner_sign String
-  delivery_time_traveller_sign String
-  cancel                 Boolean
-  cancel_reason          String
-  cancel_description     String?
-  cancel_by_id           String
-  cancel_by              User     @relation("UserBookingsCancelBy", fields: [cancel_by_id], references: [id])
-  confirmed              Boolean
-  created_at             DateTime @default(now())
-  updated_at             DateTime @updatedAt
-
-  traveller_id            String
-  owner_id                String
-  traveller              User     @relation("UserBookingsTraveller", fields: [traveller_id], references: [id])
-  owner                  User     @relation("UserBookingsOwner", fields: [owner_id], references: [id])
-
-  
-}
-
-model Travel {
-  id                    String   @id @default(uuid())
-  flight_number         String
-  airline               String
-  duration              String
-  departure             DateTime
-  collect_radius        String
-  arrival              DateTime
-  drop_radius       String
-  number_of_checked_bags Json
-  number_of_cabin_bags  Json
-  accept_electronic_items Boolean
-  trip_details          String
-  publish               Boolean
-  created_at            DateTime @default(now())
-  updated_at            DateTime @updatedAt
-
-  user                  User     @relation("UserTravels", fields: [user_id], references: [id])
-  user_id                String
-}
-
-model Chat {
-  id                    String   @id @default(uuid())
-  duration              Int
-  startedAt            DateTime
-  endedAt              DateTime
-  workspaceId          String
-}
-
-model Review {
-  id                    String   @id @default(uuid())
-  review_text           String
-  rating               Int
-  created_at           DateTime @default(now())
-  updated_at           DateTime @updatedAt
-
-  review_by            User     @relation("ReviewGiven", fields: [reviewById], references: [id])
-  review_for           User     @relation("ReviewFor", fields: [reviewForId], references: [id])
-
-  reviewById           String
-  reviewForId          String
-}
-
-model ProblemWithPackage {
-  id                    String   @id @default(uuid())
-  package_id            String
-  reason                String
-  description          String
-  photo                 String
-}
+// model Cancel {
+//   id                  String   @id @default(cuid())
+//   cancel_by_id        String
+//   cancel_by           User     @relation("UserBookingsCancelBy", fields: [cancel_by_id], references: [id])
+//   cancel_by_who       String // package_owner or traveller
+//   cancel_reason        Json
+//   description           String
+//   booking_id            String
 
 
-enum BookingStatus {
+//   booking               Booking  @relation(fields: [booking_id], references: [id])
+
+//   created_at                  DateTime @default(now())
+//   updated_at                  DateTime @updatedAt
+//   @@map("cancels")
+// }
+
+enum BookingStatus { // ShipmentStatus
   in_progress
   pick_up
   on_the_way
   delivered
   cancel
+  problem_with_the_package
+  all_conditions_are_not_met
+
 }
 
 
+model Booking {
+  id                           String        @id @default(cuid())
+  status                       BookingStatus  @default(in_progress)// ShipmentStatus
+  paid                          Boolean       @default(false)
+  amount                        Decimal?
+
+
+  // pick up
+  pick_up_photo                String?
+  pick_up_owner_sign           String?
+  pick_up_traveller_sign       String?
+
+
+  // delivery
+  delivery_photo               String?
+  delivery_time_owner_sign     String?
+  delivery_time_traveller_sign String?
+
+  // cancel
+  cancel                       Boolean @default(false)
+  cancel_reason                Json?
+  // cancel_description           String?
+  cancel_by_id                 String?
+  cancel_by                    User?          @relation("UserBookingsCancelBy", fields: [cancel_by_id], references: [id])
+  cancel_by_who                String? // package_owner or traveller
+
+
+  confirmed                    Boolean  @default(false)
+
+
+  // problem with the package
+  problem                      Boolean @default(false)
+  problem_reason               Json?
+  problem_photo                String?
+
+  // all conditions are not met
+  all_conditions               Boolean @default(true)
+  all_conditions_reason        Json?
+  
+
+  traveller_id String?
+  owner_id     String?
+  traveller    User?   @relation("UserBookingsTraveller", fields: [traveller_id], references: [id], onDelete: SetNull)
+  owner        User?   @relation("UserBookingsOwner", fields: [owner_id], references: [id], onDelete: SetNull)
+
+  package_id                  String
+  package                     Package @relation(fields: [package_id], references: [id])
+
+  travel_id                   String
+  travel                      Travel  @relation(fields: [travel_id], references: [id])
+
+
+  created_at                  DateTime @default(now())
+  updated_at                  DateTime @updatedAt
+
+  @@map("bookings")
+}
+
+
+
+model Travel {
+  id                      String   @id @default(uuid())
+  flight_number           String
+  airline                 String
+  duration                String
+  departure               DateTime
+  collect_radius          String
+  arrival                 DateTime
+  drop_radius             String
+  number_of_checked_bags  Json
+  number_of_cabin_bags    Json
+  accept_electronic_items Boolean
+  trip_details            String
+  publish                 Boolean
+
+  user                    User   @relation("UserTravels", fields: [user_id], references: [id])
+  user_id                 String
+
+  announcement_requests   AnnouncementRequest[]
+  conversations           Conversation[]
+  bookings                Booking[]
+
+  created_at DateTime     @default(now())
+  updated_at DateTime     @updatedAt
+
+  @@map("travels")
+}
+
+model Chat {
+  id          String   @id @default(uuid())
+  duration    Int
+  startedAt   DateTime
+  endedAt     DateTime
+  workspaceId String
+}
+
+model Review {
+  id          String   @id @default(uuid())
+  review_text String
+  rating      Int
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  review_by  User @relation("ReviewGiven", fields: [reviewById], references: [id])
+  review_for User @relation("ReviewFor", fields: [reviewForId], references: [id])
+
+  reviewById  String
+  reviewForId String
+}
+
+model ProblemWithPackage {
+  id          String @id @default(uuid())
+  package_id  String
+  reason      String
+  description String
+  photo       String
+}
+
+
+
+model AnnouncementRequest {
+  id          String   @id @default(cuid())
+  is_accepted Boolean  @default(false)
+  is_refused   Boolean  @default(false)
+  package_id  String
+  package     Package  @relation(fields: [package_id], references: [id], onDelete: Cascade)
+  travel_id   String
+  travel      Travel   @relation(fields: [travel_id], references: [id], onDelete: Cascade)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  @@map("announcement_requests")
+}

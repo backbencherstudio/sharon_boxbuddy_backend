@@ -91,4 +91,31 @@ export class DateHelper {
 
     return date2Data.diff(date1Data, unit, float);
   }
+
+  // Function to normalize date and set time to 23:59:59.999 (end of the day)
+  static normalizeDateToEndOfDay(date: string) {
+    const d = new Date(date);
+    d.setHours(23, 59, 59, 999); // Set time to 23:59:59.999 (end of the day)
+  
+    // If you need to convert to local time, adjust to UTC first:
+    const offset = d.getTimezoneOffset(); // Get the time zone offset in minutes
+    d.setMinutes(d.getMinutes() - offset); // Adjust to local time
+  
+    return d;
+  }
+
+  static normalizeDate(date: string){
+    // const d = new Date(date);
+    // d.setHours(0, 0, 0, 0);  // Set time to midnight (00:00:00)
+    // return d;
+
+    const d = new Date(date);
+    d.setHours(0, 0, 0, 0); // Set time to 23:59:59.999 (end of the day)
+  
+    // If you need to convert to local time, adjust to UTC first:
+    const offset = d.getTimezoneOffset(); // Get the time zone offset in minutes
+    d.setMinutes(d.getMinutes() - offset); // Adjust to local time
+  
+    return d;
+  };
 }

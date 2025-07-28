@@ -19,12 +19,71 @@ export class ConversationService {
     try {
       const data: any = {};
 
+      // check package_id, travel_id and participant_id are valid or not
+      const packageData = await this.prisma.package.findUnique({
+        where: { id: createConversationDto.package_id },
+      });
+      if (!packageData) {
+        return {
+          success: false,
+          message: 'Package not found',
+        };
+      }
+      const travelData = await this.prisma.travel.findUnique({
+        where: { id: createConversationDto.travel_id },
+      });
+
+      if (!travelData) {
+        return {
+          success: false,
+          message: 'Travel not found',
+        };
+      }
+
+      const participantData = await this.prisma.user.findUnique({
+        where: { id: createConversationDto.participant_id },
+      });
+
+      if (!participantData) {
+        return {
+          success: false,
+          message: 'Participant not found',
+        };
+      }
+
       if (createConversationDto.creator_id) {
         data.creator_id = createConversationDto.creator_id;
       }
       if (createConversationDto.participant_id) {
         data.participant_id = createConversationDto.participant_id;
       }
+      if (createConversationDto.package_id) {
+        data.package_id = createConversationDto.package_id;
+      }
+      if (createConversationDto.travel_id) {
+        data.travel_id = createConversationDto.travel_id;
+      }
+
+      if (createConversationDto.created_by === 'package_owner') {
+        // find is anouncement request exists
+        const announcementRequest = await this.prisma.announcementRequest.findFirst({
+          where: {
+            package_id: createConversationDto.package_id,
+            travel_id: createConversationDto.travel_id,
+          },
+        });
+
+        if (!announcementRequest) {
+          await this.prisma.announcementRequest.create({
+            data: {
+              package_id: createConversationDto.package_id,
+              travel_id: createConversationDto.travel_id,
+            },
+          });
+        }
+        
+      }
+      
 
       // check if conversation exists
       let conversation = await this.prisma.conversation.findFirst({
@@ -59,16 +118,20 @@ export class ConversationService {
               created_at: true,
             },
           },
+          package: true,
+          travel: true
         },
         where: {
           creator_id: data.creator_id,
           participant_id: data.participant_id,
+          package_id: createConversationDto.package_id,
+          travel_id: createConversationDto.travel_id,
         },
       });
 
       if (conversation) {
         return {
-          success: false,
+          success: true,
           message: 'Conversation already exists',
           data: conversation,
         };
@@ -106,6 +169,9 @@ export class ConversationService {
               created_at: true,
             },
           },
+
+          package: true,
+          travel: true,
         },
         data: {
           ...data,

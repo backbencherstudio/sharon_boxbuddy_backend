@@ -1,20 +1,22 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, Query } from '@nestjs/common';
 import { TravelService } from './travel.service';
 import { CreateTravelDto } from './dto/create-travel.dto';
 import { UpdateTravelDto } from './dto/update-travel.dto';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/modules/auth/guards/jwt-auth.guard';
 import { Request } from 'express';
+import { FindAllDto } from './dto/find-all-query.dto';
+import { AnnouncementRequestDto } from './dto/announcement-request.dto';
 
 @ApiTags('Travel')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 @Controller('travels')
 export class TravelController {
-  constructor(private readonly travelService: TravelService) {}
+  constructor(private readonly travelService: TravelService) { }
 
   @Post()
-  async create(@Body() createTravelDto: CreateTravelDto, @Req() req: Request,) {
+  async create(@Body() createTravelDto: CreateTravelDto, @Req() req: Request) {
     try {
       createTravelDto.user_id = req?.user?.userId;
       return await this.travelService.create(createTravelDto);
@@ -27,8 +29,15 @@ export class TravelController {
   }
 
   @Get()
-  async findAll() {
-    return this.travelService.findAll();
+  async findAll(@Query() findAllDto: FindAllDto) {
+    try {
+      return await this.travelService.findAll(findAllDto);
+    } catch (err) {
+      return {
+        success: false,
+        message: 'travels fetch failed',
+      };
+    }
   }
 
   @Get('my-current-travels')
@@ -39,6 +48,18 @@ export class TravelController {
       return {
         success: false,
         message: 'travel fetch failed',
+      };
+    }
+  }
+
+  @Patch('request/:id/update')
+  async updateRequest(@Param('id') id: string, @Req() req: Request,  @Body() announcementRequestDto: AnnouncementRequestDto) {
+    try {
+      return await this.travelService.updateRequest(id, req?.user?.userId, announcementRequestDto);
+    } catch (err) {
+      return {
+        success: false,
+        message: 'travel request accept failed',
       };
     }
   }
