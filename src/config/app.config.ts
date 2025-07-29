@@ -81,6 +81,7 @@ export default () => ({
     websiteInfo: '/website-info/',
     problem: '/problem/',
     pickUp: '/pick-up/',
+    dropOff: '/drop-off/',
     // chat
     attachment: '/attachment/',
   },

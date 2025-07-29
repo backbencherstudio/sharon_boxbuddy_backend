@@ -62,7 +62,14 @@ export class UpdateUserDto extends PartialType(CreateUserDto) {
   @IsOptional()
   @ApiProperty({
     description: 'Date of birth',
-    example: '14/11/2001',
+    example: "1992-08-20",
   })
   date_of_birth?: string;
+
+  @IsOptional()
+  @ApiProperty({
+    description: 'Bio',
+    example: 'I am a software engineer',
+  })
+  about_me?: string
 }

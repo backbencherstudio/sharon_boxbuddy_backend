@@ -58,6 +58,7 @@ model User {
   zip_code      String?
   gender        String?
   date_of_birth DateTime? @db.Date
+  about_me           String? @db.Text
 
   // billing id. e.g. stripe customer id
   billing_id String?
@@ -485,19 +486,32 @@ model Package {
 
   announcement_requests AnnouncementRequest[]
   conversations         Conversation[]
+  reports               Report[]
 
   bookings         Booking[]
   
   @@map("packages")
 }
 
+enum ReportType {
+  package
+  travel
+}
 model Report {
   id                  String   @id @default(cuid())
 
-  reported_by_id      String
-  reported_by         User     @relation("UserReports", fields: [reported_by_id], references: [id])
   shot_description    String?
   details_description String?
+
+  report_for          ReportType?
+  reported_by_id      String
+  reported_by         User     @relation("UserReports", fields: [reported_by_id], references: [id])
+
+  package_id          String?
+  package             Package?  @relation(fields: [package_id], references: [id])
+
+  travel_id           String?
+  travel              Travel?   @relation(fields: [travel_id], references: [id])
 
   created_at          DateTime @default(now())
   updated_at          DateTime @updatedAt
@@ -527,6 +541,8 @@ enum BookingStatus { // ShipmentStatus
   pick_up
   on_the_way
   delivered
+  completed
+  rejected
   cancel
   problem_with_the_package
   all_conditions_are_not_met
@@ -536,7 +552,7 @@ enum BookingStatus { // ShipmentStatus
 
 model Booking {
   id                           String        @id @default(cuid())
-  status                       BookingStatus  @default(in_progress)// ShipmentStatus
+  status                       BookingStatus  @default(pick_up)// ShipmentStatus
   paid                          Boolean       @default(false)
   amount                        Decimal?
 
@@ -548,9 +564,9 @@ model Booking {
 
 
   // delivery
-  delivery_photo               String?
-  delivery_time_owner_sign     String?
-  delivery_time_traveller_sign String?
+  drop_off_photo               String?
+  drop_off_owner_sign          String?
+  drop_off_traveller_sign      String?
 
   // cancel
   cancel                       Boolean @default(false)
@@ -570,8 +586,8 @@ model Booking {
   problem_photo                String?
 
   // all conditions are not met
-  all_conditions               Boolean @default(true)
-  all_conditions_reason        Json?
+  all_conditions_are_not_met               Boolean @default(false)
+  all_conditions_are_not_met_reason        Json?
   
 
   traveller_id String?
@@ -584,6 +600,10 @@ model Booking {
 
   travel_id                   String
   travel                      Travel  @relation(fields: [travel_id], references: [id])
+
+  reviews                     Review[]
+
+
 
 
   created_at                  DateTime @default(now())
@@ -615,6 +635,7 @@ model Travel {
   announcement_requests   AnnouncementRequest[]
   conversations           Conversation[]
   bookings                Booking[]
+  reports                 Report[]
 
   created_at DateTime     @default(now())
   updated_at DateTime     @updatedAt
@@ -630,18 +651,28 @@ model Chat {
   workspaceId String
 }
 
+enum ReviewForm {
+  package_owner
+  traveller
+}
 model Review {
   id          String   @id @default(uuid())
   review_text String
   rating      Int
+  review_from   ReviewForm
+
+  review_by_id  String
+  review_for_id String
+  booking_id    String
+
+  booking    Booking @relation(fields: [booking_id], references: [id])
+  review_by  User @relation("ReviewGiven", fields: [review_by_id], references: [id])
+  review_for User @relation("ReviewFor", fields: [review_for_id], references: [id])
+
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
 
-  review_by  User @relation("ReviewGiven", fields: [reviewById], references: [id])
-  review_for User @relation("ReviewFor", fields: [reviewForId], references: [id])
-
-  reviewById  String
-  reviewForId String
+  @@map("reviews")
 }
 
 model ProblemWithPackage {

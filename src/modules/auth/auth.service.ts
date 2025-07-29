@@ -29,7 +29,9 @@ export class AuthService {
         },
         select: {
           id: true,
-          name: true,
+          first_name: true,
+          last_name: true,
+          // name: true,
           email: true,
           avatar: true,
           address: true,
@@ -37,6 +39,7 @@ export class AuthService {
           type: true,
           gender: true,
           date_of_birth: true,
+          about_me: true,
           created_at: true,
         },
       });
@@ -116,6 +119,12 @@ export class AuthService {
       if (updateUserDto.date_of_birth) {
         data.date_of_birth = DateHelper.format(updateUserDto.date_of_birth);
       }
+
+      if(updateUserDto.about_me) {
+        data.about_me = updateUserDto.about_me;
+      }
+
+
       if (image) {
         // delete old image from storage
         const oldImage = await this.prisma.user.findFirst({
@@ -129,12 +138,13 @@ export class AuthService {
         }
 
         // upload file
-        const fileName = `${StringHelper.randomString()}${image.originalname}`;
-        await SojebStorage.put(
-          appConfig().storageUrl.avatar + fileName,
-          image.buffer,
-        );
+        // const fileName = `${StringHelper.randomString()}${image.originalname}`;
+        // await SojebStorage.put(
+        //   appConfig().storageUrl.avatar + fileName,
+        //   image.buffer,
+        // );
 
+        const fileName = image.filename
         data.avatar = fileName;
       }
       const user = await UserRepository.getUserDetails(userId);

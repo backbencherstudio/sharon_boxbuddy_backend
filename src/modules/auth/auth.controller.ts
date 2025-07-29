@@ -17,7 +17,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Request, Response } from 'express';
-import { memoryStorage } from 'multer';
+import { diskStorage, memoryStorage } from 'multer';
 import appConfig from 'src/config/app.config';
 import { AuthService } from './auth.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -230,19 +230,19 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @Patch('update')
   @UseInterceptors(
-    FileInterceptor('image', {
-      // storage: diskStorage({
-      //   destination:
-      //     appConfig().storageUrl.rootUrl + appConfig().storageUrl.avatar,
-      //   filename: (req, file, cb) => {
-      //     const randomName = Array(32)
-      //       .fill(null)
-      //       .map(() => Math.round(Math.random() * 16).toString(16))
-      //       .join('');
-      //     return cb(null, `${randomName}${file.originalname}`);
-      //   },
-      // }),
-      storage: memoryStorage(),
+    FileInterceptor('avatar', {
+      storage: diskStorage({
+        destination:
+          appConfig().storageUrl.rootUrl + appConfig().storageUrl.avatar,
+        filename: (req, file, cb) => {
+          const randomName = Array(32)
+            .fill(null)
+            .map(() => Math.round(Math.random() * 16).toString(16))
+            .join('');
+          return cb(null, `${randomName}${file.originalname.replace(/\s+/g, '-')}`);
+        },
+      }),
+      // storage: memoryStorage(),
     }),
   )
   async updateUser(
