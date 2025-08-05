@@ -12,6 +12,7 @@ import { SojebStorage } from '../../common/lib/Disk/SojebStorage';
 import { DateHelper } from '../../common/helper/date.helper';
 import { StripePayment } from '../../common/lib/Payment/stripe/StripePayment';
 import { StringHelper } from '../../common/helper/string.helper';
+import { WalletService } from '../application/wallet/wallet.service';
 
 @Injectable()
 export class AuthService {
@@ -19,6 +20,7 @@ export class AuthService {
     private jwtService: JwtService,
     private prisma: PrismaService,
     private mailService: MailService,
+    private readonly walletService: WalletService,
   ) {}
 
   async me(userId: string) {
@@ -207,6 +209,7 @@ export class AuthService {
           role: user.data.type,
         };
         const token = this.jwtService.sign(payload);
+        await this.walletService.createUserWallet(user.data.id);
 
         return {
           success: true,
@@ -257,6 +260,8 @@ export class AuthService {
           role: user.data.type,
         };
         const token = this.jwtService.sign(payload);
+
+        await this.walletService.createUserWallet(user.data.id);
 
         return {
           success: true,
@@ -450,6 +455,9 @@ export class AuthService {
         token: token.token,
         type: type,
       });
+
+      // create wallet
+      await this.walletService.createUserWallet(user.data.id);
 
       return {
         success: true,

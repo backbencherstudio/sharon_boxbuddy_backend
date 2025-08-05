@@ -10,6 +10,7 @@ import { PrismaModule } from '../../prisma/prisma.module';
 import { MailModule } from '../../mail/mail.module';
 import { GoogleStrategy } from './strategies/google.strategy';
 import { FacebookStrategy } from './strategies/facebook.strategy';
+import { WalletModule } from '../application/wallet/wallet.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { FacebookStrategy } from './strategies/facebook.strategy';
     }),
     PrismaModule,
     MailModule,
+    WalletModule,
   ],
   controllers: [AuthController],
   providers: [

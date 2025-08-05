@@ -95,6 +95,9 @@ model User {
   roles                Role[]
   role_users           RoleUser[]
   payment_transactions PaymentTransaction[]
+  paymentAccounts PaymentAccount[]
+  
+  wallet              Wallet?  
 
   @@map("users")
 }
@@ -697,4 +700,78 @@ model AnnouncementRequest {
   updated_at  DateTime @updatedAt
 
   @@map("announcement_requests")
+}
+
+enum TransactionType {
+  DEPOSIT
+  SPEND
+  WITHDRAW
+  REFUND
+  HOLD
+  RELEASE
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+model Wallet {
+  id          String             @id @default(uuid())
+  user_id     String?            @unique
+  user        User?              @relation(fields: [user_id], references: [id])
+  balance     Float              @default(0)
+  currency    String             @default("usd")
+  created_at  DateTime           @default(now())
+  updated_at  DateTime           @updatedAt
+  transactions WalletTransaction[]
+
+  @@index([user_id])
+  @@map("wallets")
+}
+
+model WalletTransaction {
+  id          String           @id @default(uuid())
+  wallet_id   String
+  wallet      Wallet           @relation(fields: [wallet_id], references: [id])
+  type        TransactionType
+  amount      Float
+  status      TransactionStatus @default(PENDING)
+  stripe_id   String?
+  metadata    Json?
+  created_at  DateTime         @default(now())
+  updated_at  DateTime         @updatedAt
+
+  @@index([wallet_id])
+  @@index([stripe_id])
+  @@map("wallet_transactions")
+}
+
+model WalletConfig {
+  id          Int     @id @default(autoincrement())
+  currency    String  @default("usd")
+  min_deposit Float   @default(5.0)
+  min_withdraw Float  @default(10.0)
+  platform_account_id String
+  central_wallet_id String
+
+  @@unique([currency])
+  @@map("wallet_configs")
+}
+
+model PaymentAccount {
+  id           String   @id @default(uuid())
+  user_id      String
+  user         User     @relation(fields: [user_id], references: [id])
+  provider     String   // 'stripe', 'paypal', etc.
+  account_id   String   // External account ID
+  is_default   Boolean  @default(false)
+  metadata     Json?    // Store provider-specific data
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  @@unique([user_id, provider, account_id])
+  @@map("payment_accounts")
 }
