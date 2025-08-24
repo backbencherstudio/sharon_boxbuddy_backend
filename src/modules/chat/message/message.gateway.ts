@@ -1,20 +1,20 @@
+import { OnModuleInit } from '@nestjs/common';
 import {
-  WebSocketGateway,
-  SubscribeMessage,
   MessageBody,
-  OnGatewayInit,
   OnGatewayConnection,
   OnGatewayDisconnect,
+  OnGatewayInit,
+  SubscribeMessage,
+  WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
-import { Server, Socket } from 'socket.io';
-import { OnModuleInit } from '@nestjs/common';
 import { MessageStatus } from '@prisma/client';
+import * as fs from 'fs';
 import * as jwt from 'jsonwebtoken';
 import * as path from 'path';
-import * as fs from 'fs';
-import appConfig from '../../../config/app.config';
+import { Server, Socket } from 'socket.io';
 import { ChatRepository } from '../../../common/repository/chat/chat.repository';
+import appConfig from '../../../config/app.config';
 
 @WebSocketGateway({
   cors: {
@@ -58,8 +58,8 @@ export class MessageGateway
   // implement jwt token validation
   async handleConnection(client: Socket, ...args: any[]) {
     try {
-      // const token = client.handshake.headers.authorization?.split(' ')[1];
-      const token = client.handshake.auth.token;
+      const token = client.handshake.headers.authorization?.split(' ')[1];
+      // const token = client.handshake.auth.token;
       if (!token) {
         client.disconnect();
         console.log('No token provided');
@@ -80,7 +80,12 @@ export class MessageGateway
       // console.log(`User ${userId} connected with socket ${client.id}`);
       await ChatRepository.updateUserStatus(userId, 'online');
       // notify the user that the user is online
-      this.server.emit('userStatusChange', {
+      // this.server.emit('userStatusChange', {
+      //   user_id: userId,
+      //   status: 'online',
+      // });
+
+      client.broadcast.emit('userStatusChange', {
         user_id: userId,
         status: 'online',
       });
@@ -108,7 +113,12 @@ export class MessageGateway
 
       await ChatRepository.updateUserStatus(userId, 'offline');
       // notify the user that the user is offline
-      this.server.emit('userStatusChange', {
+      // this.server.emit('userStatusChange', {
+      //   user_id: userId,
+      //   status: 'offline',
+      // });
+
+      client.broadcast.emit('userStatusChange', {
         user_id: userId,
         status: 'offline',
       });

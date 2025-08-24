@@ -10,36 +10,42 @@ import {
 } from '@nestjs/common';
 import { WalletService } from './wallet.service';
 
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
+import { Request } from 'express';
 import { JwtAuthGuard } from 'src/modules/auth/guards/jwt-auth.guard';
 import { DepositDto } from './dto/deposit.dto';
-import { WithdrawDto } from './dto/withdraw.dto';
-import { SpendDto } from './dto/spend.dto';
-import { Request } from 'express';
-import { PaymentAccountService } from './payment.service';
 import { SetDefaultAccountDto } from './dto/payment-account.dto';
-import { StripePayment } from 'src/common/lib/Payment/stripe/StripePayment';
+import { SpendDto } from './dto/spend.dto';
+import { WithdrawDto } from './dto/withdraw.dto';
+import { PaymentAccountService } from './payment.service';
 
 @ApiTags('wallet')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 @Controller('wallet')
 export class WalletController {
-  constructor(private readonly walletService: WalletService,     private paymentAccountService: PaymentAccountService  ) {}
-
+  constructor(
+    private readonly walletService: WalletService,
+    private paymentAccountService: PaymentAccountService,
+  ) {}
 
   @Get('accounts')
-  async getAccounts(
-    @Req() req: Request,
-    @Query('provider') provider?: string,
-  ) {
+  async getAccounts(@Req() req: Request, @Query('provider') provider?: string) {
     const userId = req?.user?.userId;
-    const accounts = await this.paymentAccountService.getAccounts(userId, provider);
+    const accounts = await this.paymentAccountService.getAccounts(
+      userId,
+      provider,
+    );
     return {
       success: true,
       message: 'Accounts retrieved successfully',
       accounts: accounts,
-    }
+    };
   }
 
   @Post('stripe/connect')
@@ -49,15 +55,20 @@ export class WalletController {
   }
 
   @Post('default')
-  async setDefaultAccount(@Body() dto: SetDefaultAccountDto, @Req() req: Request) {
+  async setDefaultAccount(
+    @Body() dto: SetDefaultAccountDto,
+    @Req() req: Request,
+  ) {
     const userId = req?.user?.userId;
-    return this.paymentAccountService.setDefaultAccount(
-      userId,
-      dto.accountId
-    );
+    return this.paymentAccountService.setDefaultAccount(userId, dto.accountId);
   }
 
-  
+  @Get('stripe/verification')
+  async createVerificationSession(@Req() req: Request) {
+    const userId = req?.user?.userId;
+    return this.walletService.createVerificationSession(userId);
+  }
+
   @Get('balance')
   @ApiOperation({ summary: 'Get wallet balance' })
   @ApiResponse({ status: 200, description: 'Returns wallet balance' })
@@ -71,13 +82,12 @@ export class WalletController {
     };
   }
 
-  @Get('balance')
-  @ApiOperation({ summary: 'Get wallet balance' })
-  @ApiResponse({ status: 200, description: 'Returns wallet balance' })
-  async getBalanceByUserId() {
-   
-    // return StripePayment.checkBalance()
-  }
+  // @Get('balance')
+  // @ApiOperation({ summary: 'Get wallet balance' })
+  // @ApiResponse({ status: 200, description: 'Returns wallet balance' })
+  // async getBalanceByUserId() {
+  //   // return StripePayment.checkBalance()
+  // }
 
   @Post('deposit')
   @ApiOperation({ summary: 'Deposit funds to wallet' })
@@ -128,6 +138,10 @@ export class WalletController {
     @Query('limit') limit = 10,
     @Query('offset') offset = 0,
   ) {
-    return this.walletService.getTransactions(userId, Number(limit), Number(offset));
+    return this.walletService.getTransactions(
+      userId,
+      Number(limit),
+      Number(offset),
+    );
   }
 }

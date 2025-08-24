@@ -22,6 +22,7 @@ export class TravelService {
         data: travel,
       }
     } catch (error) {
+      console.log(error)
       return {
         success: false,
         message: 'travel creation failed',

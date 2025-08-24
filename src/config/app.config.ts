@@ -84,6 +84,7 @@ export default () => ({
     dropOff: '/drop-off/',
     // chat
     attachment: '/attachment/',
+    message_attachment:  '/message-attachment/',
   },
 
   defaultUser: {

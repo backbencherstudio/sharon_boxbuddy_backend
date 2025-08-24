@@ -1,9 +1,14 @@
-import { Body, Controller, Headers, HttpStatus, Post, Req, Res } from '@nestjs/common';
-import { WalletService } from './wallet.service';
-import { WalletConfig } from './wallet.config';
+import {
+  Controller,
+  Headers,
+  HttpStatus,
+  Post,
+  Req,
+  Res,
+} from '@nestjs/common';
 import { Request, Response } from 'express';
-import { WALLET_CONFIG_TOKEN } from './wallet.constants';
-
+import { WalletConfig } from './wallet.config';
+import { WalletService } from './wallet.service';
 
 // export const config = {
 //   api: {
@@ -31,7 +36,7 @@ export class WalletWebhookController {
     // console.log('Signature:', signature)
     const event = this.constructEvent(body, signature);
 
-    // console.log('Received webhook:', event.type);
+    console.log('Received webhook:', event.type);
 
     switch (event.type) {
       case 'payment_intent.succeeded':
@@ -46,6 +51,11 @@ export class WalletWebhookController {
       case 'payout.failed':
         await this.handlePayoutFailed(event);
         break;
+
+      case 'identity.verification_session.verified':
+        console.log('identity.verification_session.verified');
+        await this.identityVerification(event);
+        break;
     }
 
     res.status(HttpStatus.OK).send();
@@ -56,7 +66,7 @@ export class WalletWebhookController {
     return stripe.webhooks.constructEvent(
       body,
       signature,
-      process.env.STRIPE_WEBHOOK_SECRET, 
+      process.env.STRIPE_WEBHOOK_SECRET,
     );
   }
 
@@ -67,6 +77,20 @@ export class WalletWebhookController {
       req.on('data', (chunk) => chunks.push(chunk));
       req.on('end', () => resolve(Buffer.concat(chunks)));
       req.on('error', reject);
+    });
+  }
+
+  private async identityVerification(event: any) {
+    const verificationSession = event.data.object;
+
+    // Update your database with the verification result
+    await this.walletService['prisma'].user.update({
+      where: { id: verificationSession.metadata.user_id },
+      data: {
+        verificationStatus: 'completed',
+
+        stripeSessionId: verificationSession.id,
+      },
     });
   }
 
@@ -81,7 +105,9 @@ export class WalletWebhookController {
       });
 
       // Update wallet balance
-      const transaction = await this.walletService['prisma'].walletTransaction.findUnique({
+      const transaction = await this.walletService[
+        'prisma'
+      ].walletTransaction.findUnique({
         where: { id: metadata.transactionId },
       });
 
@@ -121,7 +147,9 @@ export class WalletWebhookController {
     const metadata = payout.metadata;
 
     if (metadata.transactionId) {
-      const transaction = await this.walletService['prisma'].walletTransaction.findUnique({
+      const transaction = await this.walletService[
+        'prisma'
+      ].walletTransaction.findUnique({
         where: { id: metadata.transactionId },
         include: { wallet: true },
       });

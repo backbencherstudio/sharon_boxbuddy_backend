@@ -1,5 +1,5 @@
-import { Injectable } from "@nestjs/common";
-import { PrismaService } from "src/prisma/prisma.service";
+import { Injectable } from '@nestjs/common';
+import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class PaymentAccountService {
@@ -9,7 +9,7 @@ export class PaymentAccountService {
     userId: string,
     provider: string,
     accountId: string,
-    metadata?: any
+    metadata?: any,
   ) {
     return this.prisma.paymentAccount.create({
       data: {

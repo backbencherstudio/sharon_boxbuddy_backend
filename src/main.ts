@@ -22,7 +22,9 @@ async function bootstrap() {
   // app.use('/payment/stripe/webhook', express.raw({ type: 'application/json' }));
 
   app.setGlobalPrefix('api');
-  app.enableCors();
+  app.enableCors({
+    origin: '*',
+  });
   app.use(helmet());
   // Enable it, if special charactrers not encoding perfectly
   // app.use((req, res, next) => {

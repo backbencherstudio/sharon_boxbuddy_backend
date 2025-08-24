@@ -70,6 +70,9 @@ model User {
   two_factor_secret     String? // secret key for two factor authentication
   facebook_id           String?
 
+  verificationStatus    String?   @default("pending")
+  stripeSessionId       String?
+
   accounts                  Account[]
   creator_conversations     Conversation[] @relation("creator")
   participant_conversations Conversation[] @relation("participant")
@@ -286,6 +289,8 @@ model Message {
   created_at DateTime  @default(now())
   updated_at DateTime  @default(now())
   deleted_at DateTime?
+  is_read         Boolean     @default(false)
+  read_at         DateTime?
 
   status MessageStatus? @default(PENDING)
 
@@ -295,11 +300,14 @@ model Message {
   receiver_id String?
   receiver    User?   @relation("receiver", fields: [receiver_id], references: [id])
 
+  last_message_of  Conversation? @relation("last_message")
+  
   conversation_id String?
   conversation    Conversation? @relation(fields: [conversation_id], references: [id], onDelete: Cascade)
 
-  attachment_id String?
-  attachment    Attachment? @relation(fields: [attachment_id], references: [id])
+
+
+  attachments     Attachment[]
 
   message String?
 
@@ -319,7 +327,8 @@ model Attachment {
   file     String?
   file_alt String?
 
-  messages Message[]
+  message_id String
+  message    Message @relation(fields: [message_id], references: [id])
 
   @@map("attachments")
 }
@@ -343,7 +352,10 @@ model Conversation {
   travel_id String?
   travel    Travel? @relation(fields: [travel_id], references: [id], onDelete: SetNull)
 
+  last_message_id String? @unique
+  last_message    Message? @relation("last_message", fields: [last_message_id], references: [id])
   messages Message[]
+
 
   @@map("conversations")
 }
@@ -630,7 +642,7 @@ model Travel {
   number_of_cabin_bags    Json
   accept_electronic_items Boolean
   trip_details            String
-  publish                 Boolean
+  publish                 Boolean  @default(false)
 
   user                    User   @relation("UserTravels", fields: [user_id], references: [id])
   user_id                 String

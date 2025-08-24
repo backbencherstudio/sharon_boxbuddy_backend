@@ -19,6 +19,7 @@ export class TravelController {
   async create(@Body() createTravelDto: CreateTravelDto, @Req() req: Request) {
     try {
       createTravelDto.user_id = req?.user?.userId;
+      createTravelDto.publish = true;
       return await this.travelService.create(createTravelDto);
     } catch (err) {
       return {

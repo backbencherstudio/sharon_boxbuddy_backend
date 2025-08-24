@@ -13,7 +13,7 @@ export class ConversationService {
   constructor(
     private prisma: PrismaService,
     private readonly messageGateway: MessageGateway,
-  ) {}
+  ) { }
 
   async create(createConversationDto: CreateConversationDto) {
     try {
@@ -81,9 +81,9 @@ export class ConversationService {
             },
           });
         }
-        
+
       }
-      
+
 
       // check if conversation exists
       let conversation = await this.prisma.conversation.findFirst({
@@ -122,14 +122,35 @@ export class ConversationService {
           travel: true
         },
         where: {
-          creator_id: data.creator_id,
-          participant_id: data.participant_id,
           package_id: createConversationDto.package_id,
           travel_id: createConversationDto.travel_id,
-        },
+          OR: [
+            {
+              creator_id: data.creator_id,
+              participant_id: data.participant_id,
+            },
+            {
+              creator_id: data.participant_id,
+              participant_id: data.creator_id,
+            }
+          ]
+        }
+
       });
 
       if (conversation) {
+
+        // add image url
+        if (conversation.creator.avatar) {
+          conversation.creator['avatar_url'] = SojebStorage.url(
+            appConfig().storageUrl.avatar + conversation.creator.avatar,
+          );
+        }
+        if (conversation.participant.avatar) {
+          conversation.participant['avatar_url'] = SojebStorage.url(
+            appConfig().storageUrl.avatar + conversation.participant.avatar,
+          );
+        }
         return {
           success: true,
           message: 'Conversation already exists',
@@ -213,6 +234,9 @@ export class ConversationService {
     }
   }
 
+
+  
+
   async findAll() {
     try {
       const conversations = await this.prisma.conversation.findMany({
@@ -239,17 +263,21 @@ export class ConversationService {
               avatar: true,
             },
           },
-          messages: {
-            orderBy: {
-              created_at: 'desc',
-            },
-            take: 1,
-            select: {
-              id: true,
-              message: true,
-              created_at: true,
-            },
-          },
+          package: true,
+          travel: true,
+          last_message: true,
+          // messages: {
+          //   orderBy: {
+          //     created_at: 'desc',
+          //   },
+          //   take: 1,
+          //   select: {
+          //     id: true,
+          //     message: true,
+          //     created_at: true,
+          //   },
+          // },
+
         },
       });
 
@@ -269,6 +297,7 @@ export class ConversationService {
 
       return {
         success: true,
+        message: 'Conversations found successfully',
         data: conversations,
       };
     } catch (error) {

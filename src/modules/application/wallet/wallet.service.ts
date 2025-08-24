@@ -1,4 +1,10 @@
-import { BadRequestException, Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  Logger,
+  OnModuleInit,
+} from '@nestjs/common';
 import { WalletConfig } from './wallet.config';
 import Stripe from 'stripe';
 import { DepositDto } from './dto/deposit.dto';
@@ -17,7 +23,7 @@ export class WalletService implements OnModuleInit {
     private config: WalletConfig,
     private paymentAccountService: PaymentAccountService,
     @Inject('STRIPE_CLIENT') private stripe: Stripe,
-  ) { }
+  ) {}
 
   async onModuleInit() {
     await this.ensureCentralWalletExists();
@@ -40,8 +46,19 @@ export class WalletService implements OnModuleInit {
     }
   }
 
-
-
+  async createVerificationSession(userId: string) {
+    try {
+      const session = await this.stripe.identity.verificationSessions.create({
+        type: 'document', // or 'phone' depending on what type of verification you need
+        metadata: {
+          user_id: userId, // Your user ID (can be passed dynamically)
+        },
+      });
+      return session;
+    } catch (error) {
+      throw new Error(`Error creating verification session: ${error.message}`);
+    }
+  }
 
   async createUserWallet(userId: string) {
     return this.prisma.wallet.create({
@@ -80,14 +97,14 @@ export class WalletService implements OnModuleInit {
         email: user.email,
         capabilities: {
           card_payments: { requested: true },
-          transfers: { requested: true }
+          transfers: { requested: true },
         },
       });
 
       const accountLink = await this.stripe.accountLinks.create({
         account: account.id,
-        refresh_url: this.config.stripeReturnUrl,  // URL to redirect if user needs to reauthenticate
-        return_url: this.config.stripeReturnUrl,  // URL after successful onboarding
+        refresh_url: this.config.stripeReturnUrl, // URL to redirect if user needs to reauthenticate
+        return_url: this.config.stripeReturnUrl, // URL after successful onboarding
         type: 'account_onboarding',
       });
 
@@ -95,24 +112,29 @@ export class WalletService implements OnModuleInit {
         userId,
         'stripe',
         account.id,
-        { accountType: 'express' }
+        { accountType: 'express' },
       );
 
       return {
         sucess: true,
-        message: 'For Stripe account to be connected successfully, please click the link below',
+        message:
+          'For Stripe account to be connected successfully, please click the link below',
         url: accountLink.url,
-      }
-    }
-    catch (error) {
-      console.log(error)
+      };
+    } catch (error) {
+      console.log(error);
       throw new BadRequestException(error.message);
     }
   }
 
   async getStripeCustomerId(userId: string): Promise<string> {
-    const accounts = await this.paymentAccountService.getAccounts(userId, 'stripe');
-    const customerAccount = accounts.find(a => (a.metadata as { type?: string })?.type === 'customer');
+    const accounts = await this.paymentAccountService.getAccounts(
+      userId,
+      'stripe',
+    );
+    const customerAccount = accounts.find(
+      (a) => (a.metadata as { type?: string })?.type === 'customer',
+    );
 
     if (customerAccount) {
       return customerAccount.account_id;
@@ -132,7 +154,7 @@ export class WalletService implements OnModuleInit {
       userId,
       'stripe',
       customer.id,
-      { type: 'customer' }
+      { type: 'customer' },
     );
 
     return customer.id;
@@ -405,7 +427,6 @@ export class WalletService implements OnModuleInit {
         //   },
         // });
 
-
         await this.stripe.transfers.create({
           amount: dto.amount * 100,
           currency: 'usd',
@@ -413,19 +434,22 @@ export class WalletService implements OnModuleInit {
         });
 
         // Initiate Stripe payout (convert amount to cents)
-        const payout = await this.stripe.payouts.create({
-          amount: Math.round(dto.amount * 100), // Convert dollars to cents
-          currency: this.config.currency,
-          // destination: dto.destinationAccountId, 
-          metadata: {
-            userId: dto.userId,
-            walletId: wallet.id,
-            transactionId: transaction.id,
-            amount: dto.amount,
+        const payout = await this.stripe.payouts.create(
+          {
+            amount: Math.round(dto.amount * 100), // Convert dollars to cents
+            currency: this.config.currency,
+            // destination: dto.destinationAccountId,
+            metadata: {
+              userId: dto.userId,
+              walletId: wallet.id,
+              transactionId: transaction.id,
+              amount: dto.amount,
+            },
           },
-        }, {
-          stripeAccount: dto.destinationAccountId,
-        });
+          {
+            stripeAccount: dto.destinationAccountId,
+          },
+        );
 
         // const payout = await StripePayment.createPayout(dto.destinationAccountId, dto.amount, 'usd')
 
@@ -437,7 +461,6 @@ export class WalletService implements OnModuleInit {
 
         // Return payout and transaction details
         return { payoutId: payout.id, transactionId: transaction.id };
-
       } catch (error) {
         console.log(error); // Log error for debugging purposes
 
@@ -458,7 +481,6 @@ export class WalletService implements OnModuleInit {
       }
     });
   }
-
 
   async platformWithdraw(amount: number, destinationAccountId: string) {
     return this.prisma.$transaction(async (tx) => {
@@ -488,18 +510,21 @@ export class WalletService implements OnModuleInit {
 
       try {
         // Initiate Stripe payout from platform account
-        const payout = await this.stripe.payouts.create({
-          amount: Math.round(amount * 100),
-          currency: this.config.currency,
-          destination: destinationAccountId,
-          metadata: {
-            walletId: centralWallet.id,
-            transactionId: transaction.id,
-            amount: amount,
+        const payout = await this.stripe.payouts.create(
+          {
+            amount: Math.round(amount * 100),
+            currency: this.config.currency,
+            destination: destinationAccountId,
+            metadata: {
+              walletId: centralWallet.id,
+              transactionId: transaction.id,
+              amount: amount,
+            },
           },
-        }, {
-          stripeAccount: this.config.platformAccountId,
-        });
+          {
+            stripeAccount: this.config.platformAccountId,
+          },
+        );
 
         // Update transaction with Stripe ID
         await tx.walletTransaction.update({
@@ -518,7 +543,10 @@ export class WalletService implements OnModuleInit {
         // Update transaction status
         await tx.walletTransaction.update({
           where: { id: transaction.id },
-          data: { status: 'FAILED', metadata: { BadRequestException: BadRequestException.message } },
+          data: {
+            status: 'FAILED',
+            metadata: { BadRequestException: BadRequestException.message },
+          },
         });
 
         throw BadRequestException;
@@ -534,11 +562,15 @@ export class WalletService implements OnModuleInit {
       });
 
       if (transaction.type !== 'SPEND') {
-        throw new BadRequestException('Only SPEND transactions can be refunded');
+        throw new BadRequestException(
+          'Only SPEND transactions can be refunded',
+        );
       }
 
       if (transaction.status !== 'COMPLETED') {
-        throw new BadRequestException('Only completed transactions can be refunded');
+        throw new BadRequestException(
+          'Only completed transactions can be refunded',
+        );
       }
 
       // Create refund transaction
