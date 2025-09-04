@@ -30,10 +30,15 @@ export class TravelService {
     }
   }
 
-  async findAll(findAllDto: FindAllDto) {
+  async findAll(findAllDto: FindAllDto, userId: string) {
     try {
       const { arrival, departure } = findAllDto;
-      const where = {};
+      const where = {
+        publish: true,
+        user_id: {
+          not: userId,
+        },
+      };
      
       if (arrival) {
         where['arrival'] = {
@@ -53,6 +58,8 @@ export class TravelService {
 
       const travels = await this.prisma.travel.findMany({
         where: where,
+        skip: (findAllDto.page - 1) * findAllDto.limit,
+        take: findAllDto.limit,
         include: {
           user: {
             select: {
@@ -71,11 +78,23 @@ export class TravelService {
         ],
       });
 
+      const total = await this.prisma.travel.count();
+      const totalPages = Math.ceil(total / findAllDto.limit);
+      const hasNextPage = findAllDto.page * findAllDto.limit < total;
+      const hasPreviousPage = findAllDto.page > 1;
 
       return {
         success: true,
         message: 'travels fetched successfully',
         data: travels,
+        pagination: {
+          total,
+          totalPages,
+          currentPage: findAllDto.page,
+          limit: findAllDto.limit,
+          hasNextPage,
+          hasPreviousPage
+        }
       };
     } catch (err) {
       return {
@@ -125,6 +144,50 @@ export class TravelService {
       };
     }
   }
+
+  async myCurrentTravelsWithAnnounments(userId: string) {
+    try {
+      const travels = await this.prisma.travel.findMany({
+        where: {
+          user_id: userId,
+          departure: {
+            gte: DateHelper.normalizeDate(new Date().toUTCString()),
+          },
+          announcement_requests: {
+            some: {}, // ✅ ensures announcement_requests is not empty
+          },
+        },
+        include: {
+          announcement_requests: {
+            include: {
+              package: true,
+            },
+          },
+        },
+        orderBy: [
+          {
+            departure: "asc",
+          },
+          {
+            arrival: "asc",
+          },
+        ],
+      });
+  
+      return {
+        success: true,
+        message: 'travels fetched successfully',
+        data: travels,
+      };
+    } catch (err) {
+      console.log(err);
+      return {
+        success: false,
+        message: 'travels fetch failed',
+      };
+    }
+  }
+  
 
   async findOne(id: string) {
     try {

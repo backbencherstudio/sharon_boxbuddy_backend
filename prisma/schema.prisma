@@ -31,6 +31,7 @@ model Account {
   @@map("accounts")
 }
 
+
 model User {
   id         String    @id @default(cuid())
   created_at DateTime  @default(now())
@@ -62,6 +63,8 @@ model User {
 
   // billing id. e.g. stripe customer id
   billing_id String?
+
+
 
   type              String?   @default("user")
   email_verified_at DateTime?
@@ -99,6 +102,8 @@ model User {
   role_users           RoleUser[]
   payment_transactions PaymentTransaction[]
   paymentAccounts PaymentAccount[]
+  payment_methods PaymentMethod[]
+  stripeCustomerId   String? @map("stripe_customer_id")
   
   wallet              Wallet?  
 
@@ -109,6 +114,19 @@ model User {
 // cancelledShipments    Shipment[] @relation("CancelledShipments")
 // ownerShipments        Shipment[] @relation("OwnerShipments")
 
+
+model PaymentMethod {
+  id                     String  @id @default(cuid())
+  userId                 String
+  user                   User    @relation(fields: [userId], references: [id])
+  stripePaymentMethodId  String  @unique
+  brand                  String?
+  last4                  String?
+  expMonth               Int?
+  expYear                Int?
+  isDefault              Boolean @default(false)
+  createdAt              DateTime @default(now())
+}
 
 model Ucode {
   id         String   @id @default(cuid())
@@ -308,7 +326,6 @@ model Message {
 
 
   attachments     Attachment[]
-
   message String?
 
   @@map("messages")
@@ -634,9 +651,9 @@ model Travel {
   flight_number           String
   airline                 String
   duration                String
-  departure               DateTime
+  departure               DateTime  @db.Timestamptz
   collect_radius          String
-  arrival                 DateTime
+  arrival                 DateTime  @db.Timestamptz
   drop_radius             String
   number_of_checked_bags  Json
   number_of_cabin_bags    Json

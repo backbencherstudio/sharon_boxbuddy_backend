@@ -83,6 +83,86 @@ export class BookingService {
   //   return `This action returns all booking`;
   // }
 
+  async bookingsAsTraveller(user_id: string) {
+    const bookings = await this.prisma.booking.findMany({
+      where: {
+        traveller_id: user_id,
+      },
+      include: {
+        travel: true,
+        package: true,
+        traveller: {
+          select: {
+            id: true,
+            name: true,
+            first_name: true,
+            last_name: true,
+            phone_number: true,
+            email: true,
+            avatar: true,
+          },
+        },
+        owner: {
+          select: {
+            id: true,
+            name: true,
+            first_name: true,
+            last_name: true,
+            phone_number: true,
+            email: true,
+            avatar: true,
+          },
+        },
+      },
+    });
+
+    return {
+      success: true,
+      message: 'Bookings found successfully',
+      data: bookings,
+    };
+  }
+
+  async bookingsAsPackageOwner(user_id: string) {
+    const bookings = await this.prisma.booking.findMany({
+      where: {
+        owner_id: user_id,
+      },
+      include: {
+        travel: true,
+        package: true,
+        traveller: {
+          select: {
+            id: true,
+            name: true,
+            first_name: true,
+            last_name: true,
+            phone_number: true,
+            email: true,
+            avatar: true,
+          },
+        },
+        owner: {
+          select: {
+            id: true,
+            name: true,
+            first_name: true,
+            last_name: true,
+            phone_number: true,
+            email: true,
+            avatar: true,
+          },
+        },
+      },
+    });
+
+    return {
+      success: true,
+      message: 'Bookings found successfully',
+      data: bookings,
+    };
+  }
+
   async findOne(id: string, user_id: string) {
     const booking_data = await this.prisma.booking.findFirst({
       where: {

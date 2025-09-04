@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -40,9 +41,11 @@ export class PackageController {
   }
 
   @Get()
-  async findAll() {
+  async findAll(@Query() query: {page?: number, limit?: number }) {
     try {
-     return await this.packageService.findAll();
+      const page = Math.max(1, parseInt(String(query.page), 10) || 1);
+      const limit = Math.min(100, Math.max(1, parseInt(String(query.limit), 10) || 10));
+     return await this.packageService.findAll({page, limit});
     } catch (error) {
       return {
         success: false,

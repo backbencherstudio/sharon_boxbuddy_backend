@@ -144,4 +144,42 @@ export class WalletController {
       Number(offset),
     );
   }
+
+
+  // ----------------------
+  //        Add Card
+  // ----------------------
+
+  @Post('setup-intent')
+  async createSetupIntent(@Req() req: Request) {
+    const userId = req?.user?.userId;
+    // console.log(req?.user)
+    return await this.walletService.createSetupIntent(userId);
+  }
+
+  @Get('cards')
+  listCards(@Req() req: Request) {
+    const userId = req?.user?.userId;
+    return this.walletService.listCards(userId);
+  }
+
+  @Post('cards/default')
+  setDefault(@Body() body: { paymentMethodId: string }, @Req() req: Request) {
+    const userId = req?.user?.userId;
+    return this.walletService.setDefaultCard(userId, body.paymentMethodId);
+  }
+
+  @Post('pay')
+  pay(@Body() body: { paymentMethodId: string; amountInCents: number; currency?: string }, @Req() req: Request) {
+    const userId = req?.user?.userId;
+    return this.walletService.payWithSavedCard(userId, body.paymentMethodId, body.amountInCents, body.currency);
+  }
+
+  @Post('cards/detach')
+  detach(@Body() body: { paymentMethodId: string }, @Req() req: Request) {
+    const userId = req?.user?.userId;
+    return this.walletService.detachCard(userId, body.paymentMethodId);
+  }
+
+
 }

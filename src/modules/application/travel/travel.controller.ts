@@ -30,9 +30,13 @@ export class TravelController {
   }
 
   @Get()
-  async findAll(@Query() findAllDto: FindAllDto) {
+  async findAll(@Query() findAllDto: FindAllDto, @Req() req: Request) {
     try {
-      return await this.travelService.findAll(findAllDto);
+      const page = Math.max(1, parseInt(String(findAllDto.page), 10) || 1);
+      const limit = Math.min(100, Math.max(1, parseInt(String(findAllDto.limit), 10) || 10));
+      findAllDto.page = page;
+      findAllDto.limit = limit;
+      return await this.travelService.findAll(findAllDto, req?.user?.userId);
     } catch (err) {
       return {
         success: false,
@@ -53,6 +57,18 @@ export class TravelController {
     }
   }
 
+  @Get('my-current-travels-with-announcements')
+  async myCurrentTravelsWithAnnounments(@Req() req: Request) {
+    try {
+      return await this.travelService.myCurrentTravelsWithAnnounments(req?.user?.userId);
+    } catch (err) {
+      return {
+        success: false,
+        message: 'travel fetch failed',
+      };
+    }
+  }
+
   @Patch('request/:id/update')
   async updateRequest(@Param('id') id: string, @Req() req: Request,  @Body() announcementRequestDto: AnnouncementRequestDto) {
     try {
@@ -64,6 +80,8 @@ export class TravelController {
       };
     }
   }
+
+  
 
   @Get(':id')
   async findOne(@Param('id') id: string) {

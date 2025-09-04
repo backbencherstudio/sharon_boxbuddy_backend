@@ -106,8 +106,6 @@ export class MessageController {
       file: file.filename,
     }));
 
-
-
     const result = await this.messageService.create(
       user_id,
       createMessageDto,

@@ -45,18 +45,34 @@ export class PackageService {
     }
   }
 
-  async findAll() {
+  async findAll({ page, limit }: {page?: number, limit?: number }) {
     try {
       const packages = await this.prisma.package.findMany({
         where: {
           publish: true,
           status: 'new'
         },
+        skip: (page - 1) * limit,
+        take: limit,
       });
+
+      const total = await this.prisma.travel.count();
+      const totalPages = Math.ceil(total / limit);
+      const hasNextPage = page * limit < total;
+      const hasPreviousPage = page > 1;
+
       return {
         success: true,
         message: 'packages fetched successfully',
         data: packages,
+        pagination: {
+          total,
+          totalPages,
+          currentPage: page,
+          limit: limit,
+          hasNextPage,
+          hasPreviousPage
+        }
       };
     } catch (err) {
       return {

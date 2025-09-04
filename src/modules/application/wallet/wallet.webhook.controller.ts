@@ -9,6 +9,7 @@ import {
 import { Request, Response } from 'express';
 import { WalletConfig } from './wallet.config';
 import { WalletService } from './wallet.service';
+import Stripe from 'stripe';
 
 // export const config = {
 //   api: {
@@ -21,7 +22,7 @@ export class WalletWebhookController {
   constructor(
     private readonly walletService: WalletService,
     private readonly config: WalletConfig,
-  ) {}
+  ) { }
 
   @Post()
   async handleWebhook(
@@ -56,6 +57,61 @@ export class WalletWebhookController {
         console.log('identity.verification_session.verified');
         await this.identityVerification(event);
         break;
+
+      case 'setup_intent.succeeded': {
+        const si = event.data.object as Stripe.SetupIntent;
+        const customerId = si.customer as string | null;
+        const pmId = si.payment_method as string | null;
+        const userId = await this.findUserIdByCustomerId(customerId);
+
+        if (userId && pmId) {
+          await this.upsertPaymentMethod(userId, pmId);
+        }
+        break;
+      
+      }
+
+      case 'payment_method.attached': {
+        const pm = event.data.object as Stripe.PaymentMethod;
+        const customerId = (pm.customer as string) || null;
+        const userId = await this.findUserIdByCustomerId(customerId);
+        if (userId) {
+          await this.upsertPaymentMethod(userId, pm.id);
+        }
+        break;
+      }
+
+      case 'payment_method.detached': {
+        const pm = event.data.object as Stripe.PaymentMethod;
+        // Remove from our DB
+        await this.walletService['prisma'].paymentMethod
+          .delete({ where: { stripePaymentMethodId: pm.id } })
+          .catch(() => null);
+        break;
+      }
+
+      case 'customer.updated': {
+        // If default payment method changed in Stripe Dashboard, reflect in DB
+        const c = event.data.object as Stripe.Customer;
+        const userId = await this.findUserIdByCustomerId(c.id);
+        const defaultPm = (c.invoice_settings?.default_payment_method as string) || null;
+
+        if (userId) {
+          // Reset all flags
+          await this.walletService['prisma'].paymentMethod.updateMany({
+            where: { userId },
+            data: { isDefault: false },
+          });
+          if (defaultPm) {
+            await this.walletService['prisma'].paymentMethod.update({
+              where: { stripePaymentMethodId: defaultPm },
+              data: { isDefault: true },
+            }).catch(() => {});
+          }
+        }
+        break;
+      }
+
     }
 
     res.status(HttpStatus.OK).send();
@@ -78,6 +134,34 @@ export class WalletWebhookController {
       req.on('end', () => resolve(Buffer.concat(chunks)));
       req.on('error', reject);
     });
+  }
+
+
+  private async upsertPaymentMethod(userId: string, pmId: string) {
+    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+    const pm = await stripe.paymentMethods.retrieve(pmId);
+    const safe = this.toSafeFields(pm);
+    return this.walletService['prisma'].paymentMethod.upsert({
+      where: { stripePaymentMethodId: pm.id },
+      update: { ...safe },
+      create: { userId, stripePaymentMethodId: pm.id, ...safe },
+    });
+  }
+
+  private toSafeFields(pm: Stripe.PaymentMethod) {
+    const card = pm.card;
+    return {
+      brand: card?.brand ?? null,
+      last4: card?.last4 ?? null,
+      expMonth: card?.exp_month ?? null,
+      expYear: card?.exp_year ?? null,
+    };
+  }
+
+  private async findUserIdByCustomerId(customerId: string | null): Promise<string | null> {
+    if (!customerId) return null;
+    const user = await this.walletService['prisma'].user.findFirst({ where: { stripeCustomerId: customerId } });
+    return user?.id ?? null;
   }
 
   private async identityVerification(event: any) {

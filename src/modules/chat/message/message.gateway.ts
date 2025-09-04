@@ -76,7 +76,11 @@ export class MessageGateway
         return;
       }
 
+      client.join(userId); // join the room using user_id
+      client.emit('joinedRoom', { room_id: userId });
+
       this.clients.set(userId, client.id);
+      
       // console.log(`User ${userId} connected with socket ${client.id}`);
       await ChatRepository.updateUserStatus(userId, 'online');
       // notify the user that the user is online
