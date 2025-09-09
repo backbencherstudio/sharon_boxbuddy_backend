@@ -43,9 +43,9 @@ export class ConversationController {
   // @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Get all conversations' })
   @Get()
-  async findAll() {
+  async findAll(@Req() req: Request) {
     try {
-      const conversations = await this.conversationService.findAll();
+      const conversations = await this.conversationService.findAll(req?.user?.userId);
       return conversations;
     } catch (error) {
       return {

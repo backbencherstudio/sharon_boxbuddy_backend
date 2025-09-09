@@ -23,6 +23,7 @@ export class ConversationService {
       const packageData = await this.prisma.package.findUnique({
         where: { id: createConversationDto.package_id },
       });
+
       if (!packageData) {
         return {
           success: false,
@@ -107,19 +108,21 @@ export class ConversationService {
               avatar: true,
             },
           },
-          messages: {
-            orderBy: {
-              created_at: 'desc',
-            },
-            take: 1,
-            select: {
-              id: true,
-              message: true,
-              created_at: true,
-            },
-          },
+          // messages: {
+          //   orderBy: {
+          //     created_at: 'desc',
+          //   },
+          //   take: 1,
+          //   select: {
+          //     id: true,
+          //     message: true,
+          //     created_at: true,
+          //   },
+          // },
           package: true,
-          travel: true
+          travel: true,
+          last_message_id: true,
+          last_message: true,
         },
         where: {
           package_id: createConversationDto.package_id,
@@ -179,20 +182,22 @@ export class ConversationService {
               avatar: true,
             },
           },
-          messages: {
-            orderBy: {
-              created_at: 'desc',
-            },
-            take: 1,
-            select: {
-              id: true,
-              message: true,
-              created_at: true,
-            },
-          },
+          // messages: {
+          //   orderBy: {
+          //     created_at: 'desc',
+          //   },
+          //   take: 1,
+          //   select: {
+          //     id: true,
+          //     message: true,
+          //     created_at: true,
+          //   },
+          // },
 
           package: true,
           travel: true,
+          last_message_id: true,
+          last_message: true
         },
         data: {
           ...data,
@@ -237,9 +242,19 @@ export class ConversationService {
 
   
 
-  async findAll() {
+  async findAll(userId: string) {
     try {
       const conversations = await this.prisma.conversation.findMany({
+        where: {
+          OR: [
+            {
+              creator_id: userId
+            }, 
+            {
+              participant_id: userId
+            }
+          ]
+        },
         orderBy: {
           updated_at: 'desc',
         },
