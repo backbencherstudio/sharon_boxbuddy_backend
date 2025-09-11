@@ -5,7 +5,7 @@ import { UpdatePackageDto } from './dto/update-package.dto';
 
 @Injectable()
 export class PackageService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   async create(createPackageDto: CreatePackageDto) {
     try {
@@ -45,13 +45,24 @@ export class PackageService {
     }
   }
 
-  async findAll({ page, limit }: {page?: number, limit?: number }) {
+  async findAll(
+    { page, limit }: { page?: number; limit?: number },
+    userId?: string,
+  ) {
     try {
+      const where = {
+        publish: true,
+        status: 'new',
+      };
+
+      console.log(userId)
+      if (userId) {
+        where['owner_id'] = {
+          not: userId,
+        };
+      }
       const packages = await this.prisma.package.findMany({
-        where: {
-          publish: true,
-          status: 'new'
-        },
+        where,
         skip: (page - 1) * limit,
         take: limit,
       });
@@ -71,8 +82,8 @@ export class PackageService {
           currentPage: page,
           limit: limit,
           hasNextPage,
-          hasPreviousPage
-        }
+          hasPreviousPage,
+        },
       };
     } catch (err) {
       return {
@@ -101,7 +112,6 @@ export class PackageService {
         message: 'packages fetch failed',
       };
     }
-
   }
 
   async findProcessingPackages(userId: string) {
@@ -154,7 +164,10 @@ export class PackageService {
       //   (booking) => booking.status === 'in_progress',
       // );
 
-      const bookings = packageData.bookings?.length > 0 ? packageData.bookings[packageData.bookings.length - 1] : {};
+      const bookings =
+        packageData.bookings?.length > 0
+          ? packageData.bookings[packageData.bookings.length - 1]
+          : {};
       delete packageData.bookings;
       packageData['booking'] = bookings;
       return {

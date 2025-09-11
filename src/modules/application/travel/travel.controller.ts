@@ -7,6 +7,7 @@ import { JwtAuthGuard } from 'src/modules/auth/guards/jwt-auth.guard';
 import { Request } from 'express';
 import { FindAllDto } from './dto/find-all-query.dto';
 import { AnnouncementRequestDto } from './dto/announcement-request.dto';
+import { Public } from 'src/common/guard/public';
 
 @ApiTags('Travel')
 @ApiBearerAuth()
@@ -29,6 +30,7 @@ export class TravelController {
     }
   }
 
+ 
   @Get()
   async findAll(@Query() findAllDto: FindAllDto, @Req() req: Request) {
     try {

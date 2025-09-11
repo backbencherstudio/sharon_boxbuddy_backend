@@ -30,15 +30,18 @@ export class TravelService {
     }
   }
 
-  async findAll(findAllDto: FindAllDto, userId: string) {
+  async findAll(findAllDto: FindAllDto, userId?: string) {
     try {
       const { arrival, departure } = findAllDto;
       const where = {
         publish: true,
-        user_id: {
-          not: userId,
-        },
       };
+
+      if(userId){
+        where['user_id'] =  {
+          not: userId,
+        }
+      }
      
       if (arrival) {
         where['arrival'] = {
@@ -78,7 +81,7 @@ export class TravelService {
         ],
       });
 
-      const total = await this.prisma.travel.count();
+      const total = await this.prisma.travel.count({where});
       const totalPages = Math.ceil(total / findAllDto.limit);
       const hasNextPage = findAllDto.page * findAllDto.limit < total;
       const hasPreviousPage = findAllDto.page > 1;

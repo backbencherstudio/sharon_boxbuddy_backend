@@ -16,6 +16,8 @@ import { JwtAuthGuard } from 'src/modules/auth/guards/jwt-auth.guard';
 import { CreatePackageDto } from './dto/create-package.dto';
 import { UpdatePackageDto } from './dto/update-package.dto';
 import { PackageService } from './package.service';
+import { Public } from 'src/common/guard/public';
+
 
 @ApiTags('Package')
 @ApiBearerAuth()
@@ -40,12 +42,13 @@ export class PackageController {
     }
   }
 
+
   @Get()
-  async findAll(@Query() query: {page?: number, limit?: number }) {
+  async findAll(@Query() query: {page?: number, limit?: number }, @Req() req: Request) {
     try {
       const page = Math.max(1, parseInt(String(query.page), 10) || 1);
       const limit = Math.min(100, Math.max(1, parseInt(String(query.limit), 10) || 10));
-     return await this.packageService.findAll({page, limit});
+     return await this.packageService.findAll({page, limit}, req?.user?.userId);
     } catch (error) {
       return {
         success: false,
