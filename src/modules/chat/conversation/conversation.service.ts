@@ -99,6 +99,8 @@ export class ConversationService {
               id: true,
               name: true,
               avatar: true,
+              availability: true,
+
             },
           },
           participant: {
@@ -106,6 +108,8 @@ export class ConversationService {
               id: true,
               name: true,
               avatar: true,
+              availability: true,
+
             },
           },
           // messages: {
@@ -173,6 +177,8 @@ export class ConversationService {
               id: true,
               name: true,
               avatar: true,
+              availability: true,
+
             },
           },
           participant: {
@@ -180,6 +186,9 @@ export class ConversationService {
               id: true,
               name: true,
               avatar: true,
+
+              availability: true,
+
             },
           },
           // messages: {
@@ -269,6 +278,7 @@ export class ConversationService {
               id: true,
               name: true,
               avatar: true,
+              availability: true,
             },
           },
           participant: {
@@ -276,6 +286,8 @@ export class ConversationService {
               id: true,
               name: true,
               avatar: true,
+              availability: true,
+
             },
           },
           package: true,
@@ -338,6 +350,8 @@ export class ConversationService {
               id: true,
               name: true,
               avatar: true,
+              availability: true,
+
             },
           },
           participant: {
@@ -345,6 +359,8 @@ export class ConversationService {
               id: true,
               name: true,
               avatar: true,
+              availability: true,
+
             },
           },
         },

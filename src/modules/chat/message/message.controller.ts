@@ -118,6 +118,10 @@ export class MessageController {
         .to(result.data?.receiver_id)
         .emit('new_message', result.data);
 
+      this.messageGateway.server
+        .to(result.data?.sender_id)
+        .emit('new_message', result.data);
+
       return {
         success: true,
         data: result.data,

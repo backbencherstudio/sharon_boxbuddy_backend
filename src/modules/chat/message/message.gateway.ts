@@ -66,7 +66,9 @@ export class MessageGateway
         return;
       }
 
-      const decoded: any = jwt.verify(token, appConfig().jwt.secret);
+      const decoded: any = jwt.verify(token, appConfig().jwt.secret, {
+        ignoreExpiration: true,
+      });
       // const decoded: any = this.jwtService.verify(token);
       // const userId = client.handshake.query.userId as string;
       const userId = decoded.sub;
@@ -88,6 +90,10 @@ export class MessageGateway
       //   user_id: userId,
       //   status: 'online',
       // });
+
+
+
+      console.log("User-bbom=>",userId);
 
       client.broadcast.emit('userStatusChange', {
         user_id: userId,

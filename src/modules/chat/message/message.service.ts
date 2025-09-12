@@ -97,11 +97,10 @@ export class MessageService {
   //   }
   // }
 
-
   async create(
     senderId: string,
     createDto: CreateMessageDto,
-    attachments: AttachmentDto[] = []
+    attachments: AttachmentDto[] = [],
   ) {
     try {
       const conversation = await this.prisma.conversation.findUnique({
@@ -118,10 +117,10 @@ export class MessageService {
       }
 
       // Determine receiver
-    const receiverId =
-    conversation.creator_id === senderId
-      ? conversation.participant_id
-      : conversation.creator_id;
+      const receiverId =
+        conversation.creator_id === senderId
+          ? conversation.participant_id
+          : conversation.creator_id;
 
       const message = await this.prisma.message.create({
         data: {
@@ -131,7 +130,7 @@ export class MessageService {
           conversation_id: createDto.conversation_id,
           attachments: {
             createMany: {
-              data: attachments.map(att => ({
+              data: attachments.map((att) => ({
                 name: att.name,
                 type: att.type,
                 size: att.size,
@@ -147,6 +146,7 @@ export class MessageService {
               id: true,
               name: true,
               avatar: true,
+              availability: true,
             },
           },
         },
@@ -162,7 +162,7 @@ export class MessageService {
       });
 
       // full url for attachments
-      message.attachments.forEach(att => {
+      message.attachments.forEach((att) => {
         att['file_url'] = SojebStorage.url(
           appConfig().storageUrl.message_attachment + att.file,
         );
@@ -217,6 +217,7 @@ export class MessageService {
             first_name: true,
             last_name: true,
             avatar: true,
+            availability: true,
           },
         },
       },
@@ -236,7 +237,7 @@ export class MessageService {
       where: {
         conversation_id: conversationId,
         receiver_id: userId,
-        status: { not: 'READ' },  // Only update unread messages
+        status: { not: 'READ' }, // Only update unread messages
       },
     });
 
@@ -249,20 +250,20 @@ export class MessageService {
       where: {
         conversation_id: conversationId,
         receiver_id: userId,
-        status: { not: 'READ' },  // Only update unread messages
+        status: { not: 'READ' }, // Only update unread messages
       },
       data: {
-        status: 'READ',           // Set to READ
-        updated_at: new Date(),   // Update the timestamp
+        status: 'READ', // Set to READ
+        updated_at: new Date(), // Update the timestamp
       },
     });
 
-  
-    return { success: true, message: `Marked ${updatedMessages.count} messages as read.`, sender_id: message?.sender_id  };
+    return {
+      success: true,
+      message: `Marked ${updatedMessages.count} messages as read.`,
+      sender_id: message?.sender_id,
+    };
   }
-  
-
-
 
   async findAll({
     user_id,
@@ -316,7 +317,7 @@ export class MessageService {
           conversation_id: conversation_id,
         },
         orderBy: {
-          created_at: 'asc',
+          created_at: 'desc',
         },
         select: {
           id: true,
@@ -328,6 +329,7 @@ export class MessageService {
               id: true,
               name: true,
               avatar: true,
+              availability: true,
             },
           },
           receiver: {
@@ -335,6 +337,7 @@ export class MessageService {
               id: true,
               name: true,
               avatar: true,
+              availability: true,
             },
           },
 
@@ -353,11 +356,13 @@ export class MessageService {
       // add attachment url
       for (const message of messages) {
         if (message.attachments) {
-          let fileUrls = []
+          let fileUrls = [];
           for (const attachment of message.attachments) {
-            fileUrls.push(SojebStorage.url(
-              appConfig().storageUrl.message_attachment + attachment.file,
-            ));
+            fileUrls.push(
+              SojebStorage.url(
+                appConfig().storageUrl.message_attachment + attachment.file,
+              ),
+            );
           }
           message['attachments_urls'] = fileUrls;
         }
@@ -380,6 +385,10 @@ export class MessageService {
       return {
         success: true,
         data: messages,
+        pagination: {
+          cursor:
+            messages.length > 0 ? messages?.[messages.length - 1]?.id : null,
+        },
       };
     } catch (error) {
       return {
