@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { UpdateBookingDto } from './dto/update-booking.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -7,6 +7,7 @@ import { ProblemWithPackageDto } from './dto/problem-with-package.dto';
 import { SojebStorage } from 'src/common/lib/Disk/SojebStorage';
 import appConfig from 'src/config/app.config';
 import { AllConditionsAreNotMetDto } from './dto/all-conditions-are-not-met.dto';
+import { StripePayment } from 'src/common/lib/Payment/stripe/StripePayment';
 
 @Injectable()
 export class BookingService {
@@ -33,12 +34,12 @@ export class BookingService {
 
     // console.log(user_id)
 
-    console.log(await this.prisma.package.findFirst({
-      where: {
-        id: createBookingDto.package_id,
-        owner_id: user_id,
-      },
-    }))
+    // console.log(await this.prisma.package.findFirst({
+    //   where: {
+    //     id: createBookingDto.package_id,
+    //     owner_id: user_id,
+    //   },
+    // }))
 
     if (!package_data) {
       throw new BadRequestException('Package not found');
@@ -64,7 +65,12 @@ export class BookingService {
     });
 
     if (booking_data) {
-      throw new BadRequestException('Booking already exist');
+      return {
+        success: true,
+        message: 'Booking retrieved successfully',
+        data: booking_data,
+      };
+      // throw new BadRequestException('Booking already exist');
     }
 
     // create a booking data
@@ -432,6 +438,7 @@ export class BookingService {
 
 
   async complete(id: string, user_id: string) {
+    
     const booking_data = await this.prisma.booking.findFirst({
       where: {
         id,
@@ -440,23 +447,26 @@ export class BookingService {
     });
 
     if (!booking_data) {
-      throw new BadRequestException('Booking not found');
+      throw new NotFoundException('Booking not found');
     }
 
     if (booking_data.status !== 'delivered') {
-      throw new BadRequestException('You can not complete the package');
+      throw new ForbiddenException('You can not complete the package');
     }
 
     const data: any = {
       status: 'completed',
       confirmed: true,
+
     }
 
     const updated_booking_data = await this.prisma.booking.update({
       where: {
         id,
       },
-      data,
+      data: {
+        ...data
+      },
     });
 
     return {
@@ -477,7 +487,7 @@ export class BookingService {
     if (!booking_data) {
       throw new BadRequestException('Booking not found');
     }
-    if (booking_data.status!== 'delivered') {
+    if (booking_data.status !== 'delivered') {
       throw new BadRequestException('You can not reject the package');
     }
     const data: any = {
@@ -545,6 +555,52 @@ export class BookingService {
       data: updated_booking_data,
     };
   }
+
+  // Get Payment intent
+  // ...existing code...
+  // ...existing code...
+
+  // Get Payment intent
+  async getPaymentIntent(booking_id: string) {
+    // Find booking
+    const booking = await this.prisma.booking.findUnique({
+      where: { id: booking_id },
+      include: { traveller: true },
+    });
+
+    if (!booking) {
+      throw new BadRequestException('Booking not found');
+    }
+
+    // You may want to check if the booking is eligible for payment here
+
+    // Get customer_id (Stripe) from traveller or booking
+    const customer_id = booking.traveller?.stripeCustomerId;
+    if (!customer_id) {
+      throw new BadRequestException('No Stripe customer found for traveller');
+    }
+
+    // Set amount and currency (customize as needed)
+    const amount = 19.99 //booking.amount; // Make sure your booking model has an amount field
+    const currency = 'usd';
+
+    // Create PaymentIntent
+    const paymentIntent = await StripePayment.createPaymentIntent({
+      amount,
+      currency,
+      customer_id,
+      metadata: {
+        booking_id: booking.id,
+      },
+    });
+
+    return {
+      success: true,
+      client_secret: paymentIntent.client_secret,
+      payment_intent_id: paymentIntent.id,
+    };
+  }
+
 
 
 }

@@ -31,7 +31,6 @@ model Account {
   @@map("accounts")
 }
 
-
 model User {
   id         String    @id @default(cuid())
   created_at DateTime  @default(now())
@@ -59,12 +58,10 @@ model User {
   zip_code      String?
   gender        String?
   date_of_birth DateTime? @db.Date
-  about_me           String? @db.Text
+  about_me      String?   @db.Text
 
   // billing id. e.g. stripe customer id
   billing_id String?
-
-
 
   type              String?   @default("user")
   email_verified_at DateTime?
@@ -73,8 +70,8 @@ model User {
   two_factor_secret     String? // secret key for two factor authentication
   facebook_id           String?
 
-  verificationStatus    String?   @default("pending")
-  stripeSessionId       String?
+  verificationStatus String? @default("pending")
+  stripeSessionId    String?
 
   accounts                  Account[]
   creator_conversations     Conversation[] @relation("creator")
@@ -85,12 +82,12 @@ model User {
   sender_notifications      Notification[] @relation("sender")
 
   // packages           Package[] @relation("UserPackagesTraveller")
-  packages_owner     Package[] @relation("UserPackagesOwner")
-  reports            Report[]  @relation("UserReports")
-  bookings           Booking[] @relation("UserBookingsTraveller")
-  reviews_given      Review[]  @relation("ReviewGiven")
-  reviews_for        Review[]  @relation("ReviewFor")
-  travels            Travel[]  @relation("UserTravels")
+  packages_owner Package[] @relation("UserPackagesOwner")
+  reports        Report[]  @relation("UserReports")
+  bookings       Booking[] @relation("UserBookingsTraveller")
+  reviews_given  Review[]  @relation("ReviewGiven")
+  reviews_for    Review[]  @relation("ReviewFor")
+  travels        Travel[]  @relation("UserTravels")
 
   bookings_cancel_by Booking[] @relation("UserBookingsCancelBy")
   bookings_owner     Booking[] @relation("UserBookingsOwner")
@@ -101,11 +98,11 @@ model User {
   roles                Role[]
   role_users           RoleUser[]
   payment_transactions PaymentTransaction[]
-  paymentAccounts PaymentAccount[]
-  payment_methods PaymentMethod[]
-  stripeCustomerId   String? @map("stripe_customer_id")
-  
-  wallet              Wallet?  
+  paymentAccounts      PaymentAccount[]
+  payment_methods      PaymentMethod[]
+  stripeCustomerId     String?              @map("stripe_customer_id")
+
+  wallet Wallet?
 
   @@map("users")
 }
@@ -114,19 +111,37 @@ model User {
 // cancelledShipments    Shipment[] @relation("CancelledShipments")
 // ownerShipments        Shipment[] @relation("OwnerShipments")
 
-
 model PaymentMethod {
-  id                     String  @id @default(cuid())
-  userId                 String
-  user                   User    @relation(fields: [userId], references: [id])
-  stripePaymentMethodId  String  @unique
-  brand                  String?
-  last4                  String?
-  expMonth               Int?
-  expYear                Int?
-  isDefault              Boolean @default(false)
-  createdAt              DateTime @default(now())
+  id                    String @id @default(uuid())
+  stripePaymentMethodId String @unique
+  user                  User   @relation(fields: [userId], references: [id])
+  userId                String
+
+  payment_method_id String?
+  checkout_id       String?
+  brand             String?
+  last4             String?
+  expMonth          Int?
+  expYear           Int?
+  is_default        Boolean @default(false)
+
+  created_at              DateTime @default(now())
+  updated_at              DateTime @default(now()) @updatedAt
+
 }
+
+// model PaymentMethod {
+//   id                     String  @id @default(cuid())
+//   userId                 String
+//   user                   User    @relation(fields: [userId], references: [id])
+//   stripePaymentMethodId  String  @unique
+//   brand                  String?
+//   last4                  String?
+//   expMonth               Int?
+//   expYear                Int?
+//   isDefault              Boolean @default(false)
+//   createdAt              DateTime @default(now())
+// }
 
 model Ucode {
   id         String   @id @default(cuid())
@@ -245,8 +260,9 @@ model Notification {
 
   notification_event_id String?
   notification_event    NotificationEvent? @relation(fields: [notification_event_id], references: [id])
-
-  entity_id String?
+  notification_type     String?            @default("") //  pending, declined, accepted, canceled, expired
+  notification_message  String?
+  entity_id             String?
 
   @@map("notifications")
 }
@@ -262,6 +278,11 @@ model UserPaymentMethod {
 
   payment_method_id String?
   checkout_id       String?
+  brand             String?
+  last4             String?
+  expMonth          Int?
+  expYear           Int?
+  is_default        Boolean @default(false)
 
   @@map("user_payment_methods")
 }
@@ -307,8 +328,8 @@ model Message {
   created_at DateTime  @default(now())
   updated_at DateTime  @default(now())
   deleted_at DateTime?
-  is_read         Boolean     @default(false)
-  read_at         DateTime?
+  is_read    Boolean   @default(false)
+  read_at    DateTime?
 
   status MessageStatus? @default(PENDING)
 
@@ -318,15 +339,13 @@ model Message {
   receiver_id String?
   receiver    User?   @relation("receiver", fields: [receiver_id], references: [id])
 
-  last_message_of  Conversation? @relation("last_message")
-  
+  last_message_of Conversation? @relation("last_message")
+
   conversation_id String?
   conversation    Conversation? @relation(fields: [conversation_id], references: [id], onDelete: Cascade)
 
-
-
-  attachments     Attachment[]
-  message String?
+  attachments Attachment[]
+  message     String?
 
   @@map("messages")
 }
@@ -369,11 +388,15 @@ model Conversation {
   travel_id String?
   travel    Travel? @relation(fields: [travel_id], references: [id], onDelete: SetNull)
 
-  last_message_id String? @unique
-  last_message    Message? @relation("last_message", fields: [last_message_id], references: [id])
-  messages Message[]
+  last_message_id String?   @unique
+  last_message    Message?  @relation("last_message", fields: [last_message_id], references: [id])
+  messages        Message[]
 
+  notification_type String? @default("") //  pending, declined, accepted, canceled, expired
+  show_book_button  Boolean @default(true)
 
+  @@index([travel_id, package_id])
+  @@unique([travel_id, package_id])
   @@map("conversations")
 }
 
@@ -512,16 +535,16 @@ model Package {
   status String? @default("new")
 
   // traveller_id String?
-  owner_id     String
+  owner_id String
   // traveller User? @relation("UserPackagesTraveller", fields: [traveller_id], references: [id])
-  owner     User  @relation("UserPackagesOwner", fields: [owner_id], references: [id])
+  owner    User   @relation("UserPackagesOwner", fields: [owner_id], references: [id])
 
   announcement_requests AnnouncementRequest[]
   conversations         Conversation[]
   reports               Report[]
 
-  bookings         Booking[]
-  
+  bookings Booking[]
+
   @@map("packages")
 }
 
@@ -529,24 +552,25 @@ enum ReportType {
   package
   travel
 }
+
 model Report {
-  id                  String   @id @default(cuid())
+  id String @id @default(cuid())
 
   shot_description    String?
   details_description String?
 
-  report_for          ReportType?
-  reported_by_id      String
-  reported_by         User     @relation("UserReports", fields: [reported_by_id], references: [id])
+  report_for     ReportType?
+  reported_by_id String
+  reported_by    User        @relation("UserReports", fields: [reported_by_id], references: [id])
 
-  package_id          String?
-  package             Package?  @relation(fields: [package_id], references: [id])
+  package_id String?
+  package    Package? @relation(fields: [package_id], references: [id])
 
-  travel_id           String?
-  travel              Travel?   @relation(fields: [travel_id], references: [id])
+  travel_id String?
+  travel    Travel? @relation(fields: [travel_id], references: [id])
 
-  created_at          DateTime @default(now())
-  updated_at          DateTime @updatedAt
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
   @@map("reports")
 }
@@ -560,7 +584,6 @@ model Report {
 //   description           String
 //   booking_id            String
 
-
 //   booking               Booking  @relation(fields: [booking_id], references: [id])
 
 //   created_at                  DateTime @default(now())
@@ -568,7 +591,7 @@ model Report {
 //   @@map("cancels")
 // }
 
-enum BookingStatus { // ShipmentStatus
+enum BookingStatus {
   in_progress
   pick_up
   on_the_way
@@ -578,82 +601,77 @@ enum BookingStatus { // ShipmentStatus
   cancel
   problem_with_the_package
   all_conditions_are_not_met
-
 }
 
-
 model Booking {
-  id                           String        @id @default(cuid())
-  status                       BookingStatus  @default(pick_up)// ShipmentStatus
-  paid                          Boolean       @default(false)
-  amount                        Decimal?
-
+  id     String        @id @default(cuid())
+  status BookingStatus @default(pick_up) // ShipmentStatus
+  paid   Boolean       @default(false)
+  amount Decimal?
 
   // pick up
-  pick_up_photo                String?
-  pick_up_owner_sign           String?
-  pick_up_traveller_sign       String?
-
+  pick_up_photo          String?
+  pick_up_owner_sign     String?
+  pick_up_traveller_sign String?
 
   // delivery
-  drop_off_photo               String?
-  drop_off_owner_sign          String?
-  drop_off_traveller_sign      String?
+  drop_off_photo          String?
+  drop_off_owner_sign     String?
+  drop_off_traveller_sign String?
 
   // cancel
-  cancel                       Boolean @default(false)
-  cancel_reason                Json?
+  cancel        Boolean @default(false)
+  cancel_reason Json?
   // cancel_description           String?
-  cancel_by_id                 String?
-  cancel_by                    User?          @relation("UserBookingsCancelBy", fields: [cancel_by_id], references: [id])
-  cancel_by_who                String? // package_owner or traveller
+  cancel_by_id  String?
+  cancel_by     User?   @relation("UserBookingsCancelBy", fields: [cancel_by_id], references: [id])
+  cancel_by_who String? // package_owner or traveller
 
-
-  confirmed                    Boolean  @default(false)
-
+  confirmed Boolean @default(false)
 
   // problem with the package
-  problem                      Boolean @default(false)
-  problem_reason               Json?
-  problem_photo                String?
+  problem        Boolean @default(false)
+  problem_reason Json?
+  problem_photo  String?
 
   // all conditions are not met
-  all_conditions_are_not_met               Boolean @default(false)
-  all_conditions_are_not_met_reason        Json?
-  
+  all_conditions_are_not_met        Boolean @default(false)
+  all_conditions_are_not_met_reason Json?
 
   traveller_id String?
   owner_id     String?
   traveller    User?   @relation("UserBookingsTraveller", fields: [traveller_id], references: [id], onDelete: SetNull)
   owner        User?   @relation("UserBookingsOwner", fields: [owner_id], references: [id], onDelete: SetNull)
 
-  package_id                  String
-  package                     Package @relation(fields: [package_id], references: [id])
+  package_id String
+  package    Package @relation(fields: [package_id], references: [id])
 
-  travel_id                   String
-  travel                      Travel  @relation(fields: [travel_id], references: [id])
+  travel_id String
+  travel    Travel @relation(fields: [travel_id], references: [id])
 
-  reviews                     Review[]
+  reviews Review[]
+  announcment AnnouncementRequest?
+  
 
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
+  payment_status    String  @default("pending") // pending, complated
+  payment_intent_id String?
 
-
-  created_at                  DateTime @default(now())
-  updated_at                  DateTime @updatedAt
+  order_summary String @default("")
 
   @@map("bookings")
 }
-
-
 
 model Travel {
   id                      String   @id @default(uuid())
   flight_number           String
   airline                 String
   duration                String
-  departure               DateTime  @db.Timestamptz
+  departure               DateTime @db.Timestamptz
   collect_radius          String
-  arrival                 DateTime  @db.Timestamptz
+  arrival                 DateTime @db.Timestamptz
   drop_radius             String
   number_of_checked_bags  Json
   number_of_cabin_bags    Json
@@ -661,16 +679,16 @@ model Travel {
   trip_details            String
   publish                 Boolean  @default(false)
 
-  user                    User   @relation("UserTravels", fields: [user_id], references: [id])
-  user_id                 String
+  user    User   @relation("UserTravels", fields: [user_id], references: [id])
+  user_id String
 
-  announcement_requests   AnnouncementRequest[]
-  conversations           Conversation[]
-  bookings                Booking[]
-  reports                 Report[]
+  announcement_requests AnnouncementRequest[]
+  conversations         Conversation[]
+  bookings              Booking[]
+  reports               Report[]
 
-  created_at DateTime     @default(now())
-  updated_at DateTime     @updatedAt
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
   @@map("travels")
 }
@@ -687,22 +705,23 @@ enum ReviewForm {
   package_owner
   traveller
 }
+
 model Review {
-  id          String   @id @default(uuid())
+  id          String     @id @default(uuid())
   review_text String
   rating      Int
-  review_from   ReviewForm
+  review_from ReviewForm
 
   review_by_id  String
   review_for_id String
   booking_id    String
 
   booking    Booking @relation(fields: [booking_id], references: [id])
-  review_by  User @relation("ReviewGiven", fields: [review_by_id], references: [id])
-  review_for User @relation("ReviewFor", fields: [review_for_id], references: [id])
+  review_by  User    @relation("ReviewGiven", fields: [review_by_id], references: [id])
+  review_for User    @relation("ReviewFor", fields: [review_for_id], references: [id])
 
-  created_at  DateTime @default(now())
-  updated_at  DateTime @updatedAt
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
   @@map("reviews")
 }
@@ -715,16 +734,20 @@ model ProblemWithPackage {
   photo       String
 }
 
-
-
 model AnnouncementRequest {
   id          String   @id @default(cuid())
   is_accepted Boolean  @default(false)
-  is_refused   Boolean  @default(false)
+  is_refused  Boolean  @default(false)
   package_id  String
   package     Package  @relation(fields: [package_id], references: [id], onDelete: Cascade)
   travel_id   String
   travel      Travel   @relation(fields: [travel_id], references: [id], onDelete: Cascade)
+  
+  booking_id   String? @unique
+  booking      Booking?   @relation(fields: [booking_id], references: [id], onDelete: Cascade)
+  
+  is_processed Boolean  @default(false)
+
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
 
@@ -748,13 +771,13 @@ enum TransactionStatus {
 }
 
 model Wallet {
-  id          String             @id @default(uuid())
-  user_id     String?            @unique
-  user        User?              @relation(fields: [user_id], references: [id])
-  balance     Float              @default(0)
-  currency    String             @default("usd")
-  created_at  DateTime           @default(now())
-  updated_at  DateTime           @updatedAt
+  id           String              @id @default(uuid())
+  user_id      String?             @unique
+  user         User?               @relation(fields: [user_id], references: [id])
+  balance      Float               @default(0)
+  currency     String              @default("usd")
+  created_at   DateTime            @default(now())
+  updated_at   DateTime            @updatedAt
   transactions WalletTransaction[]
 
   @@index([user_id])
@@ -762,16 +785,16 @@ model Wallet {
 }
 
 model WalletTransaction {
-  id          String           @id @default(uuid())
-  wallet_id   String
-  wallet      Wallet           @relation(fields: [wallet_id], references: [id])
-  type        TransactionType
-  amount      Float
-  status      TransactionStatus @default(PENDING)
-  stripe_id   String?
-  metadata    Json?
-  created_at  DateTime         @default(now())
-  updated_at  DateTime         @updatedAt
+  id         String            @id @default(uuid())
+  wallet_id  String
+  wallet     Wallet            @relation(fields: [wallet_id], references: [id])
+  type       TransactionType
+  amount     Float
+  status     TransactionStatus @default(PENDING)
+  stripe_id  String?
+  metadata   Json?
+  created_at DateTime          @default(now())
+  updated_at DateTime          @updatedAt
 
   @@index([wallet_id])
   @@index([stripe_id])
@@ -779,27 +802,27 @@ model WalletTransaction {
 }
 
 model WalletConfig {
-  id          Int     @id @default(autoincrement())
-  currency    String  @default("usd")
-  min_deposit Float   @default(5.0)
-  min_withdraw Float  @default(10.0)
+  id                  Int    @id @default(autoincrement())
+  currency            String @default("usd")
+  min_deposit         Float  @default(5.0)
+  min_withdraw        Float  @default(10.0)
   platform_account_id String
-  central_wallet_id String
+  central_wallet_id   String
 
   @@unique([currency])
   @@map("wallet_configs")
 }
 
 model PaymentAccount {
-  id           String   @id @default(uuid())
-  user_id      String
-  user         User     @relation(fields: [user_id], references: [id])
-  provider     String   // 'stripe', 'paypal', etc.
-  account_id   String   // External account ID
-  is_default   Boolean  @default(false)
-  metadata     Json?    // Store provider-specific data
-  created_at   DateTime @default(now())
-  updated_at   DateTime @updatedAt
+  id         String   @id @default(uuid())
+  user_id    String
+  user       User     @relation(fields: [user_id], references: [id])
+  provider   String // 'stripe', 'paypal', etc.
+  account_id String // External account ID
+  is_default Boolean  @default(false)
+  metadata   Json? // Store provider-specific data
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
   @@unique([user_id, provider, account_id])
   @@map("payment_accounts")

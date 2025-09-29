@@ -670,7 +670,7 @@ export class WalletService implements OnModuleInit {
   async listCards(userId: string) {
     return this.prisma.paymentMethod.findMany({
       where: { userId },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { created_at: 'desc' },
     });
   }
 
@@ -685,11 +685,11 @@ export class WalletService implements OnModuleInit {
     // reflect in DB (optional convenience)
     await this.prisma.paymentMethod.updateMany({
       where: { userId },
-      data: { isDefault: false },
+      data: { is_default: false },
     });
     await this.prisma.paymentMethod.update({
       where: { stripePaymentMethodId },
-      data: { isDefault: true },
+      data: { is_default: true },
     });
   }
 

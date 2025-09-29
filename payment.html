@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stripe Payment & Card Management Test</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 20px;
+            max-width: 800px;
+            margin: auto;
+            line-height: 1.6;
+            background-color: #f4f4f9;
+        }
+
+        .container {
+            background-color: #fff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        h1,
+        h2 {
+            color: #333;
+        }
+
+        .stripe-form {
+            border: 1px solid #ccc;
+            padding: 10px;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+            margin-bottom: 15px;
+        }
+
+        .stripe-form-label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+        }
+
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+        }
+
+        button:disabled {
+            background-color: #a0c4ff;
+            cursor: not-allowed;
+        }
+
+        .message {
+            padding: 10px;
+            margin-top: 15px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        .message.success {
+            background-color: #d4edda;
+            color: #155724;
+            border-color: #c3e6cb;
+        }
+
+        .message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border-color: #f5c6cb;
+        }
+
+        #cards-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        #cards-list li {
+            background-color: #f0f0f5;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 8px;
+        }
+
+        select,
+        input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Payment Flow Test Client</h1>
+
+    <div class="container">
+        <h2>1. Save a New Card</h2>
+        <div id="card-element" class="stripe-form"></div>
+        <button id="save-card-btn">Save Card</button>
+        <div id="save-card-message" class="message"></div>
+    </div>
+
+    <div class="container">
+        <h2>2. Your Saved Cards</h2>
+        <p>This list will automatically update.</p>
+        <ul id="cards-list"></ul>
+    </div>
+
+    <div class="container">
+        <h2>3. Process a Payment</h2>
+        <label for="card-select">Select a Card:</label>
+        <select id="card-select"></select>
+        <label for="amount-input">Amount (in cents):</label>
+        <input type="number" id="amount-input" value="1000">
+        <button id="process-payment-btn">Process Payment</button>
+        <div id="process-payment-message" class="message"></div>
+    </div>
+
+    <script src="https://js.stripe.com/v3/"></script>
+    <script>
+        // --- CONFIGURATION ---
+        const STRIPE_PUBLIC_KEY = 'pk_test_51RrcXjEoIhTl0qh4mQZbartYsq4zhvSim0g9bRu8mdCnqGda36M1K3mr5BFAVkWXDXH1JKnyaP03nqy2K2o9zUjz00Xs0Pzrc8'; // <-- REPLACE WITH YOUR KEY
+        const YOUR_BACKEND_URL = 'http://localhost:4000/api'; // <-- REPLACE WITH YOUR NESTJS URL
+
+        // This is a static user ID for demonstration. In a real app, it would come from your auth system.
+        const FAKE_USER_ID = 'a-static-user-id-for-demonstration';
+
+        // --- UTILITIES ---
+        function showMessage(elementId, message, type) {
+            const el = document.getElementById(elementId);
+            el.textContent = message;
+            el.className = `message ${type}`;
+        }
+
+        // --- INITIALIZATION ---
+        const stripe = Stripe(STRIPE_PUBLIC_KEY);
+        const elements = stripe.elements();
+        const cardElement = elements.create('card');
+        cardElement.mount('#card-element');
+
+        // --- FETCH & RENDER CARDS ---
+        async function fetchCards() {
+            try {
+                const response = await fetch(`${YOUR_BACKEND_URL}/payment/stripe/cards`, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImZveXNhbGhhc2FuLmJkY2FsbGluZ0BnbWFpbC5jb20iLCJzdWIiOiJjbWZ5MjBkd3UwMDAwdjJmY2tjaXYxb2dhIiwiaWF0IjoxNzU4NzIyODk3LCJleHAiOjE3NTg4MDkyOTd9.R3haXEWp5mIuIZdpfzq7CG7cuy4Ha4hyfVigdwKBNCA'
+
+                    }
+                });
+                let cards = await response.json();
+                cards = cards?.data
+                const listEl = document.getElementById('cards-list');
+                const selectEl = document.getElementById('card-select');
+
+                listEl.innerHTML = '';
+                selectEl.innerHTML = '';
+
+                if (cards.length > 0) {
+                    cards.forEach(card => {
+                        // Render for the list
+                        const li = document.createElement('li');
+                        li.textContent = `${card.brand} ending in ${card.last4} (Exp: ${card.exp_month}/${card.exp_year})`;
+                        listEl.appendChild(li);
+
+                        // Render for the select dropdown
+                        const option = document.createElement('option');
+                        option.value = card.id;
+                        option.textContent = `${card.brand} ending in ${card.last4}`;
+                        selectEl.appendChild(option);
+                    });
+                    document.getElementById('process-payment-btn').disabled = false;
+                } else {
+                    listEl.innerHTML = '<li>No cards saved.</li>';
+                    document.getElementById('process-payment-btn').disabled = true;
+                }
+
+            } catch (error) {
+                console.error('Failed to fetch cards:', error);
+                showMessage('process-payment-message', 'Failed to load cards.', 'error');
+            }
+        }
+
+        // --- EVENT LISTENERS ---
+        document.getElementById('save-card-btn').addEventListener('click', async () => {
+            const btn = document.getElementById('save-card-btn');
+            btn.disabled = true;
+            showMessage('save-card-message', 'Processing...', 'message');
+
+            const { paymentMethod, error } = await stripe.createPaymentMethod({
+                type: 'card',
+                card: cardElement,
+            });
+
+            if (error) {
+                showMessage('save-card-message', `Error: ${error.message}`, 'error');
+                btn.disabled = false;
+                return;
+            }
+
+            try {
+                const response = await fetch(`${YOUR_BACKEND_URL}/payment/stripe/save-card`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImZveXNhbGhhc2FuLmJkY2FsbGluZ0BnbWFpbC5jb20iLCJzdWIiOiJjbWZ5MjBkd3UwMDAwdjJmY2tjaXYxb2dhIiwiaWF0IjoxNzU4NzIyODk3LCJleHAiOjE3NTg4MDkyOTd9.R3haXEWp5mIuIZdpfzq7CG7cuy4Ha4hyfVigdwKBNCA'
+
+                    },
+                    body: JSON.stringify({ userId: FAKE_USER_ID, paymentMethodId: paymentMethod.id }),
+                });
+
+                if (response.ok) {
+                    showMessage('save-card-message', 'Card saved successfully!', 'success');
+                    await fetchCards(); // Refresh the list
+                } else {
+                    const result = await response.json();
+                    showMessage('save-card-message', result.message || 'Failed to save card.', 'error');
+                }
+            } catch (e) {
+                showMessage('save-card-message', `An unexpected error occurred: ${e.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+            }
+        });
+
+        document.getElementById('process-payment-btn').addEventListener('click', async () => {
+            const btn = document.getElementById('process-payment-btn');
+            const selectedCardId = document.getElementById('card-select').value;
+            const amount = document.getElementById('amount-input').value;
+
+            btn.disabled = true;
+            showMessage('process-payment-message', 'Processing payment...', 'message');
+
+            if (!selectedCardId || !amount) {
+                showMessage('process-payment-message', 'Please select a card and enter an amount.', 'error');
+                btn.disabled = false;
+                return;
+            }
+
+            try {
+                const response = await fetch(`${YOUR_BACKEND_URL}/payment/stripe/charge`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImZveXNhbGhhc2FuLmJkY2FsbGluZ0BnbWFpbC5jb20iLCJzdWIiOiJjbWZ5MjBkd3UwMDAwdjJmY2tjaXYxb2dhIiwiaWF0IjoxNzU4NzIyODk3LCJleHAiOjE3NTg4MDkyOTd9.R3haXEWp5mIuIZdpfzq7CG7cuy4Ha4hyfVigdwKBNCA'
+                    },
+                    body: JSON.stringify({
+                        // userId: FAKE_USER_ID,
+                        paymentMethodId: selectedCardId,
+                        amount: parseInt(amount),
+                        bookingId: "test"
+                    }),
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    showMessage('process-payment-message', `Payment succeeded! Status: ${result.status}`, 'success');
+                } else {
+                    showMessage('process-payment-message', result.message || 'Payment failed.', 'error');
+                }
+            } catch (e) {
+                showMessage('process-payment-message', `An unexpected error occurred: ${e.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+            }
+        });
+
+        // Initial fetch of cards when the page loads
+        document.addEventListener('DOMContentLoaded', fetchCards);
+    </script>
+</body>
+
+</html>

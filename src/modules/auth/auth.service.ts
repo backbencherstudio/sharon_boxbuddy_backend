@@ -209,6 +209,25 @@ export class AuthService {
           role: user.data.type,
         };
         const token = this.jwtService.sign(payload);
+
+              // create stripe customer account
+      const stripeCustomer = await StripePayment.createCustomer({
+        user_id: user.data.id,
+        email: email,
+        name: name,
+      });
+
+      if (stripeCustomer) {
+        await this.prisma.user.update({
+          where: {
+            id: user.data.id,
+          },
+          data: {
+            billing_id: stripeCustomer.id,
+          },
+        });
+      }
+
         await this.walletService.createUserWallet(user.data.id);
 
         return {
@@ -237,7 +256,7 @@ export class AuthService {
 
       if (user) {
         const payload = { email: email, sub: user.id, role: user.type };
-        const token = this.jwtService.sign(payload);
+        const token =  this.jwtService.sign(payload);
 
         return {
           success: true,
@@ -261,6 +280,24 @@ export class AuthService {
         };
         const token = this.jwtService.sign(payload);
 
+              // create stripe customer account
+      const stripeCustomer = await StripePayment.createCustomer({
+        user_id: user.data.id,
+        email: email,
+        name: name,
+      });
+
+      if (stripeCustomer) {
+        await this.prisma.user.update({
+          where: {
+            id: user.data.id,
+          },
+          data: {
+            billing_id: stripeCustomer.id,
+          },
+        });
+      }
+      
         await this.walletService.createUserWallet(user.data.id);
 
         return {

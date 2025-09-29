@@ -1,11 +1,15 @@
-import { Controller, Post, Req, Headers } from '@nestjs/common';
+import { Controller, Post, Req, Headers, Body, Get, UseGuards } from '@nestjs/common';
 import { StripeService } from './stripe.service';
 import { Request } from 'express';
 import { TransactionRepository } from '../../../common/repository/transaction/transaction.repository';
+import { SaveCardDto } from './dto/save-card.dto';
+import { JwtAuthGuard } from 'src/modules/auth/guards/jwt-auth.guard';
+import { ProcessPaymentDto } from './dto/process-payment.dto';
+import { PaymentIntentDto } from './dto/payment-intent.dto';
 
 @Controller('payment/stripe')
 export class StripeController {
-  constructor(private readonly stripeService: StripeService) {}
+  constructor(private readonly stripeService: StripeService) { }
 
   @Post('webhook')
   async handleWebhook(
@@ -80,5 +84,48 @@ export class StripeController {
       console.error('Webhook error', error);
       return { received: false };
     }
+  }
+
+
+  @UseGuards(JwtAuthGuard)
+  @Post('save-card')
+  async saveCard(@Body() saveCardDto: SaveCardDto, @Req() req: Request) {
+    // In a real application, you would get the user ID from the request object (e.g., from a JWT)
+    // const userId = 'a-static-user-id-for-demonstration'; 
+    const userId = req.user?.userId; // For example, if you use Passport.js
+    return this.stripeService.saveCard(userId, saveCardDto.paymentMethodId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('cards')
+  async listCards(@Req() req: Request) {
+    // In a real app, you would get the user ID from the authenticated request object
+    // const userId = 'a-static-user-id-for-demonstration'; 
+    const userId = req.user?.userId; // Example with JWT authentication
+
+    return this.stripeService.listSavedCards(userId);
+  }
+
+  // New endpoint to process a payment
+  @UseGuards(JwtAuthGuard)
+  @Post('charge')
+  async charge(@Body() processPaymentDto: ProcessPaymentDto, @Req() req: Request) {
+    const userId = req?.user?.userId;
+    return this.stripeService.processPayment(
+      userId,
+      processPaymentDto.paymentMethodId,
+      processPaymentDto.amount,
+      processPaymentDto.bookingId
+    );
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('payment-intent')
+  async getPaymentIntent(@Body() paymentIntentDto: PaymentIntentDto, @Req() req: Request) {
+    const userId = req?.user?.userId;
+    return this.stripeService.getPaymentIntent(
+      paymentIntentDto.bookingId,
+      userId
+    );
   }
 }

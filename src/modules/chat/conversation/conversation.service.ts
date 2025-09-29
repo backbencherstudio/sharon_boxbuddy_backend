@@ -65,28 +65,29 @@ export class ConversationService {
         data.travel_id = createConversationDto.travel_id;
       }
 
-      if (createConversationDto.created_by === 'package_owner') {
-        // find is anouncement request exists
-        const announcementRequest = await this.prisma.announcementRequest.findFirst({
-          where: {
-            package_id: createConversationDto.package_id,
-            travel_id: createConversationDto.travel_id,
-          },
-        });
+      // if (createConversationDto.created_by === 'package_owner') {
+      //   // find is anouncement request exists
+      //   const announcementRequest = await this.prisma.announcementRequest.findFirst({
+      //     where: {
+      //       package_id: createConversationDto.package_id,
+      //       travel_id: createConversationDto.travel_id,
+      //     },
+      //   });
 
-        if (!announcementRequest) {
-          await this.prisma.announcementRequest.create({
-            data: {
-              package_id: createConversationDto.package_id,
-              travel_id: createConversationDto.travel_id,
-            },
-          });
-        }``
+      //   if (!announcementRequest) {
+      //     await this.prisma.announcementRequest.create({
+      //       data: {
+      //         package_id: createConversationDto.package_id,
+      //         travel_id: createConversationDto.travel_id,
+      //       },
+      //     });
+      //   }
 
-      }
+      // }
 
 
       // check if conversation exists
+      
       let conversation = await this.prisma.conversation.findFirst({
         select: {
           id: true,

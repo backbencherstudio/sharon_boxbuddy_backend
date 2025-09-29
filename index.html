@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Complete Payment</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .payment-container {
+      background-color: #fff;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      width: 400px;
+      text-align: center;
+    }
+
+    h2 {
+      font-size: 24px;
+      color: #333;
+      margin-bottom: 20px;
+    }
+
+    #card-element {
+      background-color: #fafafa;
+      padding: 10px;
+      border-radius: 4px;
+      border: 1px solid #ddd;
+      margin-bottom: 20px;
+      width: 100%;
+    }
+
+    button {
+      background-color: #4CAF50;
+      color: white;
+      padding: 12px 30px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      width: 100%;
+      font-size: 16px;
+    }
+
+    button:disabled {
+      background-color: #ccc;
+    }
+
+    #error-message {
+      color: red;
+      margin-top: 10px;
+    }
+
+    .success-message {
+      color: green;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+
+    .loading {
+      margin-top: 20px;
+      font-size: 18px;
+      color: #666;
+    }
+
+    .error {
+      margin-top: 20px;
+      font-size: 18px;
+      color: red;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="payment-container">
+    <h2>Complete Your Payment</h2>
+
+    <form id="payment-form">
+      <div id="card-element"></div>
+
+      <button id="submit">Pay Now</button>
+
+      <div id="error-message"></div>
+      <div class="success-message" id="success-message" style="display:none;">Payment succeeded!</div>
+      <div class="loading" id="loading" style="display:none;">Processing payment...</div>
+    </form>
+  </div>
+
+  <script src="https://js.stripe.com/v3/"></script>
+  <script>
+    var stripe = Stripe('pk_test_51RrcXjEoIhTl0qh4mQZbartYsq4zhvSim0g9bRu8mdCnqGda36M1K3mr5BFAVkWXDXH1JKnyaP03nqy2K2o9zUjz00Xs0Pzrc8'); // Replace with your Stripe public key
+    var elements = stripe.elements();
+
+    var card = elements.create('card');
+    card.mount('#card-element');
+
+    var paymentForm = document.getElementById('payment-form');
+    var submitButton = document.getElementById('submit');
+    var errorMessage = document.getElementById('error-message');
+    var successMessage = document.getElementById('success-message');
+    var loadingMessage = document.getElementById('loading');
+
+    paymentForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      const clientSecret = 'pi_3SCIzHEoIhTl0qh41Wk5LUjk_secret_XXdwmUsls81A72zQWzK5hA46l'; // Get this from your backend
+
+      // Show loading message and disable the submit button
+      loadingMessage.style.display = 'block';
+      submitButton.disabled = true;
+
+      const { paymentIntent, error } = await stripe.confirmCardPayment(clientSecret, {
+        payment_method: {
+          card: card,
+        },
+      });
+
+      loadingMessage.style.display = 'none'; // Hide loading message
+
+      if (error) {
+        // Display error message
+        errorMessage.textContent = error.message;
+        submitButton.disabled = false;
+      } else if (paymentIntent.status === 'succeeded') {
+        // Show success message
+        successMessage.style.display = 'block';
+      }
+    });
+  </script>
+
+</body>
+</html>

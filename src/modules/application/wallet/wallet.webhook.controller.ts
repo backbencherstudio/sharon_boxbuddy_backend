@@ -68,7 +68,7 @@ export class WalletWebhookController {
           await this.upsertPaymentMethod(userId, pmId);
         }
         break;
-      
+
       }
 
       case 'payment_method.attached': {
@@ -100,13 +100,13 @@ export class WalletWebhookController {
           // Reset all flags
           await this.walletService['prisma'].paymentMethod.updateMany({
             where: { userId },
-            data: { isDefault: false },
+            data: { is_default: false },
           });
           if (defaultPm) {
             await this.walletService['prisma'].paymentMethod.update({
               where: { stripePaymentMethodId: defaultPm },
-              data: { isDefault: true },
-            }).catch(() => {});
+              data: { is_default: true },
+            }).catch(() => { });
           }
         }
         break;
@@ -182,24 +182,71 @@ export class WalletWebhookController {
     const paymentIntent = event.data.object;
     const metadata = paymentIntent.metadata;
 
-    if (metadata.transactionId) {
-      await this.walletService['prisma'].walletTransaction.update({
-        where: { id: metadata.transactionId },
-        data: { status: 'COMPLETED' },
-      });
+    // if (metadata.transactionId) {
+    //   await this.walletService['prisma'].walletTransaction.update({
+    //     where: { id: metadata.transactionId },
+    //     data: { status: 'COMPLETED' },
+    //   });
 
-      // Update wallet balance
-      const transaction = await this.walletService[
-        'prisma'
-      ].walletTransaction.findUnique({
-        where: { id: metadata.transactionId },
-      });
+    //   // Update wallet balance
+    //   const transaction = await this.walletService[
+    //     'prisma'
+    //   ].walletTransaction.findUnique({
+    //     where: { id: metadata.transactionId },
+    //   });
 
-      await this.walletService['prisma'].wallet.update({
-        where: { id: transaction.wallet_id },
-        data: { balance: { increment: transaction.amount } },
-      });
-    }
+    //   await this.walletService['prisma'].wallet.update({
+    //     where: { id: transaction.wallet_id },
+    //     data: { balance: { increment: transaction.amount } },
+    //   });
+    // }
+
+    await this.walletService['prisma'].booking.update({
+      where: { id: metadata.booking_id },
+      data: {
+        paid: true,
+        payment_status: 'complated',
+        payment_intent_id: paymentIntent.id,
+      }
+    })
+
+    
+
+    await this.walletService['prisma'].announcementRequest.create({
+      data: {
+        package_id: metadata.package_id,
+        travel_id: metadata.travel_id,
+        booking_id: metadata.booking_id,
+      },
+    });
+
+    await this.walletService['prisma'].notification.createMany({
+      data: [
+        {
+          notification_message: `Your booking request is pending. Waiting for ${metadata.traveller_first_name}’s confirmation (up to 12h).`,
+          notification_type: 'pending',
+          receiver_id: metadata.owner_id
+        },
+        {
+          notification_message: `You have received a new booking request from ${metadata.owner_first_name}. Respond within 12 hours.`,
+          notification_type: 'pending',
+          receiver_id: metadata.traveller_id
+        }
+      ]
+    })
+
+
+    await this.walletService['prisma'].conversation.updateMany({
+      where: {
+          travel_id: metadata.travel_id,
+          package_id: metadata.package_id,
+      },
+      data: {
+        notification_type: 'pending'
+      }
+    })
+
+
   }
 
   private async handlePaymentFailed(event: any) {
