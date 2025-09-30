@@ -4,6 +4,9 @@
 /build
 /public/storage
 
+index.html
+payment.html
+
 # Logs
 logs
 *.log
