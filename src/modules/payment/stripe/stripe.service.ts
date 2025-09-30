@@ -104,7 +104,7 @@ export class StripeService {
 
     // 4. Create a Stripe PaymentIntent using the total from the order
     const paymentIntent = await StripePayment.createPaymentIntent({
-      amount: 100 * 100, // Convert amount to cents
+      amount: 50.55, // Convert amount to cents
       currency: 'usd',
       customer_id: booking.owner.billing_id, // Ensure the user has a Stripe customer ID
       metadata: {

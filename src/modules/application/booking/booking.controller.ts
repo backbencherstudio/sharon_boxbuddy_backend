@@ -196,6 +196,7 @@ export class BookingController {
     return await this.bookingService.dropOff(id, req?.user?.userId, photos);
   }
 
+  
   @Patch(":id/complete")
   async complete(@Param('id') id: string, @Req() req: Request) {
     return await this.bookingService.complete(id, req?.user?.userId);

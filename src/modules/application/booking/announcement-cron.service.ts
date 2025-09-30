@@ -6,7 +6,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 export class AnnouncementCronService {
   private readonly logger = new Logger(AnnouncementCronService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   @Cron(CronExpression.EVERY_5_SECONDS) // CronExpression.EVERY_30_MINUTES // runs every hour
   async handleCron() {
@@ -20,22 +20,97 @@ export class AnnouncementCronService {
         is_refused: false,
         is_processed: false, // only unprocessed ones
         created_at: { lt: twelveHoursAgo }
-      }
+      },
+      include: {
+        travel: true, // Include the associated travel to check user_id
+        booking: {
+          select: {
+            id: true,
+            amount: true,
+            owner_id: true,
+            owner: {
+              select: {
+                first_name: true,
+              }
+            },
+            traveller_id: true,
+            traveller: {
+              select: {
+                first_name: true,
+              }
+            },
+          }
+        },
+        package: {
+          select: {
+            owner_id: true,
+          }
+        }
+      },
     });
 
-    for (const req of requests) {
+    for (const request of requests) {
       // Example: process booking if exists
-      if (req.booking_id) {
-        // Your booking logic here
-        this.logger.log(`Processing booking: ${req.booking_id}`);
-        // await this.bookingService.updateStatus(req.booking_id, 'expired');
-      }
+      // if (req.booking_id) {
+      //   // Your booking logic here
+      //   this.logger.log(`Processing booking: ${req.booking_id}`);
+      //   // await this.bookingService.updateStatus(req.booking_id, 'expired');
+      // }
+
+      await this.prisma.wallet.update({
+        where: {
+          user_id: request.booking.owner_id,
+        },
+        data: {
+          balance: {
+            increment: request.booking.amount
+          }
+        }
+      })
+
+      await this.prisma.booking.update({
+        where: {
+          id: request.booking_id
+        },
+        data: {
+          status: 'expired',
+          payment_status: 'refunded'
+        }
+      })
+
+
+      // conversation
+      await this.prisma.conversation.updateMany({
+        where: {
+          travel_id: request.travel_id,
+          package_id: request.package_id,
+        },
+        data: {
+          notification_type: 'expired'
+        }
+      })
+
+      // notification
+      await this.prisma.notification.createMany({
+        data: [
+          {
+            notification_message: `Your booking request expired. ${request.booking.traveller.first_name} did not confirm within 12h. You have been refunded.`,
+            notification_type: 'expired',
+            receiver_id: request.booking.owner_id
+          },
+          {
+            notification_message: `You missed ${request.booking.owner.first_name}’s booking request. It expired after 12h.`,
+            notification_type: 'expired',
+            receiver_id: request.booking.traveller_id
+          }
+        ]
+      })
 
       // Mark as processed
-    //   await this.prisma.announcementRequest.update({
-    //     where: { id: req.id },
-    //     data: { is_processed: true }
-    //   });
+      await this.prisma.announcementRequest.update({
+        where: { id: request.id },
+        data: { is_processed: true }
+      });
     }
 
     this.logger.log(`Processed ${requests.length} requests`);

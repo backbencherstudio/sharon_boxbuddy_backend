@@ -6,5 +6,5 @@
 -- the enum.
 
 
-ALTER TYPE "BookingStatus" ADD VALUE 'completed';
-ALTER TYPE "BookingStatus" ADD VALUE 'rejected';
+ALTER TYPE "BookingStatus" ADD VALUE 'declined';
+ALTER TYPE "BookingStatus" ADD VALUE 'expired';

@@ -56,10 +56,13 @@ export class BookingService {
         travel_id: createBookingDto.travel_id,
         package_id: createBookingDto.package_id,
         status: {
-          in: ["in_progress",
+          in: [
+            "pending",
+            "in_progress",
             "pick_up",
             "on_the_way",
-            "delivered"],
+            "delivered"
+          ],
         },
       },
     });
@@ -234,6 +237,18 @@ export class BookingService {
       where: {
         id,
       },
+      include: {
+        traveller: {
+          select: {
+            first_name: true,
+          }
+        },
+        owner: {
+          select: {
+            first_name: true,
+          }
+        }
+      }
     });
 
     if (!booking_data) {
@@ -258,8 +273,50 @@ export class BookingService {
 
     if (booking_data.traveller_id === user_id) {
       data['cancel_by_who'] = 'traveller'
+      
+      // notification
+      await this.prisma.notification.createMany({
+        data: [
+          {
+            notification_message: `${booking_data.traveller.first_name} has canceled the booking. You have been refunded.`,
+            notification_type: 'canceled',
+            receiver_id: booking_data.owner_id
+          },
+          // {
+          //   notification_message: `You canceled ${booking_data.owner.first_name}'s booking request.`,
+          //   notification_type: 'canceled',
+          //   receiver_id: booking_data.traveller_id
+          // }
+        ]
+      })
+
+      
+      // need to adjust wallet based on remaining hours
+
+
     } else {
       data['cancel_by_who'] = 'package_owner'
+
+      // notification
+      await this.prisma.notification.createMany({
+        data: [
+          // {
+          //   notification_message: `You canceled your booking request.`,
+          //   notification_type: 'canceled',
+          //   receiver_id: booking_data.owner_id
+          // },
+          {
+            notification_message: `${booking_data.owner.first_name} canceled their booking request.`,
+            notification_type: 'canceled',
+            receiver_id: booking_data.traveller_id
+          }
+        ]
+      })
+
+      
+
+      // need to adjust wallet based on remaining hours
+
     }
 
     const updated_booking_data = await this.prisma.booking.update({
@@ -268,6 +325,17 @@ export class BookingService {
       },
       data,
     });
+
+    // conversation
+    await this.prisma.conversation.updateMany({
+      where: {
+        travel_id: updated_booking_data.travel_id,
+        package_id: updated_booking_data.package_id,
+      },
+      data: {
+        notification_type: 'canceled'
+      }
+    })
 
     return {
       success: true,
@@ -438,7 +506,6 @@ export class BookingService {
 
 
   async complete(id: string, user_id: string) {
-    
     const booking_data = await this.prisma.booking.findFirst({
       where: {
         id,

@@ -5,6 +5,8 @@ import { AnnouncementCronService } from './announcement-cron.service';
 
 @Module({
   controllers: [BookingController],
-  providers: [BookingService, AnnouncementCronService],
+  providers: [BookingService, 
+    AnnouncementCronService
+  ],
 })
 export class BookingModule {}

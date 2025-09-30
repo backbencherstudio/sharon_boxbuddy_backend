@@ -201,14 +201,19 @@ export class WalletWebhookController {
     //   });
     // }
 
+    // console.log(JSON.stringify(paymentIntent, null, 4))
+    // console.log("amount => ", paymentIntent.amount, parseFloat(paymentIntent.amount) / 100)
+
+
     await this.walletService['prisma'].booking.update({
       where: { id: metadata.booking_id },
       data: {
         paid: true,
         payment_status: 'complated',
         payment_intent_id: paymentIntent.id,
+        amount: (paymentIntent.amount / 100).toFixed(4)  || 0
       }
-    })
+    })  
 
     
 

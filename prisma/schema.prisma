@@ -592,6 +592,7 @@ model Report {
 // }
 
 enum BookingStatus {
+  pending
   in_progress
   pick_up
   on_the_way
@@ -601,13 +602,15 @@ enum BookingStatus {
   cancel
   problem_with_the_package
   all_conditions_are_not_met
+  declined
+  expired
 }
 
 model Booking {
   id     String        @id @default(cuid())
-  status BookingStatus @default(pick_up) // ShipmentStatus
+  status BookingStatus @default(pending) // ShipmentStatus
   paid   Boolean       @default(false)
-  amount Decimal?
+  amount Decimal?     @db.Decimal(15, 4)
 
   // pick up
   pick_up_photo          String?
@@ -774,7 +777,7 @@ model Wallet {
   id           String              @id @default(uuid())
   user_id      String?             @unique
   user         User?               @relation(fields: [user_id], references: [id])
-  balance      Float               @default(0)
+  balance      Decimal               @db.Decimal(15, 4) @default(0)
   currency     String              @default("usd")
   created_at   DateTime            @default(now())
   updated_at   DateTime            @updatedAt
