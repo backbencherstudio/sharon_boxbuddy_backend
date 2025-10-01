@@ -95,6 +95,7 @@ export class ConversationService {
           participant_id: true,
           created_at: true,
           updated_at: true,
+          notification_type: true,
           creator: {
             select: {
               id: true,
@@ -173,6 +174,7 @@ export class ConversationService {
           participant_id: true,
           created_at: true,
           updated_at: true,
+          notification_type: true,
           creator: {
             select: {
               id: true,
@@ -250,8 +252,6 @@ export class ConversationService {
   }
 
 
-  
-
   async findAll(userId: string) {
     try {
       const conversations = await this.prisma.conversation.findMany({
@@ -294,6 +294,7 @@ export class ConversationService {
           package: true,
           travel: true,
           last_message: true,
+          notification_type: true,
           // messages: {
           //   orderBy: {
           //     created_at: 'desc',
@@ -346,6 +347,7 @@ export class ConversationService {
           participant_id: true,
           created_at: true,
           updated_at: true,
+          notification_type: true,
           creator: {
             select: {
               id: true,
