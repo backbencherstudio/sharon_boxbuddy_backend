@@ -8,7 +8,7 @@ export class AnnouncementCronService {
 
   constructor(private prisma: PrismaService) { }
 
-  @Cron(CronExpression.EVERY_5_SECONDS) // CronExpression.EVERY_30_MINUTES // runs every hour
+  @Cron(CronExpression.EVERY_10_MINUTES) // CronExpression.EVERY_30_MINUTES // runs every hour
   async handleCron() {
     this.logger.log('Cron job started: Checking old AnnouncementRequests');
 
