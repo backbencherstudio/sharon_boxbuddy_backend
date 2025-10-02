@@ -10,6 +10,7 @@ import { Request, Response } from 'express';
 import { WalletConfig } from './wallet.config';
 import { WalletService } from './wallet.service';
 import Stripe from 'stripe';
+import { MessageGateway } from 'src/modules/chat/message/message.gateway';
 
 // export const config = {
 //   api: {
@@ -22,6 +23,7 @@ export class WalletWebhookController {
   constructor(
     private readonly walletService: WalletService,
     private readonly config: WalletConfig,
+    private gateway: MessageGateway
   ) { }
 
   @Post()
@@ -225,7 +227,7 @@ export class WalletWebhookController {
       },
     });
 
-    await this.walletService['prisma'].notification.createMany({
+    const notifications = await this.walletService['prisma'].notification.createManyAndReturn({
       data: [
         {
           notification_message: `Your booking request is pending. Waiting for ${metadata.traveller_first_name}’s confirmation (up to 12h).`,
@@ -241,15 +243,42 @@ export class WalletWebhookController {
     })
 
 
-    await this.walletService['prisma'].conversation.updateMany({
+    const conversations = await this.walletService['prisma'].conversation.updateManyAndReturn({
       where: {
           travel_id: metadata.travel_id,
           package_id: metadata.package_id,
       },
       data: {
         notification_type: 'pending'
-      }
+      },
+      include: {
+          package: {
+            select: {
+              owner_id: true,
+            }
+          },
+          travel: {
+            select: {
+              user_id: true
+            }
+          }
+        }
     })
+
+    // sending notification for notification and conversation
+      // notification
+      notifications.forEach(notification => {
+        this.gateway.server.to(notification.receiver_id).emit("notification", notification)
+      });
+
+      // conversation
+      conversations.forEach(conv => {
+        // sending to package owner
+        this.gateway.server.to(conv.package.owner_id).emit("conversation-notification-update", {
+          id: conv.id,
+          notification_type: conv.notification_type
+        })
+      })
 
 
   }

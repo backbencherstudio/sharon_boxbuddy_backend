@@ -213,9 +213,9 @@ export class WalletService implements OnModuleInit {
         where: { user_id: dto.userId },
       });
 
-      if (userWallet.balance < dto.amount) {
-        throw new BadRequestException('Insufficient funds');
-      }
+      // if (userWallet.balance < dto.amount) {
+      //   throw new BadRequestException('Insufficient funds');
+      // }
 
       const centralWallet = await tx.wallet.findUniqueOrThrow({
         where: { id: this.config.centralWalletId },
@@ -267,9 +267,9 @@ export class WalletService implements OnModuleInit {
         where: { id: this.config.centralWalletId },
       });
 
-      if (centralWallet.balance < amount) {
-        throw new BadRequestException('Insufficient funds in central wallet');
-      }
+      // if (centralWallet.balance < amount) {
+      //   throw new BadRequestException('Insufficient funds in central wallet');
+      // }
 
       // Deduct from central wallet
       await tx.wallet.update({
@@ -394,9 +394,9 @@ export class WalletService implements OnModuleInit {
       }
 
       // Check for sufficient funds in the wallet
-      if (wallet.balance < dto.amount) {
-        throw new BadRequestException('Insufficient funds');
-      }
+      // if (wallet.balance < dto.amount) {
+      //   throw new BadRequestException('Insufficient funds');
+      // }
 
       // Create transaction record (withdrawing amount)
       const transaction = await tx.walletTransaction.create({
@@ -488,9 +488,9 @@ export class WalletService implements OnModuleInit {
         where: { id: this.config.centralWalletId },
       });
 
-      if (centralWallet.balance < amount) {
-        throw new BadRequestException('Insufficient funds in central wallet');
-      }
+      // if (centralWallet.balance < amount) {
+      //   throw new BadRequestException('Insufficient funds in central wallet');
+      // }
 
       // Create transaction record
       const transaction = await tx.walletTransaction.create({

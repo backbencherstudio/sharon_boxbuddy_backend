@@ -104,7 +104,7 @@ export class StripeService {
 
     // 4. Create a Stripe PaymentIntent using the total from the order
     const paymentIntent = await StripePayment.createPaymentIntent({
-      amount: 50.55, // Convert amount to cents
+      amount: Number(booking.amount), // Convert amount to cents
       currency: 'usd',
       customer_id: booking.owner.billing_id, // Ensure the user has a Stripe customer ID
       metadata: {
@@ -172,7 +172,7 @@ export class StripeService {
     return paymentIntent;
   }
 
-  async processPayment(userId: string, paymentMethodId: string, amount: number, bookingId: string) {
+  async processPayment(userId: string, paymentMethodId: string, bookingId: string) {
 
     const booking = await this.prisma.booking.findUnique({
       where: { id: bookingId },
@@ -203,7 +203,7 @@ export class StripeService {
     try {
       // 2. Use Stripe's PaymentIntents API to create and confirm a payment
       const paymentIntent = await this.stripe.paymentIntents.create({
-        amount: amount * 100,
+        amount: Number(booking.amount) * 100,
         currency: 'usd',
         customer: user.billing_id,
         payment_method: paymentMethodId,

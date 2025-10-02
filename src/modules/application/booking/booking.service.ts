@@ -8,10 +8,11 @@ import { SojebStorage } from 'src/common/lib/Disk/SojebStorage';
 import appConfig from 'src/config/app.config';
 import { AllConditionsAreNotMetDto } from './dto/all-conditions-are-not-met.dto';
 import { StripePayment } from 'src/common/lib/Payment/stripe/StripePayment';
+import { MessageGateway } from 'src/modules/chat/message/message.gateway';
 
 @Injectable()
 export class BookingService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService, private gateway: MessageGateway) { }
   async create(createBookingDto: CreateBookingDto, user_id: string) {
     // check travel is exist or not
     const travel = await this.prisma.travel.findUnique({
@@ -45,8 +46,18 @@ export class BookingService {
       throw new BadRequestException('Package not found');
     }
 
+    // calculate booking amount
+    const weight = this.parseWeight(package_data.weight)
+
+    if(!weight) throw new BadRequestException("Your package weight is missing or in wrong format. You can't book for this package.")
+    
+    // Fixed 20 euros + 6 euros per kg
+    // Less than 1kg costs the same price as 1kg
+    const amount = 20 + (weight * 6)
+
     const data: any = {
       ...createBookingDto,
+      amount,
       traveller_id: travel.user_id,
       owner_id: user_id,
     }
@@ -86,6 +97,17 @@ export class BookingService {
       message: 'Booking created successfully',
       data: booking_data,
     };
+  }
+
+  private parseWeight(input: string, defaultValue = 0) {
+    if (!input || typeof input !== 'string') {
+      return defaultValue;
+    }
+
+    const numericString = input.toLowerCase().replace(/kg/g, '').trim();
+    const number = parseFloat(numericString);
+
+    return isNaN(number) ? defaultValue : number;
   }
 
   // findAll() {
@@ -224,6 +246,25 @@ export class BookingService {
     };
   }
 
+  async updateSummary(id: string, user_id: string, summary: string) {
+    await this.prisma.booking.update({
+      where: {
+        id: id,
+        traveller_id: user_id,
+        order_summary: "",
+      },
+      data: {
+        order_summary: summary
+      }
+    })
+
+    return {
+      success: true,
+      message: 'Booking summary updated'
+    }
+
+  }
+
   // update(id: string, updateBookingDto: UpdateBookingDto) {
   //   return `This action updates a #${id} booking`;
   // }
@@ -273,9 +314,9 @@ export class BookingService {
 
     if (booking_data.traveller_id === user_id) {
       data['cancel_by_who'] = 'traveller'
-      
+
       // notification
-      await this.prisma.notification.createMany({
+      const notifications = await this.prisma.notification.createManyAndReturn({
         data: [
           {
             notification_message: `${booking_data.traveller.first_name} has canceled the booking. You have been refunded.`,
@@ -290,7 +331,15 @@ export class BookingService {
         ]
       })
 
-      
+
+      // notification
+      notifications.forEach(notification => {
+        this.gateway.server.to(notification.receiver_id).emit("notification", notification)
+      });
+
+
+
+
       // need to adjust wallet based on remaining hours
 
 
@@ -298,7 +347,7 @@ export class BookingService {
       data['cancel_by_who'] = 'package_owner'
 
       // notification
-      await this.prisma.notification.createMany({
+      const notifications = await this.prisma.notification.createManyAndReturn({
         data: [
           // {
           //   notification_message: `You canceled your booking request.`,
@@ -313,7 +362,10 @@ export class BookingService {
         ]
       })
 
-      
+      // notification
+      notifications.forEach(notification => {
+        this.gateway.server.to(notification.receiver_id).emit("notification", notification)
+      });
 
       // need to adjust wallet based on remaining hours
 
@@ -327,14 +379,35 @@ export class BookingService {
     });
 
     // conversation
-    await this.prisma.conversation.updateMany({
+    const conversations = await this.prisma.conversation.updateManyAndReturn({
       where: {
         travel_id: updated_booking_data.travel_id,
         package_id: updated_booking_data.package_id,
       },
       data: {
         notification_type: 'canceled'
+      },
+      include: {
+        package: {
+          select: {
+            owner_id: true,
+          }
+        },
+        travel: {
+          select: {
+            user_id: true
+          }
+        }
       }
+    })
+
+    // conversation
+    conversations.forEach(conv => {
+      // sending to package owner
+      this.gateway.server.to(conv.package.owner_id).emit("conversation-notification-update", {
+        id: conv.id,
+        notification_type: conv.notification_type
+      })
     })
 
     return {
@@ -628,45 +701,45 @@ export class BookingService {
   // ...existing code...
 
   // Get Payment intent
-  async getPaymentIntent(booking_id: string) {
-    // Find booking
-    const booking = await this.prisma.booking.findUnique({
-      where: { id: booking_id },
-      include: { traveller: true },
-    });
+  // async getPaymentIntent(booking_id: string) {
+  //   // Find booking
+  //   const booking = await this.prisma.booking.findUnique({
+  //     where: { id: booking_id },
+  //     include: { traveller: true },
+  //   });
 
-    if (!booking) {
-      throw new BadRequestException('Booking not found');
-    }
+  //   if (!booking) {
+  //     throw new BadRequestException('Booking not found');
+  //   }
 
-    // You may want to check if the booking is eligible for payment here
+  //   // check the booking is eligible for payment here
 
-    // Get customer_id (Stripe) from traveller or booking
-    const customer_id = booking.traveller?.stripeCustomerId;
-    if (!customer_id) {
-      throw new BadRequestException('No Stripe customer found for traveller');
-    }
+  //   // Get customer_id (Stripe) from traveller or booking
+  //   const customer_id = booking.traveller?.billing_id;
+  //   if (!customer_id) {
+  //     throw new BadRequestException('No Stripe customer found for package owner');
+  //   }
 
-    // Set amount and currency (customize as needed)
-    const amount = 19.99 //booking.amount; // Make sure your booking model has an amount field
-    const currency = 'usd';
+  //   // Set amount and currency (customize as needed)
+  //   const amount = 19.99 //booking.amount; // Make sure your booking model has an amount field
+  //   const currency = 'usd';
 
-    // Create PaymentIntent
-    const paymentIntent = await StripePayment.createPaymentIntent({
-      amount,
-      currency,
-      customer_id,
-      metadata: {
-        booking_id: booking.id,
-      },
-    });
+  //   // Create PaymentIntent
+  //   const paymentIntent = await StripePayment.createPaymentIntent({
+  //     amount,
+  //     currency,
+  //     customer_id,
+  //     metadata: {
+  //       booking_id: booking.id,
+  //     },
+  //   });
 
-    return {
-      success: true,
-      client_secret: paymentIntent.client_secret,
-      payment_intent_id: paymentIntent.id,
-    };
-  }
+  //   return {
+  //     success: true,
+  //     client_secret: paymentIntent.client_secret,
+  //     payment_intent_id: paymentIntent.id,
+  //   };
+  // }
 
 
 

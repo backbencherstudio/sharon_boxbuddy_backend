@@ -10,7 +10,7 @@ export class ProcessPaymentDto {
   @IsNotEmpty()
   bookingId: string
 
-  @IsNumber()
-  @IsNotEmpty()
-  amount: number; // Amount in cents (e.g., 1000 for $10.00)
+  // @IsNumber()
+  // @IsNotEmpty()
+  // amount: number; // Amount in cents (e.g., 1000 for $10.00)
 }

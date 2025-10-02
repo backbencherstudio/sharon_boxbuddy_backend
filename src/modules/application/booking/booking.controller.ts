@@ -11,6 +11,7 @@ import { FileFieldsInterceptor, FileInterceptor } from '@nestjs/platform-express
 import { diskStorage } from 'multer';
 import appConfig from 'src/config/app.config';
 import { AllConditionsAreNotMetDto } from './dto/all-conditions-are-not-met.dto';
+import { SummaryDto } from './dto/summary-dto';
 
 @ApiTags('Booking')
 @ApiBearerAuth()
@@ -28,6 +29,11 @@ export class BookingController {
   // findAll() {
   //   return this.bookingService.findAll();
   // }
+
+  @Patch('summary/:id')
+  async updateSummary(@Param('id') id: string, @Req() req: Request, @Body() summaryDto: SummaryDto){
+    return await this.bookingService.updateSummary(id, req?.user?.userId, summaryDto.summary);
+  }
 
   // bookings as traveler booking/traveller
   @Get('traveller')

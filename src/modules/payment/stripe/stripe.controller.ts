@@ -114,7 +114,6 @@ export class StripeController {
     return this.stripeService.processPayment(
       userId,
       processPaymentDto.paymentMethodId,
-      processPaymentDto.amount,
       processPaymentDto.bookingId
     );
   }

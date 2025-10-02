@@ -5,11 +5,12 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { FindAllDto } from './dto/find-all-query.dto';
 import { DateHelper } from 'src/common/helper/date.helper';
 import { AnnouncementRequestDto } from './dto/announcement-request.dto';
+import { MessageGateway } from 'src/modules/chat/message/message.gateway';
 
 
 @Injectable()
 export class TravelService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService, private gateway: MessageGateway) { }
 
   async create(createTravelDto: CreateTravelDto) {
     try {
@@ -283,12 +284,12 @@ export class TravelService {
 
       // Step 1: Find the AnnouncementRequest by ID
       const request = await this.prisma.announcementRequest.findUnique({
-        where: { 
+        where: {
           id: id,
           is_accepted: false,
           is_refused: false,
           is_processed: false
-         },
+        },
         include: {
           travel: true, // Include the associated travel to check user_id
           booking: {
@@ -364,17 +365,29 @@ export class TravelService {
           }
         })
         // conversation
-        await this.prisma.conversation.updateMany({
+        const conversations = await this.prisma.conversation.updateManyAndReturn({
           where: {
             travel_id: request.travel_id,
             package_id: request.package_id,
           },
           data: {
             notification_type: 'accepted'
+          },
+          include: {
+            package: {
+              select: {
+                owner_id: true,
+              }
+            },
+            travel: {
+              select: {
+                user_id: true
+              }
+            }
           }
         })
 
-        await this.prisma.notification.createMany({
+        const notifications = await this.prisma.notification.createManyAndReturn({
           data: [
             {
               notification_message: `Your booking has been accepted by ${request.booking.traveller.first_name}`,
@@ -388,17 +401,33 @@ export class TravelService {
             }
           ]
         })
-      }else if(announcementRequestDto.is_refused === true){
+
+
+        // sending notification for notification and conversation
+        // notification
+        notifications.forEach(notification => {
+          this.gateway.server.to(notification.receiver_id).emit("notification", notification)
+        });
+
+        // conversation
+        conversations.forEach(conv => {
+          // sending to package owner
+          this.gateway.server.to(conv.package.owner_id).emit("conversation-notification-update", {
+            id: conv.id,
+            notification_type: conv.notification_type
+          })
+        })
+      } else if (announcementRequestDto.is_refused === true) {
         // update booking, conversation, wallet, create notification for both
         // wallet
         await this.prisma.wallet.update({
           where: {
             user_id: request.booking.owner_id,
-          }, 
+          },
           data: {
             balance: {
               increment: request.booking.amount
-            } 
+            }
           }
         })
 
@@ -412,19 +441,32 @@ export class TravelService {
           }
         })
 
-        
+
         // conversation
-        await this.prisma.conversation.updateMany({
+        const conversations = await this.prisma.conversation.updateManyAndReturn({
           where: {
             travel_id: request.travel_id,
             package_id: request.package_id,
           },
           data: {
             notification_type: 'declined'
+          },
+          include: {
+            package: {
+              select: {
+                owner_id: true,
+              }
+            },
+            travel: {
+              select: {
+                user_id: true
+              }
+            }
           }
         })
+
         // notification
-        await this.prisma.notification.createMany({
+        const notifications = await this.prisma.notification.createManyAndReturn({
           data: [
             {
               notification_message: `Your booking has been declined by ${request.booking.traveller.first_name}. You have been automatically refunded.`,
@@ -438,6 +480,24 @@ export class TravelService {
             }
           ]
         })
+
+        // sending notification for notification and conversation
+        // notification
+        notifications.forEach(notification => {
+          this.gateway.server.to(notification.receiver_id).emit("notification", notification)
+        });
+
+        // conversation
+        conversations.forEach( conv => {
+          // sending to package owner
+          this.gateway.server.to(conv.package.owner_id).emit("conversation-notification-update", {
+            id: conv.id,
+            notification_type: conv.notification_type
+          })
+        })
+
+
+
       }
 
       return {
