@@ -69,13 +69,24 @@ export class AnnouncementCronService {
         }
       })
 
+
+      const pickUpTime = new Date(request.travel.departure)
+      const now = new Date()
+      const hoursUntilPickup = (pickUpTime.getTime() - now.getTime()) / (1000 * 60 * 60)
+
       await this.prisma.booking.update({
         where: {
           id: request.booking_id
         },
         data: {
           status: 'expired',
-          payment_status: 'refunded'
+          payment_status: 'refunded',
+          refund_details: {
+            sender_refund: Number(request.booking.amount),
+            traveler_amount: 0,
+            platform_amount: 0,
+            cancellation_timeframe: `${Math.round(hoursUntilPickup)} hours before pick-up`
+          }
         }
       })
 

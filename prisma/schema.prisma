@@ -101,8 +101,12 @@ model User {
   paymentAccounts      PaymentAccount[]
   payment_methods      PaymentMethod[]
   stripeCustomerId     String?              @map("stripe_customer_id")
-
   wallet Wallet?
+
+  // bookings
+  total_booking_completed Int @default(0)
+  total_booking_canceled  Int @default(0)
+  total_orders            Int @default(0)          
 
   @@map("users")
 }
@@ -604,6 +608,7 @@ enum BookingStatus {
   all_conditions_are_not_met
   declined
   expired
+
 }
 
 model Booking {
@@ -629,6 +634,9 @@ model Booking {
   cancel_by_id  String?
   cancel_by     User?   @relation("UserBookingsCancelBy", fields: [cancel_by_id], references: [id])
   cancel_by_who String? // package_owner or traveller
+  cancel_at     DateTime? 
+
+  refund_details Json?
 
   confirmed Boolean @default(false)
 
@@ -659,7 +667,7 @@ model Booking {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  payment_status    String  @default("pending") // pending, complated
+  payment_status    String  @default("pending") // pending, complated, refunded
   payment_intent_id String?
 
   order_summary String @default("")
@@ -772,6 +780,9 @@ enum TransactionStatus {
   FAILED
   REFUNDED
 }
+
+
+
 
 
 // Platform Wallet to track total earnings

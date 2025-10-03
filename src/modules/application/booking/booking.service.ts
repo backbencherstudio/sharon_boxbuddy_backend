@@ -49,8 +49,8 @@ export class BookingService {
     // calculate booking amount
     const weight = this.parseWeight(package_data.weight)
 
-    if(!weight) throw new BadRequestException("Your package weight is missing or in wrong format. You can't book for this package.")
-    
+    if (!weight) throw new BadRequestException("Your package weight is missing or in wrong format. You can't book for this package.")
+
     // Fixed 20 euros + 6 euros per kg
     // Less than 1kg costs the same price as 1kg
     const amount = 20 + (weight * 6)
@@ -247,10 +247,20 @@ export class BookingService {
   }
 
   async updateSummary(id: string, user_id: string, summary: string) {
+    const booking = await this.prisma.booking.findFirst({
+      where: {
+         id: id,
+        owner_id: user_id,
+      }
+    })
+
+    if(!booking) throw new NotFoundException('Booking not found');
+    if(booking.order_summary != "") throw new ForbiddenException('Your booking summary already submitted')
+    
     await this.prisma.booking.update({
       where: {
         id: id,
-        traveller_id: user_id,
+        owner_id: user_id,
         order_summary: "",
       },
       data: {
@@ -288,6 +298,11 @@ export class BookingService {
           select: {
             first_name: true,
           }
+        },
+        travel: {
+          select: {
+            departure: true,
+          }
         }
       }
     });
@@ -309,7 +324,9 @@ export class BookingService {
       ...cancelReasonDto,
       cancel_by_id: user_id,
       cancel: true,
-      status: 'cancel'
+      status: 'cancel',
+      payment_status: 'refunded',
+      cancel_at: new Date()
     }
 
     if (booking_data.traveller_id === user_id) {
@@ -341,6 +358,49 @@ export class BookingService {
 
 
       // need to adjust wallet based on remaining hours
+      /*
+        If canceled by the Traveler:
+        Full refund to Sender
+        Penalty applies for repeated or unjustified cancellations
+        May result in account suspension
+      */
+
+      await this.prisma.$transaction(async tx => {
+        await tx.user.update({
+          where: {
+            id: booking_data.traveller_id,
+          },
+          data: {
+            total_booking_canceled: {
+              increment: 1
+            }
+          }
+        })
+
+        await tx.wallet.update({
+          where: {
+            user_id: booking_data.owner_id
+          },
+          data: {
+            balance: {
+              increment: booking_data.amount
+            }
+          }
+        })
+      })
+
+      const pickUpTime = new Date(booking_data.travel.departure)
+      const now = new Date()
+      const hoursUntilPickup = (pickUpTime.getTime() - now.getTime()) / (1000 * 60 * 60)
+
+      data['refund_details'] = {
+        sender_refund: Number(booking_data.amount),
+        traveler_amount: 0,
+        platform_amount: 0,
+        cancellation_timeframe: `${Math.round(hoursUntilPickup)} hours before pick-up`
+      }
+
+
 
 
     } else {
@@ -368,6 +428,148 @@ export class BookingService {
       });
 
       // need to adjust wallet based on remaining hours
+      /*
+        If canceled by the Sender
+        Before pick-up within 48 hours: 100% refund to sender.
+        24 to 47 hours before pick-up: 80% refund to sender, 20% to platform.
+        Less than 24 hours before pick-up: 36% refund to sender, 36% to traveler, 28% to platform.
+      */
+
+      await this.prisma.$transaction(async tx => {
+        const pickUpTime = new Date(booking_data.travel.departure)
+        const now = new Date()
+        const hoursUntilPickup = (pickUpTime.getTime() - now.getTime()) / (1000 * 60 * 60)
+
+        let senderRefund = 0
+        let travelerAmount = 0
+        let platformAmount = 0
+
+        // 2. Calculate refunds based on cancellation time
+        if (hoursUntilPickup > 48) {
+          // Before 48 hours: 100% refund to sender
+          senderRefund = Number(booking_data.amount)
+          travelerAmount = 0
+          platformAmount = 0
+        } else if (hoursUntilPickup >= 24 && hoursUntilPickup <= 48) {
+          // 24 to 47 hours: 80% refund to sender, 20% to platform
+          senderRefund = Number(booking_data.amount) * 0.8
+          platformAmount = Number(booking_data.amount) * 0.2
+          travelerAmount = 0
+        } else if (hoursUntilPickup < 24) {
+          // Less than 24 hours: 36% refund to sender, 36% to traveler, 28% to platform
+          senderRefund = Number(booking_data.amount) * 0.36
+          travelerAmount = Number(booking_data.amount) * 0.36
+          platformAmount = Number(booking_data.amount) * 0.28
+        }
+
+        // 3. Update sender's wallet (refund)
+        if (senderRefund > 0) {
+          await tx.wallet.update({
+            where: {
+              user_id: booking_data.owner_id // Sender's wallet
+            },
+            data: {
+              balance: {
+                increment: senderRefund
+              }
+            }
+          })
+        }
+
+        // 4. Update traveler's wallet (if applicable)
+        if (travelerAmount > 0) {
+          await tx.wallet.update({
+            where: {
+              user_id: booking_data.traveller_id
+            },
+            data: {
+              balance: {
+                increment: travelerAmount
+              }
+            }
+          })
+        }
+
+        // 5. Update platform wallet (if applicable)
+        if (platformAmount > 0) {
+          // Assuming you have a platform wallet or admin account
+          await tx.platformWallet.updateMany({
+            data: {
+              totalEarnings: {
+                increment: platformAmount
+              }
+            }
+          })
+        }
+
+        // 6. Update sender's cancellation count
+        await tx.user.update({
+          where: {
+            id: booking_data.owner_id // Sender's user account
+          },
+          data: {
+            total_booking_canceled: {
+              increment: 1
+            }
+          }
+        })
+
+        // 7. Update booking status and store refund details
+        data['refund_details'] = {
+          sender_refund: senderRefund,
+          traveler_amount: travelerAmount,
+          platform_amount: platformAmount,
+          cancellation_timeframe: `${Math.round(hoursUntilPickup)} hours before pick-up`
+        }
+
+
+        // 8. Create transaction records for audit
+        // const transactions = []
+
+        // if (senderRefund > 0) {
+        //   transactions.push(
+        //     tx.transaction.create({
+        //       data: {
+        //         user_id: booking_data.owner_id,
+        //         amount: senderRefund,
+        //         type: 'REFUND',
+        //         reference_id: booking_data.id,
+        //         description: `Sender refund - ${Math.round(hoursUntilPickup)}h before pick-up`
+        //       }
+        //     })
+        //   )
+        // }
+
+        // if (travelerAmount > 0) {
+        //   transactions.push(
+        //     tx.transaction.create({
+        //       data: {
+        //         user_id: booking_data.traveller_id,
+        //         amount: travelerAmount,
+        //         type: 'COMPENSATION',
+        //         reference_id: booking_data.id,
+        //         description: `Cancellation compensation - ${Math.round(hoursUntilPickup)}h before pick-up`
+        //       }
+        //     })
+        //   )
+        // }
+
+        // if (platformAmount > 0) {
+        //   transactions.push(
+        //     tx.transaction.create({
+        //       data: {
+        //         user_id: 'platform_user_id', // Replace with actual platform user ID
+        //         amount: platformAmount,
+        //         type: 'PLATFORM_FEE',
+        //         reference_id: booking_data.id,
+        //         description: `Cancellation fee - ${Math.round(hoursUntilPickup)}h before pick-up`
+        //       }
+        //     })
+        //   )
+        // }
+
+        // await Promise.all(transactions)
+      })
 
     }
 
