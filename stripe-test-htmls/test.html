@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stripe Connect Tester</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8fafc;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .btn {
+            background: #635bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        .btn:hover {
+            background: #5a54d9;
+        }
+        .log {
+            background: #1e293b;
+            color: #f1f5f9;
+            padding: 16px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 14px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Stripe Connect Tester</h1>
+        
+        <div class="card">
+            <h3>Quick Test Links</h3>
+            <button class="btn" onclick="window.open('dashboard.html', '_blank')">
+                Open Dashboard
+            </button>
+            <button class="btn" onclick="window.open('success.html', '_blank')">
+                Test Success Page
+            </button>
+            <button class="btn" onclick="window.open('reauth.html', '_blank')">
+                Test Reauth Page
+            </button>
+        </div>
+
+        <div class="card">
+            <h3>API Base URL Configuration</h3>
+            <p>Make sure to update the <code>API_BASE</code> variable in each HTML file to match your NestJS server URL.</p>
+            <p>Default: <code>http://localhost:4000/api/payment/stripe</code></p>
+        </div>
+
+        <div class="card">
+            <h3>Testing Checklist</h3>
+            <ul>
+                <li>✅ NestJS server running on port 3001</li>
+                <li>✅ Stripe keys configured in environment</li>
+                <li>✅ Database migrations applied</li>
+                <li>✅ CORS configured for frontend URLs</li>
+                <li>✅ Authentication middleware working</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

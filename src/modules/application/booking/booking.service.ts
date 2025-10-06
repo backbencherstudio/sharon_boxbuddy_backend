@@ -118,6 +118,7 @@ export class BookingService {
     const bookings = await this.prisma.booking.findMany({
       where: {
         traveller_id: user_id,
+        confirmed: true
       },
       include: {
         travel: true,
@@ -158,6 +159,7 @@ export class BookingService {
     const bookings = await this.prisma.booking.findMany({
       where: {
         owner_id: user_id,
+        confirmed: true
       },
       include: {
         travel: true,
@@ -287,6 +289,9 @@ export class BookingService {
     const booking_data = await this.prisma.booking.findFirst({
       where: {
         id,
+        paid: true,
+        confirmed: true,
+        payment_status: 'completed'
       },
       include: {
         traveller: {

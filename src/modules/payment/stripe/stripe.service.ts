@@ -1,8 +1,9 @@
-import { ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { StripePayment } from '../../../common/lib/Payment/stripe/StripePayment';
 import { PrismaService } from 'src/prisma/prisma.service';
 import Stripe from 'stripe';
 import appConfig from 'src/config/app.config';
+import { CreateAccountLinkDto } from './dto/create-account-link.dto';
 
 
 
@@ -10,6 +11,7 @@ import appConfig from 'src/config/app.config';
 @Injectable()
 export class StripeService {
   private stripe: Stripe;
+  private readonly logger = new Logger(StripeService.name);
   constructor(private prisma: PrismaService) {
 
     this.stripe = new Stripe(appConfig().payment.stripe.secret_key, {
@@ -222,7 +224,7 @@ export class StripeService {
           }
         })
 
-        
+
 
         await this.prisma.announcementRequest.create({
           data: {
@@ -245,11 +247,11 @@ export class StripeService {
           }]
         })
 
-        
+
         await this.prisma.conversation.updateMany({
           where: {
-              travel_id: booking.travel_id,
-              package_id: booking.package_id
+            travel_id: booking.travel_id,
+            package_id: booking.package_id
           },
           data: {
             notification_type: 'pending'
@@ -308,6 +310,267 @@ export class StripeService {
     return {
       success: true,
       data: cards
+    }
+  }
+
+
+  // Create Stripe Connect account and onboarding link
+  async createConnectedAccount(user_id: string) {
+    return await this.prisma.$transaction(async (tx) => {
+      // Check if user already has an active Stripe account
+      const existingAccount = await tx.stripeAccount.findUnique({
+        where: { user_id },
+      });
+
+      let stripeAccountId: string;
+
+      if (existingAccount) {
+        // Use existing Stripe account
+        stripeAccountId = existingAccount.stripe_account_id;
+
+        // Reactivate if previously deactivated
+        if (!existingAccount.is_active) {
+          await tx.stripeAccount.update({
+            where: { user_id },
+            data: { is_active: true },
+          });
+        }
+      } else {
+        // Create new Stripe Connect account with minimal info
+        const stripeAccount = await this.stripe.accounts.create({
+          type: 'express',
+          // Stripe will collect all other details during onboarding
+
+        });
+
+        // Store only the Stripe account ID
+        await tx.stripeAccount.create({
+          data: {
+            user_id,
+            stripe_account_id: stripeAccount.id,
+            is_active: true,
+          },
+        });
+
+        stripeAccountId = stripeAccount.id;
+      }
+
+      this.logger.log(`Created/retrieved Stripe account for user ${user_id}: ${stripeAccountId}`);
+
+      return { stripe_account_id: stripeAccountId };
+    });
+  }
+
+  // Generate onboarding link
+  async createAccountLink(user_id: string, createAccountLinkDto: CreateAccountLinkDto) {
+    const account = await this.getActiveConnectedAccount(user_id);
+
+    const accountLink = await this.stripe.accountLinks.create({
+      account: account.stripe_account_id,
+      refresh_url: createAccountLinkDto.refresh_url || `${process.env.CLIENT_URL}/stripe/reauth`,
+      return_url: createAccountLinkDto.return_url || `${process.env.CLIENT_URL}/stripe/success`,
+      type: 'account_onboarding',
+
+    });
+
+    return {
+      url: accountLink.url,
+      expires_at: accountLink.expires_at,
+    };
+  }
+
+  // Get active connected account
+  async getActiveConnectedAccount(user_id: string) {
+    const account = await this.prisma.stripeAccount.findFirst({
+      where: {
+        user_id,
+        is_active: true,
+      },
+      include: {
+        user: {
+          include: {
+            wallet: true
+          }
+        }
+      }
+    });
+
+    if (!account) {
+      throw new NotFoundException('No active connected account found');
+    }
+
+    return account;
+  }
+
+  // Get account status from Stripe
+  async getAccountStatus(user_id: string) {
+    const account = await this.getActiveConnectedAccount(user_id);
+
+    const stripeAccount = await this.stripe.accounts.retrieve(account.stripe_account_id);
+
+    return {
+      stripe_account_id: account.stripe_account_id,
+      charges_enabled: stripeAccount.charges_enabled,
+      payouts_enabled: stripeAccount.payouts_enabled,
+      details_submitted: stripeAccount.details_submitted,
+      requirements: stripeAccount.requirements,
+    };
+  }
+
+  // Process payout to user's Stripe account
+  async processPayout(user_id: string, amount: number, currency: string = 'usd') {
+    try {
+      const account = await this.getActiveConnectedAccount(user_id);
+
+      // Verify the account can receive payouts
+      const stripeAccount = await this.stripe.accounts.retrieve(account.stripe_account_id);
+      if (!stripeAccount.payouts_enabled) {
+        throw new BadRequestException('Account is not ready for payouts. Please complete verification on Stripe.');
+      }
+
+      if (Number(account.user.wallet.balance) < amount) {
+        throw new BadRequestException('Insufficient balance');
+      }
+
+      if (1 > amount) {
+        throw new BadRequestException('Withdraw can not be less then 1');
+      }
+
+
+      const amountInCents = Math.round(amount * 100); // Convert to cents
+
+      // Transfer funds to the connected account
+      const transfer = await this.stripe.transfers.create({
+        amount: amountInCents,
+        currency: currency,
+        destination: account.stripe_account_id,
+        description: `Payout for completed orders`,
+      });
+
+      // reduce wallet by x amount
+      await this.prisma.wallet.update({
+        where: { id: account.user.wallet.id},
+        data: {
+          balance: {
+            decrement: amount
+          }
+        }
+      })
+
+      // transfer 
+
+
+      // Initiate Stripe payout (convert amount to cents)
+      const payout = await this.stripe.payouts.create(
+        {
+          amount: amountInCents, // Convert dollars to cents
+          currency: 'USD',
+          // destination: dto.destinationAccountId,
+          metadata: {
+            currency: currency,
+            destination: account.stripe_account_id,
+            description: `Payout for completed orders`,
+          },
+        },
+        {
+          stripeAccount: account.stripe_account_id,
+        },
+      );
+
+      this.logger.log(`Processed payout of ${amount} to user ${user_id}`);
+      // console.log(transfer)
+
+      return {
+        transfer_id: transfer.id,
+        amount: amount,
+        currency: currency,
+        status: transfer.created,
+      };
+    } catch (error) {
+      // Handle Stripe API errors specifically
+      // if (error && error.type && error.type.startsWith('Stripe')) {
+      //   this.logger.error(`Stripe error: ${error.message}`);
+      //   throw new BadRequestException(`Stripe error: ${error.message}`);
+      // }
+
+      // // Handle known custom errors (optional)
+      if (error instanceof BadRequestException) {
+        throw error; // rethrow as is
+      }
+
+      // Handle any other unexpected errors
+      // this.logger.error(`Unexpected error in payout: ${error.message || error}`);
+      throw new BadRequestException('An unexpected error occurred while processing payout. Try again later.');
+    }
+  }
+
+  // Deactivate account (soft delete)
+  async deactivateAccount(user_id: string) {
+    const account = await this.getActiveConnectedAccount(user_id);
+
+    const updatedAccount = await this.prisma.stripeAccount.update({
+      where: { id: account.id },
+      data: { is_active: false },
+    });
+
+    this.logger.log(`Deactivated Stripe account for user ${user_id}`);
+
+    return updatedAccount;
+  }
+
+  // Create login link for users to access their Stripe dashboard
+  async createLoginLink(user_id: string) {
+    const account = await this.getActiveConnectedAccount(user_id);
+
+    const loginLink = await this.stripe.accounts.createLoginLink(
+      account.stripe_account_id
+    );
+
+    return { url: loginLink.url };
+  }
+
+// List payouts for the connected account
+  async listPayoutsForUser(userId: string, limit = 5, cursor?: { starting_after?: string; ending_before?: string }, status?: string) {
+    try {
+      const { stripe_account_id } = await this.getActiveConnectedAccount(userId);
+
+      const listParams: Stripe.PayoutListParams = { limit };
+      if (cursor?.starting_after) listParams.starting_after = cursor.starting_after;
+      if (cursor?.ending_before) listParams.ending_before = cursor.ending_before;
+      if (status) listParams.status = status;
+
+      const payouts = await this.stripe.payouts.list(listParams, {
+        stripeAccount: stripe_account_id,
+      });
+
+      return {
+        user_id: userId,
+        account: stripe_account_id,
+        count: payouts.data.length,
+        has_more: payouts.has_more,
+        payouts: payouts.data.map(p => ({
+          id: p.id,
+          amount: p.amount / 100,
+          currency: p.currency,
+          status: p.status,
+          method: p.method,
+          arrival_date: p.arrival_date ? new Date(p.arrival_date * 1000) : null,
+          created: new Date(p.created * 1000),
+          description: p.description ?? null,
+          destination: typeof p.destination === 'string' ? p.destination : p.destination?.id ?? null,
+          failure_code: p.failure_code ?? null,
+          failure_message: p.failure_message ?? null,
+          statement_descriptor: p.statement_descriptor ?? null,
+        })),
+      };
+    } catch (error: any) {
+      if (error && error.type && String(error.type).startsWith('Stripe')) {
+        this.logger.error(`Stripe error: ${error.message}`);
+        throw new BadRequestException(`Stripe error: ${error.message}`);
+      }
+      if (error instanceof NotFoundException || error instanceof BadRequestException) throw error;
+      this.logger.error(`Unexpected error: ${error?.message || error}`);
+      throw new BadRequestException('Failed to list payouts.');
     }
   }
 }

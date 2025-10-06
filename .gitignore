@@ -4,8 +4,7 @@
 /build
 /public/storage
 
-index.html
-payment.html
+# stripe-test-htmls
 
 # Logs
 logs

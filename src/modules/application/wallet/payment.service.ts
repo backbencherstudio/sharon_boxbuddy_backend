@@ -39,10 +39,14 @@ export class PaymentAccountService {
         data: { is_default: false },
       }),
       // Set new default
-      this.prisma.paymentAccount.update({
-        where: { id: accountId },
+      this.prisma.paymentAccount.updateMany({
+        where: { account_id: accountId },
         data: { is_default: true },
       }),
     ]);
+
+    return {
+      success: true,
+    }
   }
 }
