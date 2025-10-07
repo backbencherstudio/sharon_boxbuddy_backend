@@ -23,8 +23,11 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api');
   app.enableCors({
-    origin: '*',
+    // origin: '*',
+    origin: appConfig().app.client_app_url || '*',
   });
+
+
   app.use(helmet());
   // Enable it, if special charactrers not encoding perfectly
   // app.use((req, res, next) => {
