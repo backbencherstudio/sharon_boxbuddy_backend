@@ -11,6 +11,8 @@ import { WalletConfig } from './wallet.config';
 import { WalletService } from './wallet.service';
 import Stripe from 'stripe';
 import { MessageGateway } from 'src/modules/chat/message/message.gateway';
+import { TransactionRepository } from 'src/common/repository/transaction/transaction.repository';
+import { TransactionStatus, TransactionType } from '@prisma/client';
 
 // export const config = {
 //   api: {
@@ -266,6 +268,15 @@ export class WalletWebhookController {
           }
         }
     })
+
+    await TransactionRepository.createTransaction({
+      user_id: metadata.owner_id,
+      amount: paymentIntent.amount / 100,
+      type: TransactionType.BOOKING_PAYMENT,
+      status: TransactionStatus.COMPLETED,
+      description: `Payment for booking ${metadata.booking_id}`,
+      reference_id: paymentIntent.id,
+    });
 
     // sending notification for notification and conversation
       // notification

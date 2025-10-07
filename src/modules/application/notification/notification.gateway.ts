@@ -8,7 +8,7 @@ import {
   WebSocketServer,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { NotificationService } from './notification.service';
+import { GetNotificationsOptions, NotificationService } from './notification.service';
 import { CreateNotificationDto } from './dto/create-notification.dto';
 import { UpdateNotificationDto } from './dto/update-notification.dto';
 import { OnModuleInit } from '@nestjs/common';
@@ -110,8 +110,8 @@ export class NotificationGateway
   }
 
   @SubscribeMessage('findAllNotification')
-  findAll() {
-    return this.notificationService.findAll();
+  findAll(@MessageBody() userId: string, @MessageBody() options: GetNotificationsOptions) {
+    return this.notificationService.findAll(userId as string, options);
   }
 
   @SubscribeMessage('findOneNotification')

@@ -790,13 +790,16 @@ export class WalletService implements OnModuleInit {
          }
       });
 
-      if (!existingBooking) {
+      if (!existingBooking ) {
         throw new ForbiddenException('Booking not found or already paid.');
+      }
+
+      if (existingBooking.status !== BookingStatus.pending) {
+        throw new ForbiddenException('Booking already processed.');
       }
 
 
       
-
       if (wallet.balance.toNumber() < existingBooking.amount.toNumber()) {
         throw new BadRequestException('Insufficient wallet balance.');
       }
@@ -823,7 +826,7 @@ export class WalletService implements OnModuleInit {
 
       
       // 4️⃣ Create transaction record
-      const transaction = await TransactionRepository.createTransaction({
+      await TransactionRepository.createTransaction({
           user_id,
           wallet_id: wallet.id,
           booking_id,
