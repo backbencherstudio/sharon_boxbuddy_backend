@@ -929,7 +929,7 @@ export class BookingService {
 
   //   // Set amount and currency (customize as needed)
   //   const amount = 19.99 //booking.amount; // Make sure your booking model has an amount field
-  //   const currency = 'usd';
+  //   const currency = process.env.CURRENCY || 'EUR';
 
   //   // Create PaymentIntent
   //   const paymentIntent = await StripePayment.createPaymentIntent({

@@ -61,7 +61,7 @@ export class BillingService {
     async listCards(userId: string) {
       return this.prisma.paymentMethod.findMany({
         where: { userId },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { created_at: 'desc' },
       });
     }
 
@@ -76,16 +76,16 @@ export class BillingService {
       // reflect in DB (optional convenience)
       await this.prisma.paymentMethod.updateMany({
         where: { userId },
-        data: { isDefault: false },
+        data: { is_default: false },
       });
       await this.prisma.paymentMethod.update({
         where: { stripePaymentMethodId },
-        data: { isDefault: true },
+        data: { is_default: true },
       });
     }
 
     // Step 2: Pay with a selected saved card
-    async payWithSavedCard(userId: string, stripePaymentMethodId: string, amountInCents: number, currency = 'usd') {
+    async payWithSavedCard(userId: string, stripePaymentMethodId: string, amountInCents: number, currency = 'EUR') {
       const user = await this.prisma.user.findUnique({ where: { id: userId } });
       if (!user?.stripeCustomerId) throw new Error('Customer not found');
 

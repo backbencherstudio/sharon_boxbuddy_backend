@@ -1,0 +1,14 @@
+1. Add transction for each
+    - booking payment
+    - charge from saved cards
+    - seller Payout
+    - platform Payout
+    - booking from wallet balance
+2. Wallet payment/ booking from wallet balance
+3. Postman endpoints add
+4. problem_with_the_package refund
+5. all_conditions_are_not_met refund
+6. Configure Currency in a way so it can be change any time
+7. Platform Payout
+
+

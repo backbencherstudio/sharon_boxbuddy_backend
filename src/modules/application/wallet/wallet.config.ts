@@ -5,7 +5,7 @@ import Stripe from 'stripe';
 export class WalletConfig implements OnModuleInit {
   private readonly logger = new Logger(WalletConfig.name);
   public platformAccountId: string;
-  public currency: string = 'usd';
+  public currency: string = process.env.CURRENCY || 'EUR';
   public minDeposit: number = 5.0;
   public minWithdraw: number = 10.0;
   public centralWalletId: string = process.env.CENTRAL_WALLET_USER_ID;

@@ -18,6 +18,8 @@ import { MessageGateway } from 'src/modules/chat/message/message.gateway';
 //   },
 // }
 
+
+
 @Controller('wallet/webhook')
 export class WalletWebhookController {
   constructor(
@@ -288,7 +290,7 @@ export class WalletWebhookController {
     const metadata = paymentIntent.metadata;
 
     if (metadata.transactionId) {
-      await this.walletService['prisma'].walletTransaction.update({
+      await this.walletService['prisma'].transaction.update({
         where: { id: metadata.transactionId },
         data: { status: 'FAILED' },
       });
@@ -300,7 +302,7 @@ export class WalletWebhookController {
     const metadata = payout.metadata;
 
     if (metadata.transactionId) {
-      await this.walletService['prisma'].walletTransaction.update({
+      await this.walletService['prisma'].transaction.update({
         where: { id: metadata.transactionId },
         data: { status: 'COMPLETED' },
       });
@@ -314,9 +316,9 @@ export class WalletWebhookController {
     if (metadata.transactionId) {
       const transaction = await this.walletService[
         'prisma'
-      ].walletTransaction.findUnique({
+      ].transaction.findUnique({
         where: { id: metadata.transactionId },
-        include: { wallet: true },
+        // include: { wallet: true },
       });
 
       // Auto-refund to wallet
@@ -325,22 +327,23 @@ export class WalletWebhookController {
           where: { id: transaction.wallet_id },
           data: { balance: { increment: transaction.amount } },
         }),
-        this.walletService['prisma'].walletTransaction.update({
+        this.walletService['prisma'].transaction.update({
           where: { id: metadata.transactionId },
           data: { status: 'FAILED' },
         }),
-        this.walletService['prisma'].walletTransaction.create({
-          data: {
-            wallet_id: transaction.wallet_id,
-            type: 'REFUND',
-            amount: transaction.amount,
-            status: 'COMPLETED',
-            metadata: {
-              originalTransactionId: metadata.transactionId,
-              reason: 'Payout failed',
-            },
-          },
-        }),
+        // this.walletService['prisma'].transaction.create({
+        //   data: {
+        //     // wallet_id: transaction.wallet_id,
+        //     type: 'WALLET_REFUND',
+        //     amount: transaction.amount,
+        //     status: 'COMPLETED',
+        //     user_id:  
+        //     // metadata: {
+        //     //   originalTransactionId: metadata.transactionId,
+        //     //   reason: 'Payout failed',
+        //     // },
+        //   },
+        // }),
       ]);
     }
   }

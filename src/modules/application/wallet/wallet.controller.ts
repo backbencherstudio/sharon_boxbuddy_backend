@@ -23,6 +23,7 @@ import { SetDefaultAccountDto } from './dto/payment-account.dto';
 import { SpendDto } from './dto/spend.dto';
 import { WithdrawDto } from './dto/withdraw.dto';
 import { PaymentAccountService } from './payment.service';
+import { GetPaymentFromExistingWalletDto } from './dto/get-payment-from-existing-wallet.dto';
 
 @ApiTags('wallet')
 @ApiBearerAuth()
@@ -97,88 +98,95 @@ export class WalletController {
     return this.walletService.depositFunds(dto);
   }
 
-  @Post('withdraw')
-  @ApiOperation({ summary: 'Withdraw funds from wallet' })
-  @ApiResponse({ status: 201, description: 'Initiates withdrawal process' })
-  async withdraw(@Body() dto: WithdrawDto, @Req() req: Request) {
-    dto.userId = req?.user?.userId;
-    return this.walletService.withdrawFunds(dto);
-  }
+  // @Post('withdraw')
+  // @ApiOperation({ summary: 'Withdraw funds from wallet' })
+  // @ApiResponse({ status: 201, description: 'Initiates withdrawal process' })
+  // async withdraw(@Body() dto: WithdrawDto, @Req() req: Request) {
+  //   dto.userId = req?.user?.userId;
+  //   return this.walletService.withdrawFunds(dto);
+  // }
 
-  @Post('hold')
-  @ApiOperation({ summary: 'Hold funds for booking' })
-  @ApiResponse({ status: 201, description: 'Holds funds for booking' })
-  async holdFunds(@Body() dto: SpendDto) {
-    return this.walletService.holdFunds(dto);
-  }
+  // @Post('hold')
+  // @ApiOperation({ summary: 'Hold funds for booking' })
+  // @ApiResponse({ status: 201, description: 'Holds funds for booking' })
+  // async holdFunds(@Body() dto: SpendDto) {
+  //   return this.walletService.holdFunds(dto);
+  // }
 
-  @Post('release/:bookingId')
-  @ApiOperation({ summary: 'Release held funds to provider' })
-  @ApiResponse({ status: 201, description: 'Releases funds to provider' })
-  async releaseFunds(
-    @Param('bookingId') bookingId: string,
-    @Query('providerId') providerId: string,
-    @Query('amount') amount: number,
-  ) {
-    return this.walletService.releaseFunds(bookingId, providerId, amount);
-  }
+  // @Post('release/:bookingId')
+  // @ApiOperation({ summary: 'Release held funds to provider' })
+  // @ApiResponse({ status: 201, description: 'Releases funds to provider' })
+  // async releaseFunds(
+  //   @Param('bookingId') bookingId: string,
+  //   @Query('providerId') providerId: string,
+  //   @Query('amount') amount: number,
+  // ) {
+  //   return this.walletService.releaseFunds(bookingId, providerId, amount);
+  // }
 
-  @Post('refund/:transactionId')
-  @ApiOperation({ summary: 'Refund a transaction' })
-  @ApiResponse({ status: 201, description: 'Refunds the transaction' })
-  async refund(@Param('transactionId') transactionId: string) {
-    return this.walletService.refundTransaction(transactionId);
-  }
+  // @Post('refund/:transactionId')
+  // @ApiOperation({ summary: 'Refund a transaction' })
+  // @ApiResponse({ status: 201, description: 'Refunds the transaction' })
+  // async refund(@Param('transactionId') transactionId: string) {
+  //   return this.walletService.refundTransaction(transactionId);
+  // }
 
-  @Get('transactions/:userId')
-  @ApiOperation({ summary: 'Get wallet transactions' })
-  @ApiResponse({ status: 200, description: 'Returns wallet transactions' })
-  async getTransactions(
-    @Param('userId') userId: string,
-    @Query('limit') limit = 10,
-    @Query('offset') offset = 0,
-  ) {
-    return this.walletService.getTransactions(
-      userId,
-      Number(limit),
-      Number(offset),
-    );
-  }
+  // @Get('transactions/:userId')
+  // @ApiOperation({ summary: 'Get wallet transactions' })
+  // @ApiResponse({ status: 200, description: 'Returns wallet transactions' })
+  // async getTransactions(
+  //   @Param('userId') userId: string,
+  //   @Query('limit') limit = 10,
+  //   @Query('offset') offset = 0,
+  // ) {
+  //   return this.walletService.getTransactions(
+  //     userId,
+  //     Number(limit),
+  //     Number(offset),
+  //   );
+  // }
 
 
-  // ----------------------
-  //        Add Card
-  // ----------------------
+  // // ----------------------
+  // //        Add Card
+  // // ----------------------
 
-  @Post('setup-intent')
-  async createSetupIntent(@Req() req: Request) {
-    const userId = req?.user?.userId;
-    // console.log(req?.user)
-    return await this.walletService.createSetupIntent(userId);
-  }
+  // @Post('setup-intent')
+  // async createSetupIntent(@Req() req: Request) {
+  //   const userId = req?.user?.userId;
+  //   // console.log(req?.user)
+  //   return await this.walletService.createSetupIntent(userId);
+  // }
 
-  @Get('cards')
-  listCards(@Req() req: Request) {
-    const userId = req?.user?.userId;
-    return this.walletService.listCards(userId);
-  }
+  // @Get('cards')
+  // listCards(@Req() req: Request) {
+  //   const userId = req?.user?.userId;
+  //   return this.walletService.listCards(userId);
+  // }
 
-  @Post('cards/default')
-  setDefault(@Body() body: { paymentMethodId: string }, @Req() req: Request) {
-    const userId = req?.user?.userId;
-    return this.walletService.setDefaultCard(userId, body.paymentMethodId);
-  }
+  // @Post('cards/default')
+  // setDefault(@Body() body: { paymentMethodId: string }, @Req() req: Request) {
+  //   const userId = req?.user?.userId;
+  //   return this.walletService.setDefaultCard(userId, body.paymentMethodId);
+  // }
+
+  // @Post('pay')
+  // pay(@Body() body: { paymentMethodId: string; amountInCents: number; currency?: string }, @Req() req: Request) {
+  //   const userId = req?.user?.userId;
+  //   return this.walletService.payWithSavedCard(userId, body.paymentMethodId, body.amountInCents, body.currency);
+  // }
+
+  // @Post('cards/detach')
+  // detach(@Body() body: { paymentMethodId: string }, @Req() req: Request) {
+  //   const userId = req?.user?.userId;
+  //   return this.walletService.detachCard(userId, body.paymentMethodId);
+  // }
 
   @Post('pay')
-  pay(@Body() body: { paymentMethodId: string; amountInCents: number; currency?: string }, @Req() req: Request) {
+  async payExistingBooking(@Body() dto: GetPaymentFromExistingWalletDto, @Req() req: Request) {
     const userId = req?.user?.userId;
-    return this.walletService.payWithSavedCard(userId, body.paymentMethodId, body.amountInCents, body.currency);
-  }
-
-  @Post('cards/detach')
-  detach(@Body() body: { paymentMethodId: string }, @Req() req: Request) {
-    const userId = req?.user?.userId;
-    return this.walletService.detachCard(userId, body.paymentMethodId);
+    dto.user_id = userId;
+    return this.walletService.completeBookingWithWallet(dto);
   }
 
 

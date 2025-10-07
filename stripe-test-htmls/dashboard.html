@@ -336,7 +336,7 @@
             try {
                 const response = await apiCall('/payout', {
                     method: 'POST',
-                    data: { amount, currency: 'usd' }
+                    data: { amount, currency: process.env.CURRENCY || 'EUR' }
                 });
                 
                 showAlert(`Payout of $${amount} processed successfully!`);

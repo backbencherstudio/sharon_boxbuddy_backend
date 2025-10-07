@@ -4,9 +4,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import Stripe from 'stripe';
 import appConfig from 'src/config/app.config';
 import { CreateAccountLinkDto } from './dto/create-account-link.dto';
-
-
-
+import config from 'src/config/app.config'
 
 @Injectable()
 export class StripeService {
@@ -107,7 +105,7 @@ export class StripeService {
     // 4. Create a Stripe PaymentIntent using the total from the order
     const paymentIntent = await StripePayment.createPaymentIntent({
       amount: Number(booking.amount), // Convert amount to cents
-      currency: 'usd',
+      currency: process.env.CURRENCY || 'EUR',
       customer_id: booking.owner.billing_id, // Ensure the user has a Stripe customer ID
       metadata: {
         owner_id: booking.owner_id,
@@ -163,7 +161,7 @@ export class StripeService {
 
     const paymentIntent = await this.stripe.paymentIntents.create({
       amount: amount,
-      currency: 'usd',
+      currency: process.env.CURRENCY || 'EUR',
       customer: user.stripeCustomerId,
       payment_method: paymentMethod.stripePaymentMethodId,
       off_session: true, // This is crucial for recurring payments
@@ -206,7 +204,7 @@ export class StripeService {
       // 2. Use Stripe's PaymentIntents API to create and confirm a payment
       const paymentIntent = await this.stripe.paymentIntents.create({
         amount: Number(booking.amount) * 100,
-        currency: 'usd',
+        currency: process.env.CURRENCY || 'EUR',
         customer: user.billing_id,
         payment_method: paymentMethodId,
         off_session: true, // This is crucial for payments where the user is not actively on the checkout page
@@ -418,7 +416,7 @@ export class StripeService {
   }
 
   // Process payout to user's Stripe account
-  async processPayout(user_id: string, amount: number, currency: string = 'usd') {
+  async processPayout(user_id: string, amount: number, currency: string = process.env.CURRENCY || 'EUR') {
     try {
       const account = await this.getActiveConnectedAccount(user_id);
 
@@ -464,7 +462,7 @@ export class StripeService {
       const payout = await this.stripe.payouts.create(
         {
           amount: amountInCents, // Convert dollars to cents
-          currency: 'USD',
+          currency: process.env.CURRENCY || 'EUR',
           // destination: dto.destinationAccountId,
           metadata: {
             currency: currency,

@@ -768,21 +768,21 @@ model AnnouncementRequest {
   @@map("announcement_requests")
 }
 
-enum TransactionType {
-  DEPOSIT
-  SPEND
-  WITHDRAW
-  REFUND
-  HOLD
-  RELEASE
-}
+// enum TransactionType {
+//   DEPOSIT
+//   SPEND
+//   WITHDRAW
+//   REFUND
+//   HOLD
+//   RELEASE
+// }
 
-enum TransactionStatus {
-  PENDING
-  COMPLETED
-  FAILED
-  REFUNDED
-}
+// enum TransactionStatus {
+//   PENDING
+//   COMPLETED
+//   FAILED
+//   REFUNDED
+// }
 
 
 
@@ -808,28 +808,73 @@ model Wallet {
   currency     String              @default("usd")
   created_at   DateTime            @default(now())
   updated_at   DateTime            @updatedAt
-  transactions WalletTransaction[]
+  // transactions WalletTransaction[]
 
   @@index([user_id])
   @@map("wallets")
 }
 
-model WalletTransaction {
-  id         String            @id @default(uuid())
-  wallet_id  String
-  wallet     Wallet            @relation(fields: [wallet_id], references: [id])
-  type       TransactionType
-  amount     Float
-  status     TransactionStatus @default(PENDING)
-  stripe_id  String?
-  metadata   Json?
-  created_at DateTime          @default(now())
-  updated_at DateTime          @updatedAt
+// model WalletTransaction {
+//   id         String            @id @default(uuid())
+//   wallet_id  String
+//   wallet     Wallet            @relation(fields: [wallet_id], references: [id])
+//   type       TransactionType
+//   amount     Float
+//   status     TransactionStatus @default(PENDING)
+//   stripe_id  String?
+//   metadata   Json?
+//   created_at DateTime          @default(now())
+//   updated_at DateTime          @updatedAt
 
-  @@index([wallet_id])
-  @@index([stripe_id])
-  @@map("wallet_transactions")
+//   @@index([wallet_id])
+//   @@index([stripe_id])
+//   @@map("wallet_transactions")
+// }
+
+
+enum TransactionType {
+  STRIPE_PAYMENT  // Payment via Stripe
+  WALLET_TOPUP    // Adding money to wallet
+  BOOKING_PAYMENT // Payment for booking
+  WALLET_REFUND   // Refund to wallet
+  CASHBACK        // Cashback/delivery bonus
+  COMMISSION      // Commission earned
 }
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+model Transaction {
+  id          String      @id @default(cuid())
+  type        TransactionType
+  amount      Decimal
+  status      TransactionStatus @default(COMPLETED)
+  description String?
+  reference_id String? // Stripe payment intent ID or booking ID
+  
+  // Foreign keys
+  user_id      String 
+  wallet_id    String?
+  booking_id   String?
+  
+  // Timestamps
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+  
+  // Relationships
+  // user        User    @relation(fields: [userId], references: [id])
+  // wallet      Wallet? @relation(fields: [walletId], references: [id])
+  // booking     Booking? @relation(fields: [bookingId], references: [id])
+  
+  @@index([user_id])
+
+  @@map("transactions")
+}
+
 
 model WalletConfig {
   id                  Int    @id @default(autoincrement())

@@ -164,7 +164,7 @@ export class StripePayment {
       line_items: [
         {
           price_data: {
-            currency: 'usd',
+            currency: process.env.CURRENCY || 'EUR',
             product_data: {
               name: 'Sample Product',
             },
@@ -387,7 +387,7 @@ export class StripePayment {
     const token = await Stripe.tokens.create({
       bank_account: {
         country: 'US',
-        currency: 'usd',
+        currency: process.env.CURRENCY || 'EUR',
         routing_number: '110000000',
         account_number: '000123456789',
         account_holder_name: 'Jane Doe',
@@ -417,7 +417,7 @@ export class StripePayment {
   static async createACHPaymentIntent(customerId: string, amount: number) {
     return await Stripe.paymentIntents.create({
       amount: amount * 100,
-      currency: 'usd',
+      currency: process.env.CURRENCY || 'EUR',
       customer: customerId,
       payment_method_types: ['us_bank_account'],
       payment_method_options: {
@@ -438,7 +438,7 @@ export class StripePayment {
     //   line_items: [
     //     {
     //       price_data: {
-    //         currency: 'usd',
+    //         currency: process.env.CURRENCY || 'EUR',
     //         unit_amount: amount * 100,
     //         product_data: {
     //           name: 'T-shirt',
