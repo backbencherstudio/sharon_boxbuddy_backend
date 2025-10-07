@@ -25,11 +25,13 @@ async function bootstrap() {
   app.enableCors({
     // origin: '*',
     origin: [
-      "http://colisr.com", 
       'https://colisr.com',
-      'http://backend.colisr.com', 
       'https://backend.colisr.com',
-      appConfig().app.client_app_url, 'http://localhost:3000'],
+      "http://colisr.com",
+      'http://backend.colisr.com',
+      appConfig().app.client_app_url,
+      'http://localhost:3000'
+    ],
     // credentials: true,
   });
 
@@ -57,7 +59,7 @@ async function bootstrap() {
       whitelist: true,
     }),
   );
-  
+
   app.useGlobalFilters(new PrismaExceptionFilter(), new CustomExceptionFilter());
 
   // storage setup
