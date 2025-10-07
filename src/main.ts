@@ -24,8 +24,13 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
   app.enableCors({
     // origin: '*',
-    origin: ["http://colisr.com", appConfig().app.client_app_url, 'http://localhost:3000'],
-    credentials: true,
+    origin: [
+      "http://colisr.com", 
+      'https://colisr.com',
+      'http://backend.colisr.com', 
+      'https://backend.colisr.com',
+      appConfig().app.client_app_url, 'http://localhost:3000'],
+    // credentials: true,
   });
 
 
