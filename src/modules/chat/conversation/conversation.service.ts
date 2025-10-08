@@ -100,8 +100,13 @@ export class ConversationService {
             select: {
               id: true,
               name: true,
+              email: true,
               avatar: true,
               availability: true,
+              about_me: true,
+              phone_number: true,
+              date_of_birth: true,
+              gender: true,
 
             },
           },
@@ -109,8 +114,13 @@ export class ConversationService {
             select: {
               id: true,
               name: true,
+              email: true,
               avatar: true,
               availability: true,
+              about_me: true,
+              phone_number: true,
+              date_of_birth: true,
+              gender: true
 
             },
           },
@@ -179,8 +189,13 @@ export class ConversationService {
             select: {
               id: true,
               name: true,
+              email: true,
               avatar: true,
               availability: true,
+              about_me: true,
+              phone_number: true,
+              date_of_birth: true,
+              gender: true,
 
             },
           },
@@ -188,7 +203,12 @@ export class ConversationService {
             select: {
               id: true,
               name: true,
+              email: true,
               avatar: true,
+              about_me: true,
+              phone_number: true,
+              date_of_birth: true,
+              gender: true,
 
               availability: true,
 
@@ -278,16 +298,26 @@ export class ConversationService {
             select: {
               id: true,
               name: true,
+              email: true,
               avatar: true,
               availability: true,
+              about_me: true,
+              phone_number: true,
+              date_of_birth: true,
+              gender: true,
             },
           },
           participant: {
             select: {
               id: true,
               name: true,
+              email: true,
               avatar: true,
               availability: true,
+              about_me: true,
+              phone_number: true,
+              date_of_birth: true,
+              gender: true,
 
             },
           },
@@ -352,8 +382,13 @@ export class ConversationService {
             select: {
               id: true,
               name: true,
+              email: true,
               avatar: true,
               availability: true,
+              about_me: true,
+              phone_number: true,
+              date_of_birth: true,
+              gender: true,
 
             },
           },
@@ -361,8 +396,13 @@ export class ConversationService {
             select: {
               id: true,
               name: true,
+              email: true,
               avatar: true,
               availability: true,
+              about_me: true,
+              phone_number: true,
+              date_of_birth: true,
+              gender: true,
 
             },
           },

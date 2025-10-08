@@ -168,6 +168,18 @@ export class StripeController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Post('platform-payout')
+  async platformPayout(
+    @Req() req: Request,
+    @Body() body: { amount: number; currency?: string }
+  ) {
+    return this.stripeService.platformPayout(
+      req.user.userId, 
+      body.amount, 
+    );
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Get('login-link')
   async createLoginLink(@Req() req: Request) {
     return this.stripeService.createLoginLink(req.user.userId);

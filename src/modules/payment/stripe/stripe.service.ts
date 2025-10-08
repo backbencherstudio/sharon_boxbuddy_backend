@@ -5,6 +5,8 @@ import Stripe from 'stripe';
 import appConfig from 'src/config/app.config';
 import { CreateAccountLinkDto } from './dto/create-account-link.dto';
 import config from 'src/config/app.config'
+import { TransactionRepository } from 'src/common/repository/transaction/transaction.repository';
+import { TransactionStatus, TransactionType } from '@prisma/client';
 
 @Injectable()
 export class StripeService {
@@ -222,6 +224,17 @@ export class StripeService {
           }
         })
 
+        // transaction
+        await TransactionRepository.createTransaction({
+          user_id: userId,
+          type: TransactionType.BOOKING_PAYMENT,
+          amount: booking.amount.toNumber(),
+          status: TransactionStatus.COMPLETED,
+          description: `Payment for booking ${booking.id}`,
+          reference_id: paymentIntent.id,
+          booking_id: bookingId,
+        })
+
 
 
         await this.prisma.announcementRequest.create({
@@ -256,6 +269,16 @@ export class StripeService {
           }
         })
 
+      } else {
+        await TransactionRepository.createTransaction({
+          user_id: userId,
+          type: TransactionType.BOOKING_PAYMENT,
+          amount: booking.amount.toNumber(),
+          status: TransactionStatus.FAILED,
+          description: `Payment for booking ${booking.id}`,
+          reference_id: paymentIntent.id,
+          booking_id: bookingId,
+        })
       }
 
       // 3. Return the payment status to the client
@@ -447,7 +470,7 @@ export class StripeService {
 
       // reduce wallet by x amount
       await this.prisma.wallet.update({
-        where: { id: account.user.wallet.id},
+        where: { id: account.user.wallet.id },
         data: {
           balance: {
             decrement: amount
@@ -455,7 +478,14 @@ export class StripeService {
         }
       })
 
-      // transfer 
+      // transction
+      await TransactionRepository.createTransaction({
+        user_id: account.user_id,
+        wallet_id: account.user.wallet.id,
+        type: TransactionType.WALLET_WITHDRAW,
+        amount: amount,
+        status: TransactionStatus.COMPLETED
+      })
 
 
       // Initiate Stripe payout (convert amount to cents)
@@ -527,7 +557,7 @@ export class StripeService {
     return { url: loginLink.url };
   }
 
-// List payouts for the connected account
+  // List payouts for the connected account
   async listPayoutsForUser(userId: string, limit = 5, cursor?: { starting_after?: string; ending_before?: string }, status?: string) {
     try {
       const { stripe_account_id } = await this.getActiveConnectedAccount(userId);
@@ -569,6 +599,67 @@ export class StripeService {
       if (error instanceof NotFoundException || error instanceof BadRequestException) throw error;
       this.logger.error(`Unexpected error: ${error?.message || error}`);
       throw new BadRequestException('Failed to list payouts.');
+    }
+  }
+
+  // Platform Payout
+  async platformPayout(user_id: string, amount: number, currency: string = process.env.CURRENCY || 'EUR') {
+    // check platform wallet balance
+    const platformWallet = await this.prisma.platformWallet.findFirst({
+      select: {
+        totalEarnings: true,
+        id: true,
+      },
+    });
+
+    if (platformWallet.totalEarnings.toNumber() < amount) {
+      throw new BadRequestException('Insufficient balance');
+    }
+    try {
+
+      // create payout
+      await this.stripe.payouts.create({
+        amount: amount * 100,
+        currency: currency,
+        destination: process.env.PLATFORM_ACCOUNT_ID,
+        metadata: {
+          description: `Platform Payout`,
+        },
+      });
+
+      // create transaction
+      await TransactionRepository.createTransaction({
+        user_id,
+        type: TransactionType.PLATFORM_PAYOUT,
+        amount: amount,
+        status: TransactionStatus.COMPLETED,
+        description: `Platform Payout`,
+        reference_id: platformWallet.id,
+      });
+
+      // update platform wallet
+      await this.prisma.platformWallet.update({
+        where: { id: platformWallet.id },
+        data: { totalEarnings: { decrement: amount } },
+      });
+
+      return {
+        success: true,
+        message: 'Platform payout processed successfully',
+      };
+
+    } catch (error) {
+      // transaction
+      await TransactionRepository.createTransaction({
+        user_id,
+        type: TransactionType.PLATFORM_PAYOUT,
+        amount: amount,
+        status: TransactionStatus.FAILED,
+        description: `Platform Payout`,
+        reference_id: platformWallet.id,
+      });
+
+      throw new BadRequestException('Failed to process platform payout.');
     }
   }
 }

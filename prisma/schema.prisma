@@ -839,6 +839,8 @@ enum TransactionType {
   WALLET_REFUND   // Refund to wallet
   CASHBACK        // Cashback/delivery bonus
   COMMISSION      // Commission earned
+  WALLET_WITHDRAW // Withdraw from wallet
+  PLATFORM_PAYOUT // Platform Payout
 }
 
 enum TransactionStatus {
