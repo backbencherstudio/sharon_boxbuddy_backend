@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreatePackageDto } from './dto/create-package.dto';
 import { UpdatePackageDto } from './dto/update-package.dto';
+import { SojebStorage } from 'src/common/lib/Disk/SojebStorage';
+import appConfig from 'src/config/app.config';
 
 @Injectable()
 export class PackageService {
@@ -12,6 +14,12 @@ export class PackageService {
       const packageData = await this.prisma.package.create({
         data: createPackageDto as any,
       });
+
+      if(createPackageDto.photo) {
+        packageData['photo_url'] = SojebStorage.url(
+          appConfig().storageUrl.package + createPackageDto.photo,
+        );
+      }
       return {
         success: true,
         message: 'package created successfully',
@@ -31,6 +39,14 @@ export class PackageService {
         where: {
           owner_id: owner_id,
         },
+      });
+
+      packages.forEach((packageData) => {
+        if(packageData.photo) {
+          packageData['photo_url'] = SojebStorage.url(
+            appConfig().storageUrl.package + packageData.photo,
+          );
+        }
       });
       return {
         success: true,
@@ -55,7 +71,7 @@ export class PackageService {
         status: 'new',
       };
 
-      console.log(userId)
+      // console.log(userId)
       if (userId) {
         where['owner_id'] = {
           not: userId,
@@ -65,6 +81,14 @@ export class PackageService {
         where,
         skip: (page - 1) * limit,
         take: limit,
+      });
+
+      packages.forEach((packageData) => {
+        if(packageData.photo) {
+          packageData['photo_url'] = SojebStorage.url(
+            appConfig().storageUrl.package + packageData.photo,
+          );
+        }
       });
 
       const total = await this.prisma.travel.count();
@@ -101,6 +125,14 @@ export class PackageService {
           publish: false,
         },
       });
+
+      packages.forEach((packageData) => {
+        if(packageData.photo) {
+          packageData['photo_url'] = SojebStorage.url(
+            appConfig().storageUrl.package + packageData.photo,
+          );
+        }
+      });
       return {
         success: true,
         message: 'packages fetched successfully',
@@ -121,6 +153,14 @@ export class PackageService {
           owner_id: userId,
           publish: true,
         },
+      });
+
+      packages.forEach((packageData) => {
+        if(packageData.photo) {
+          packageData['photo_url'] = SojebStorage.url(
+            appConfig().storageUrl.package + packageData.photo,
+          );
+        }
       });
       return {
         success: true,
@@ -170,6 +210,12 @@ export class PackageService {
           : {};
       delete packageData.bookings;
       packageData['booking'] = bookings;
+
+      if(packageData.photo) {
+        packageData['photo_url'] = SojebStorage.url(
+          appConfig().storageUrl.package + packageData.photo,
+        );
+      }
       return {
         success: true,
         message: 'package fetched successfully',
@@ -203,6 +249,12 @@ export class PackageService {
         where: { id: id, owner_id: owner_id },
         data: updatePackageDto as any,
       });
+
+      if(updatedPackageData.photo) {
+        updatedPackageData['photo_url'] = SojebStorage.url(
+          appConfig().storageUrl.package + updatedPackageData.photo,
+        );
+      }
       return {
         success: true,
         message: 'package updated successfully',

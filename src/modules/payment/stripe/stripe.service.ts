@@ -376,7 +376,7 @@ export class StripeService {
         stripeAccountId = stripeAccount.id;
       }
 
-      this.logger.log(`Created/retrieved Stripe account for user ${user_id}: ${stripeAccountId}`);
+      // this.logger.log(`Created/retrieved Stripe account for user ${user_id}: ${stripeAccountId}`);
 
       return { stripe_account_id: stripeAccountId };
     });
@@ -602,20 +602,40 @@ export class StripeService {
     }
   }
 
+  
+  // get platform account
+  async getPlatformAccount() {
+    const platformAccount = await this.stripe.accounts.retrieve(process.env.PLATFORM_ACCOUNT_ID);
+    return platformAccount;
+  }
+
   // Platform Payout
-  async platformPayout(user_id: string, amount: number, currency: string = process.env.CURRENCY || 'EUR') {
+  async platformPayout(user_id: string, amount: number) {
+    const currency: string = process.env.CURRENCY || 'EUR'
     // check platform wallet balance
     const platformWallet = await this.prisma.platformWallet.findFirst({
       select: {
-        totalEarnings: true,
+        total_earnings: true,
         id: true,
       },
     });
 
-    if (platformWallet.totalEarnings.toNumber() < amount) {
+    console.log("platformWallet.total_earnings.toNumber(), amount => ", platformWallet.total_earnings.toNumber(), amount)
+
+    if (platformWallet.total_earnings.toNumber() < amount) {
       throw new BadRequestException('Insufficient balance');
     }
+
     try {
+
+      const accounts = await this.getPlatformAccount();
+      console.log("accounts => ", accounts)
+      // transfer
+      await this.stripe.transfers.create({
+        amount: amount * 100,
+        currency: currency,
+        destination: process.env.PLATFORM_ACCOUNT_ID,
+      });
 
       // create payout
       await this.stripe.payouts.create({
@@ -640,7 +660,7 @@ export class StripeService {
       // update platform wallet
       await this.prisma.platformWallet.update({
         where: { id: platformWallet.id },
-        data: { totalEarnings: { decrement: amount } },
+        data: { total_earnings: { decrement: amount } },
       });
 
       return {
@@ -658,7 +678,10 @@ export class StripeService {
         description: `Platform Payout`,
         reference_id: platformWallet.id,
       });
-
+      console.log("error => ", error)
+      if(error instanceof BadRequestException) {
+        throw error;
+      }
       throw new BadRequestException('Failed to process platform payout.');
     }
   }

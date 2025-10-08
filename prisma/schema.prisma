@@ -791,7 +791,7 @@ model AnnouncementRequest {
 // Platform Wallet to track total earnings
 model PlatformWallet {
   id          String   @id @default(cuid())
-  totalEarnings Decimal  @default(0)
+  total_earnings Decimal @db.Decimal(15, 4) @default(0)
 
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt

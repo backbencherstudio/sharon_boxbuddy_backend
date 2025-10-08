@@ -63,4 +63,6 @@ export class CreatePackageDto {
   @IsString()
   @IsOptional()
   traveller_id?: string;
+
+  photo?: string;
 }

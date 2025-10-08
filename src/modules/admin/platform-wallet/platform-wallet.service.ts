@@ -19,7 +19,7 @@ export class PlatformWalletService implements OnModuleInit {
       
       if (!existingWallet) {
         const newWallet = await this.prisma.platformWallet.create({
-          data: { totalEarnings: 0 }
+          data: { total_earnings: 0 }
         });
         this.logger.log('Platform wallet created successfully');
         this.logger.log(`Wallet ID: ${newWallet.id}`);
@@ -40,7 +40,7 @@ export class PlatformWalletService implements OnModuleInit {
     return {
       success: true,
       message: "Plartform wallet retrived successfully",
-      data: wallet.totalEarnings
+      data: wallet.total_earnings
     }
   }
 

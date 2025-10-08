@@ -7,6 +7,7 @@ import { JwtAuthGuard } from 'src/modules/auth/guards/jwt-auth.guard';
 import { ProcessPaymentDto } from './dto/process-payment.dto';
 import { PaymentIntentDto } from './dto/payment-intent.dto';
 import { CreateAccountLinkDto } from './dto/create-account-link.dto';
+import { PlatformPayoutDto } from './dto/platform-payout.dto';
 
 @Controller('payment/stripe')
 export class StripeController {
@@ -171,7 +172,7 @@ export class StripeController {
   @Post('platform-payout')
   async platformPayout(
     @Req() req: Request,
-    @Body() body: { amount: number; currency?: string }
+    @Body() body: PlatformPayoutDto
   ) {
     return this.stripeService.platformPayout(
       req.user.userId, 

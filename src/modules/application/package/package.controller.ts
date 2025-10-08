@@ -8,7 +8,9 @@ import {
   Post,
   Query,
   Req,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
@@ -17,6 +19,9 @@ import { CreatePackageDto } from './dto/create-package.dto';
 import { UpdatePackageDto } from './dto/update-package.dto';
 import { PackageService } from './package.service';
 import { Public } from 'src/common/guard/public';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import appConfig from 'src/config/app.config';
 
 
 @ApiTags('Package')
@@ -26,13 +31,45 @@ import { Public } from 'src/common/guard/public';
 export class PackageController {
   constructor(private readonly packageService: PackageService) {}
 
+
+  // handle file
+
   @Post()
+  @UseInterceptors(
+    FileInterceptor('photo',
+      {
+        storage: diskStorage({
+          destination:
+            appConfig().storageUrl.rootUrl + appConfig().storageUrl.package,
+          filename: (req, file, cb) => {
+            const randomName = Array(32)
+              .fill(null)
+              .map(() => Math.round(Math.random() * 16).toString(16))
+              .join('');
+            return cb(
+              null,
+              `${randomName}${file.originalname.replace(/\s+/g, '-')}`,
+            );
+          },
+        }
+        ),
+        // storage: memoryStorage(),
+        limits: {
+          fileSize: 5 * 1024 * 1024, // 5MB in bytes
+        },
+      }
+    ),
+  )
   async create(
     @Body() createPackageDto: CreatePackageDto,
     @Req() req: Request,
+    @UploadedFile() photo: Express.Multer.File,
   ) {
     try {
       createPackageDto.owner_id = req.user.userId;
+      if(photo) {
+        createPackageDto.photo = photo.filename;
+      }
       return await this.packageService.create(createPackageDto);
     } catch (error) {
       throw {
@@ -114,12 +151,41 @@ export class PackageController {
   }
 
   @Patch(':id')
+  @UseInterceptors(
+    FileInterceptor('photo',
+      {
+        storage: diskStorage({
+          destination:
+            appConfig().storageUrl.rootUrl + appConfig().storageUrl.package,
+          filename: (req, file, cb) => {
+            const randomName = Array(32)
+              .fill(null)
+              .map(() => Math.round(Math.random() * 16).toString(16))
+              .join('');
+            return cb(
+              null,
+              `${randomName}${file.originalname.replace(/\s+/g, '-')}`,
+            );
+          },
+        }
+        ),
+        // storage: memoryStorage(),
+        limits: {
+          fileSize: 5 * 1024 * 1024, // 5MB in bytes
+        },
+      }
+    ),
+  )
   async update(
     @Param('id') id: string,
     @Body() updatePackageDto: UpdatePackageDto,
     @Req() req: Request,
-  ) {
+    @UploadedFile() photo: Express.Multer.File,
+    ) {
     try {
+      if(photo) {
+        updatePackageDto.photo = photo.filename;
+      }
       return await this.packageService.update(
         id,
         updatePackageDto,

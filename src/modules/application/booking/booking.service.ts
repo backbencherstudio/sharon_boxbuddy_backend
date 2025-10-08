@@ -500,7 +500,7 @@ export class BookingService {
           // Assuming you have a platform wallet or admin account
           await tx.platformWallet.updateMany({
             data: {
-              totalEarnings: {
+              total_earnings: {
                 increment: platformAmount
               }
             }
