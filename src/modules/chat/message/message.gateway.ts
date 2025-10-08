@@ -93,7 +93,7 @@ export class MessageGateway
 
 
 
-      console.log("User-bbom=>",userId);
+      // console.log("User-bbom=>",userId);
 
       client.broadcast.emit('userStatusChange', {
         user_id: userId,
@@ -103,7 +103,7 @@ export class MessageGateway
       console.log(`User ${userId} connected`);
     } catch (error) {
       client.disconnect();
-      console.error('Error handling connection:', error);
+      // console.error('Error handling connection:', error);
     }
   }
 

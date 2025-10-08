@@ -5,11 +5,13 @@ import { Fetch } from '../../Fetch';
 
 const STRIPE_SECRET_KEY = appConfig().payment.stripe.secret_key;
 
+// console.log("STRIPE_SECRET_KEY", STRIPE_SECRET_KEY);
 const Stripe = new stripe(STRIPE_SECRET_KEY, {
   apiVersion: '2025-03-31.basil',
 });
 
 const STRIPE_WEBHOOK_SECRET = appConfig().payment.stripe.webhook_secret;
+// console.log("STRIPE_WEBHOOK_SECRET", STRIPE_WEBHOOK_SECRET);
 /**
  * Stripe payment method helper
  */
