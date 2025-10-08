@@ -1,15 +1,15 @@
-1. Add transction for each
+done => 1. Add transction for each
     - done => booking payment
     - done => charge from saved cards
     - done => seller Payout
-    - platform Payout
+    - done => platform Payout
     - done => booking from wallet balance
 done => 2. Wallet payment/ booking from wallet balance - 
 3. Postman endpoints add
 4. problem_with_the_package refund
 5. all_conditions_are_not_met refund
 done => 6. Configure Currency in a way so it can be change any time
-7. Platform Payout
+done => 7. Platform Payout
 8. On delivery need otp function and need to increase wallet of traveller
-9. upload image on submit package
+done => 9. upload image on submit package
 

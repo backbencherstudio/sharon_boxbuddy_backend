@@ -177,6 +177,7 @@ export class StripeController {
     return this.stripeService.platformPayout(
       req.user.userId, 
       body.amount, 
+      body.currency
     );
   }
 

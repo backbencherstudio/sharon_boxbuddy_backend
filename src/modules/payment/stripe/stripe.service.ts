@@ -605,13 +605,13 @@ export class StripeService {
   
   // get platform account
   async getPlatformAccount() {
-    const platformAccount = await this.stripe.accounts.retrieve(process.env.PLATFORM_ACCOUNT_ID);
+    const platformAccount = await this.stripe.accounts.retrieve();
     return platformAccount;
   }
 
+
   // Platform Payout
-  async platformPayout(user_id: string, amount: number) {
-    const currency: string = process.env.CURRENCY || 'EUR'
+  async platformPayout(user_id: string, amount: number, currency: string = process.env.CURRENCY || 'EUR') {
     // check platform wallet balance
     const platformWallet = await this.prisma.platformWallet.findFirst({
       select: {
@@ -620,7 +620,7 @@ export class StripeService {
       },
     });
 
-    console.log("platformWallet.total_earnings.toNumber(), amount => ", platformWallet.total_earnings.toNumber(), amount)
+    // console.log("platformWallet.total_earnings.toNumber(), amount => ", platformWallet.total_earnings.toNumber(), amount)
 
     if (platformWallet.total_earnings.toNumber() < amount) {
       throw new BadRequestException('Insufficient balance');
@@ -628,22 +628,36 @@ export class StripeService {
 
     try {
 
-      const accounts = await this.getPlatformAccount();
-      console.log("accounts => ", accounts)
+      // const accounts = await this.getPlatformAccount();
+      // console.log("accounts => ", accounts)
       // transfer
-      await this.stripe.transfers.create({
-        amount: amount * 100,
-        currency: currency,
-        destination: process.env.PLATFORM_ACCOUNT_ID,
-      });
+      // await this.stripe.transfers.create({
+      //   amount: amount * 100,
+      //   currency: currency,
+      //   destination: accounts.id,
+      // });
+
+      const balances = await this.stripe.balance.retrieve();
+      // console.log("balance => ", balances)
+
+      // check balance acording to currency
+      const balance = balances.available.find(b => b.currency === currency.toLowerCase());
+      // console.log("balance => ", balance)
+      if(!balance) {
+        // throw error no account for this currency
+        throw new BadRequestException('No account for this currency');
+      }
+
+      if(balance.amount < amount) {
+        throw new BadRequestException('Insufficient balance');
+      }
 
       // create payout
       await this.stripe.payouts.create({
         amount: amount * 100,
-        currency: currency,
-        destination: process.env.PLATFORM_ACCOUNT_ID,
+        currency: currency.toLowerCase(),
         metadata: {
-          description: `Platform Payout`,
+          description: `Platform Payout in ${currency}`,
         },
       });
 
@@ -653,7 +667,7 @@ export class StripeService {
         type: TransactionType.PLATFORM_PAYOUT,
         amount: amount,
         status: TransactionStatus.COMPLETED,
-        description: `Platform Payout`,
+        description: `Platform Payout in ${currency.toLowerCase()}`,
         reference_id: platformWallet.id,
       });
 
@@ -675,10 +689,10 @@ export class StripeService {
         type: TransactionType.PLATFORM_PAYOUT,
         amount: amount,
         status: TransactionStatus.FAILED,
-        description: `Platform Payout`,
+        description: `Platform Payout in ${currency.toLowerCase()}`,
         reference_id: platformWallet.id,
       });
-      console.log("error => ", error)
+      // console.log("error => ", error)
       if(error instanceof BadRequestException) {
         throw error;
       }

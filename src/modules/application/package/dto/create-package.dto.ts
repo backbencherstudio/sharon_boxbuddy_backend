@@ -1,3 +1,4 @@
+import { Transform } from 'class-transformer';
 import {
   IsBoolean,
   IsNotEmpty,
@@ -33,6 +34,7 @@ export class CreatePackageDto {
 
   @IsBoolean()
   @IsOptional()
+  @Transform(({ value }) => value === 'true' || value === true)
   is_electronic?: boolean;
 
   @IsString()
@@ -48,11 +50,12 @@ export class CreatePackageDto {
   drop_off_location: string;
 
   @IsString()
-  @IsOptional()
+  @IsNotEmpty()
   drop_off_parson?: string; // Assuming this is a string ID or name
 
   @IsBoolean()
   @IsOptional()
+  @Transform(({ value }) => value === 'true' || value === true)
   publish?: boolean;
 
   @IsString()
