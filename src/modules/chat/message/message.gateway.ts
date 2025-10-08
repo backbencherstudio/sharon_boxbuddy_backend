@@ -100,7 +100,7 @@ export class MessageGateway
         status: 'online',
       });
 
-      console.log(`User ${userId} connected`);
+      // console.log(`User ${userId} connected`);
     } catch (error) {
       client.disconnect();
       // console.error('Error handling connection:', error);
