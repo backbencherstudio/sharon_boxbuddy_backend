@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, Query, BadRequestException } from '@nestjs/common';
 import { TravelService } from './travel.service';
 import { CreateTravelDto } from './dto/create-travel.dto';
 import { UpdateTravelDto } from './dto/update-travel.dto';
@@ -8,6 +8,7 @@ import { Request } from 'express';
 import { FindAllDto } from './dto/find-all-query.dto';
 import { AnnouncementRequestDto } from './dto/announcement-request.dto';
 import { Public } from 'src/common/guard/public';
+import { OptionalJwtAuthGuard } from 'src/modules/auth/guards/optional-jwt-auth.guard';
 
 @ApiTags('Travel')
 @ApiBearerAuth()
@@ -23,14 +24,24 @@ export class TravelController {
       createTravelDto.publish = true;
       return await this.travelService.create(createTravelDto);
     } catch (err) {
-      return {
-        success: false,
-        message: 'travel creation failed',
-      };
-    }
-  }
+      if(err instanceof BadRequestException) {
+        return {
+          success: false,
+          message: err.message,
+        };
 
- 
+      }else{
+        return {
+          success: false,
+          message: 'travel creation failed',
+        };
+      }
+      }
+    }
+  
+
+    @Public()
+    @UseGuards(OptionalJwtAuthGuard)
   @Get()
   async findAll(@Query() findAllDto: FindAllDto, @Req() req: Request) {
     try {

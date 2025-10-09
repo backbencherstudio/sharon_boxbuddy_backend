@@ -1,4 +1,4 @@
-import { Injectable, Query } from '@nestjs/common';
+import { BadRequestException, Injectable, Query } from '@nestjs/common';
 import { CreateTravelDto } from './dto/create-travel.dto';
 import { UpdateTravelDto } from './dto/update-travel.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -8,27 +8,32 @@ import { AnnouncementRequestDto } from './dto/announcement-request.dto';
 import { MessageGateway } from 'src/modules/chat/message/message.gateway';
 
 
+
 @Injectable()
 export class TravelService {
   constructor(private readonly prisma: PrismaService, private gateway: MessageGateway) { }
 
   async create(createTravelDto: CreateTravelDto) {
-    try {
+
+      // check departure date is not in the past
+      if (DateHelper.normalizeDate(createTravelDto.departure) < DateHelper.normalizeDate(new Date().toUTCString())) {
+        throw new BadRequestException('Departure date is in the past or invalid');
+      }
+
+      // check arrival date is not in the past
+      if (DateHelper.normalizeDate(createTravelDto.arrival) < DateHelper.normalizeDate(new Date().toUTCString())) {
+        throw new BadRequestException('Arrival date is in the past or invalid');
+      }
+
       const travel = await this.prisma.travel.create({
         data: createTravelDto,
       });
+
       return {
         success: true,
         message: 'travel created successfully',
         data: travel,
       }
-    } catch (error) {
-      console.log(error)
-      return {
-        success: false,
-        message: 'travel creation failed',
-      }
-    }
   }
 
   async findAll(findAllDto: FindAllDto, userId?: string) {

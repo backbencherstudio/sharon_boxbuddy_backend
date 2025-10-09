@@ -10,6 +10,7 @@ done => 2. Wallet payment/ booking from wallet balance -
 5. all_conditions_are_not_met refund
 done => 6. Configure Currency in a way so it can be change any time
 done => 7. Platform Payout
-8. On delivery need otp function and need to increase wallet of traveller
+done => 8. On delivery need otp function and need to increase wallet of traveller
 done => 9. upload image on submit package
-
+done => 10. during package creation check weight format
+done => 11. Without login user can view all the travels and package

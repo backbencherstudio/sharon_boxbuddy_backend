@@ -9,6 +9,10 @@ import appConfig from 'src/config/app.config';
 import { AllConditionsAreNotMetDto } from './dto/all-conditions-are-not-met.dto';
 import { StripePayment } from 'src/common/lib/Payment/stripe/StripePayment';
 import { MessageGateway } from 'src/modules/chat/message/message.gateway';
+import { DateHelper } from 'src/common/helper/date.helper';
+import { randomInt } from 'crypto';
+import { TransactionRepository } from 'src/common/repository/transaction/transaction.repository';
+import { TransactionType } from '@prisma/client';
 
 @Injectable()
 export class BookingService {
@@ -18,11 +22,14 @@ export class BookingService {
     const travel = await this.prisma.travel.findUnique({
       where: {
         id: createBookingDto.travel_id,
+        departure: {
+          gte: DateHelper.normalizeDate(new Date().toUTCString()),
+        },
       },
     });
 
     if (!travel) {
-      throw new BadRequestException('Travel not found');
+      throw new BadRequestException('Travel not found or travel date is expired');
     }
 
     // check package is exist or not
@@ -119,6 +126,9 @@ export class BookingService {
       where: {
         traveller_id: user_id,
         confirmed: true
+      },
+      omit: {
+        otp: true,
       },
       include: {
         travel: true,
@@ -239,6 +249,10 @@ export class BookingService {
 
     if (!booking_data) {
       throw new BadRequestException('Booking not found');
+    }
+    
+    if(booking_data.otp && booking_data.traveller_id === user_id) {
+      delete booking_data.otp
     }
 
     return {
@@ -685,7 +699,8 @@ export class BookingService {
 
     const data: any = {
       status: 'on_the_way',
-      ...photos
+      ...photos,
+      otp: String(randomInt(100000, 1000000))
     }
 
     const updated_booking_data = await this.prisma.booking.update({
@@ -698,6 +713,8 @@ export class BookingService {
     if (!updated_booking_data) {
       throw new BadRequestException('Something went wrong');
     }
+
+
 
     // if (updated_booking_data.problem_photo) {
     //   updated_booking_data['problem_photo_url'] = SojebStorage.url(appConfig().storageUrl.pickUp + updated_booking_data.problem_photo);
@@ -723,7 +740,7 @@ export class BookingService {
 
   }
 
-  async dropOff(id: string, user_id: string, photos: {
+  async dropOff(id: string, user_id: string, otp: string, photos: {
     drop_off_photo: string,
     drop_off_owner_sign: string,
     drop_off_traveller_sign: string,
@@ -739,10 +756,13 @@ export class BookingService {
       throw new BadRequestException('Booking not found');
     }
 
-    if (booking_data.status !== 'on_the_way' && booking_data.status !== 'rejected') {
+    if (booking_data.status !== 'on_the_way') {
       throw new BadRequestException('You can not deliver the package');
     }
 
+    if (booking_data.otp !== otp) {
+      throw new BadRequestException('OTP is incorrect');
+    }
 
     const data: any = {
       status: 'delivered',
@@ -754,11 +774,90 @@ export class BookingService {
         id,
       },
       data,
+      include: {
+        traveller: {
+          select: {
+            first_name: true,
+          }
+        },
+        owner: {
+          select: {
+            first_name: true,
+          }
+        },
+      },
     });
 
     if (!updated_booking_data) {
-      throw new BadRequestException('Something went wrong');
+      throw new BadRequestException('Delivery failed try again');
     }
+
+    // update traveller wallet
+    await this.prisma.wallet.update({
+      where: {
+        user_id: booking_data.traveller_id,
+      },
+      data: {
+        balance: { increment: booking_data.amount }
+      },
+    });
+
+    // create transaction
+    await TransactionRepository.createTransaction({
+      user_id: booking_data.traveller_id,
+      amount: booking_data.amount.toNumber(),
+      type: TransactionType.CASHBACK,
+      description: 'Delivery completed',
+      reference_id: booking_data.id,
+    });
+    
+    // create notification for traveller and owner use createManyAndReturn
+    const notifications = await this.prisma.notification.createManyAndReturn({
+      data: [
+        {
+          notification_message: `You delivered ${updated_booking_data.owner.first_name}'s package`,
+          notification_type: 'delivered',
+          receiver_id: booking_data.traveller_id
+        },
+        {
+          notification_message: `Your package has been delivered by ${updated_booking_data.traveller.first_name}`,
+          notification_type: 'delivered',
+          receiver_id: booking_data.owner_id
+        },
+      ],
+    });
+
+    // sending notification for notification and conversation
+    // notification
+    notifications.forEach(notification => {
+      this.gateway.server.to(notification.receiver_id).emit("notification", notification)
+    });
+
+    const conversations = await this.prisma.conversation.updateManyAndReturn({
+      where: {
+        travel_id: booking_data.travel_id,
+        package_id: booking_data.package_id,
+      },
+      data: {
+        notification_type: 'delivered'
+      },
+      include: {
+        package: {
+          select: {
+            owner_id: true,
+          }
+        },
+      },
+    });
+
+    // conversation
+    conversations.forEach(conv => {
+      // sending to package owner
+      this.gateway.server.to(conv.package.owner_id).emit("conversation-notification-update", {
+        id: conv.id,
+        notification_type: conv.notification_type
+      })
+    })
 
     // if (updated_booking_data.problem_photo) {
     //   updated_booking_data['problem_photo_url'] = SojebStorage.url(appConfig().storageUrl.pickUp + updated_booking_data.problem_photo);
@@ -778,8 +877,7 @@ export class BookingService {
 
     return {
       success: true,
-      message: 'Package picked up successfully',
-      data: updated_booking_data,
+      message: 'Package delivered successfully'
     };
 
   }

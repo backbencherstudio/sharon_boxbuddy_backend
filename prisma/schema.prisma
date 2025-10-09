@@ -675,8 +675,15 @@ model Booking {
 
   order_summary String @default("")
 
+  // booking otp
+  otp String?
+
   @@map("bookings")
 }
+
+
+
+
 
 model Travel {
   id                      String   @id @default(uuid())

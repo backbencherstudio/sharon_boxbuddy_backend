@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreatePackageDto } from './dto/create-package.dto';
 import { UpdatePackageDto } from './dto/update-package.dto';
@@ -9,11 +9,29 @@ import appConfig from 'src/config/app.config';
 export class PackageService {
   constructor(private readonly prisma: PrismaService) {}
 
+  private parseWeight(input: string, defaultValue = 0) {
+    if (!input || typeof input !== 'string') {
+      return defaultValue;
+    }
+
+    const numericString = input.toLowerCase().replace(/kg/g, '').trim();
+    const number = parseFloat(numericString);
+
+    return isNaN(number) ? defaultValue : number;
+  }
+
   async create(createPackageDto: CreatePackageDto) {
-    try {
+
+      if(createPackageDto.weight) {
+        // calculate booking amount
+        const weight = this.parseWeight(createPackageDto.weight)
+        if (!weight) throw new BadRequestException("Your package weight is missing or in wrong format. Format should be like 1kg, 2kg, 3kg, etc.")
+      }
+
       const packageData = await this.prisma.package.create({
         data: createPackageDto as any,
       });
+      
 
       if(createPackageDto.photo) {
         packageData['photo_url'] = SojebStorage.url(
@@ -25,12 +43,7 @@ export class PackageService {
         message: 'package created successfully',
         data: packageData,
       };
-    } catch (err) {
-      return {
-        success: false,
-        message: 'package create failed',
-      };
-    }
+    
   }
 
   async findMyPackages(owner_id: string) {
@@ -77,6 +90,8 @@ export class PackageService {
           not: userId,
         };
       }
+
+      
       const packages = await this.prisma.package.findMany({
         where,
         skip: (page - 1) * limit,
@@ -91,7 +106,9 @@ export class PackageService {
         }
       });
 
-      const total = await this.prisma.travel.count();
+      const total = await this.prisma.package.count({
+        where: where,
+      });
       const totalPages = Math.ceil(total / limit);
       const hasNextPage = page * limit < total;
       const hasPreviousPage = page > 1;

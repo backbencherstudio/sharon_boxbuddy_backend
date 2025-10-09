@@ -12,6 +12,8 @@ import { diskStorage } from 'multer';
 import appConfig from 'src/config/app.config';
 import { AllConditionsAreNotMetDto } from './dto/all-conditions-are-not-met.dto';
 import { SummaryDto } from './dto/summary-dto';
+import { DropOffDto } from './dto/drop-off.dto';
+
 
 @ApiTags('Booking')
 @ApiBearerAuth()
@@ -174,6 +176,7 @@ export class BookingController {
   async dropOff(
     @Param('id') id: string,
     @Req() req: Request,
+    @Body() dropOffDto: DropOffDto,
     @UploadedFiles() files: {
       drop_off_photo?: Express.Multer.File[],
       drop_off_owner_sign?: Express.Multer.File[],
@@ -199,7 +202,7 @@ export class BookingController {
       drop_off_traveller_sign: files.drop_off_traveller_sign[0].filename
     }
 
-    return await this.bookingService.dropOff(id, req?.user?.userId, photos);
+    return await this.bookingService.dropOff(id, req?.user?.userId, dropOffDto.otp, photos);
   }
 
   
