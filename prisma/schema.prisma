@@ -523,7 +523,7 @@ model UserSetting {
 
 model Package {
   id                String   @id @default(uuid())
-  category          String
+  category          String[]   
   weight            String
   value             String
   length            String?
@@ -532,9 +532,11 @@ model Package {
   is_electronic     Boolean? @default(false)
   photo             String?
   pick_up_location  String
-  pick_up_parson    String
+  pick_up_person    String
+  pick_up_person_info Json?
   drop_off_location String
-  drop_off_parson   String
+  drop_off_person   String
+  drop_off_person_info Json?
   publish           Boolean  @default(false)
   created_at        DateTime @default(now())
   updated_at        DateTime @updatedAt

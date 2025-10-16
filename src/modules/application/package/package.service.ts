@@ -7,7 +7,7 @@ import appConfig from 'src/config/app.config';
 
 @Injectable()
 export class PackageService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   private parseWeight(input: string, defaultValue = 0) {
     if (!input || typeof input !== 'string') {
@@ -22,7 +22,8 @@ export class PackageService {
 
   async create(createPackageDto: CreatePackageDto) {
 
-      if(createPackageDto.weight) {
+    try {
+      if (createPackageDto.weight) {
         // calculate booking amount
         const weight = this.parseWeight(createPackageDto.weight)
         if (!weight) throw new BadRequestException("Your package weight is missing or in wrong format. Format should be like 1kg, 2kg, 3kg, etc.")
@@ -31,9 +32,9 @@ export class PackageService {
       const packageData = await this.prisma.package.create({
         data: createPackageDto as any,
       });
-      
 
-      if(createPackageDto.photo) {
+
+      if (createPackageDto.photo) {
         packageData['photo_url'] = SojebStorage.url(
           appConfig().storageUrl.package + createPackageDto.photo,
         );
@@ -43,7 +44,16 @@ export class PackageService {
         message: 'package created successfully',
         data: packageData,
       };
-    
+    } catch (error) {
+      // if error then delete the photo from storage and throw the error
+      if (createPackageDto.photo) {
+        await SojebStorage.delete(appConfig().storageUrl.package + createPackageDto.photo);
+      }
+      throw error;
+    }
+
+
+
   }
 
   async findMyPackages(owner_id: string) {
@@ -55,7 +65,7 @@ export class PackageService {
       });
 
       packages.forEach((packageData) => {
-        if(packageData.photo) {
+        if (packageData.photo) {
           packageData['photo_url'] = SojebStorage.url(
             appConfig().storageUrl.package + packageData.photo,
           );
@@ -91,7 +101,7 @@ export class PackageService {
         };
       }
 
-      
+
       const packages = await this.prisma.package.findMany({
         where,
         skip: (page - 1) * limit,
@@ -99,7 +109,7 @@ export class PackageService {
       });
 
       packages.forEach((packageData) => {
-        if(packageData.photo) {
+        if (packageData.photo) {
           packageData['photo_url'] = SojebStorage.url(
             appConfig().storageUrl.package + packageData.photo,
           );
@@ -144,7 +154,7 @@ export class PackageService {
       });
 
       packages.forEach((packageData) => {
-        if(packageData.photo) {
+        if (packageData.photo) {
           packageData['photo_url'] = SojebStorage.url(
             appConfig().storageUrl.package + packageData.photo,
           );
@@ -173,7 +183,7 @@ export class PackageService {
       });
 
       packages.forEach((packageData) => {
-        if(packageData.photo) {
+        if (packageData.photo) {
           packageData['photo_url'] = SojebStorage.url(
             appConfig().storageUrl.package + packageData.photo,
           );
@@ -228,7 +238,7 @@ export class PackageService {
       delete packageData.bookings;
       packageData['booking'] = bookings;
 
-      if(packageData.photo) {
+      if (packageData.photo) {
         packageData['photo_url'] = SojebStorage.url(
           appConfig().storageUrl.package + packageData.photo,
         );
@@ -267,7 +277,7 @@ export class PackageService {
         data: updatePackageDto as any,
       });
 
-      if(updatedPackageData.photo) {
+      if (updatedPackageData.photo) {
         updatedPackageData['photo_url'] = SojebStorage.url(
           appConfig().storageUrl.package + updatedPackageData.photo,
         );
