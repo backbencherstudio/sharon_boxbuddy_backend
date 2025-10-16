@@ -43,6 +43,7 @@ export class AuthService {
           date_of_birth: true,
           about_me: true,
           created_at: true,
+          verification_status: true,
         },
       });
 

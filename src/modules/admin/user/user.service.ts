@@ -75,6 +75,7 @@ export class UserService {
           approved_at: true,
           created_at: true,
           updated_at: true,
+          verification_status: true,
         },
       });
 
@@ -107,6 +108,7 @@ export class UserService {
           updated_at: true,
           avatar: true,
           billing_id: true,
+          verification_status: true,  
         },
       });
 

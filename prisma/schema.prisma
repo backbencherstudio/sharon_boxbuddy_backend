@@ -70,7 +70,7 @@ model User {
   two_factor_secret     String? // secret key for two factor authentication
   facebook_id           String?
 
-  verificationStatus String? @default("pending")
+  verification_status String  ? @default("pending")
   stripeSessionId    String?
 
   accounts                  Account[]

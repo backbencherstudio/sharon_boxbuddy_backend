@@ -177,8 +177,7 @@ export class WalletWebhookController {
     await this.walletService['prisma'].user.update({
       where: { id: verificationSession.metadata.user_id },
       data: {
-        verificationStatus: 'completed',
-
+        verification_status: 'completed',
         stripeSessionId: verificationSession.id,
       },
     });
