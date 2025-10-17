@@ -61,7 +61,7 @@ export class PackageService {
       const packages = await this.prisma.package.findMany({
         where: {
           owner_id: owner_id,
-          status: 'pending',
+          status: 'new',
         },
       });
 
@@ -92,7 +92,7 @@ export class PackageService {
     try {
       const where = {
         publish: true,
-        status: 'pending',
+        status: 'new',
       };
 
       // console.log(userId)
@@ -202,7 +202,7 @@ export class PackageService {
         where: {
           owner_id: userId,
           publish: false,
-          status: 'pending',
+          status: 'new',
         },
       });
 
@@ -232,7 +232,7 @@ export class PackageService {
         where: {
           owner_id: userId,
           publish: true,
-          status: 'pending',
+          status: 'new',
         },
       });
 

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, Query } from '@nestjs/common';
 import { ReviewsService } from './reviews.service';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { UpdateReviewDto } from './dto/update-review.dto';
@@ -18,14 +18,20 @@ export class ReviewsController {
     return await this.reviewsService.create(createReviewDto, req?.user?.userId);
   }
 
-  @Get(':user_id/received')
-  async findAllRecevied(@Param('user_id') user_id: string) {
-    return await this.reviewsService.findAllReceived(user_id);
+  @Get('received')
+  async findAllRecevied(@Query('page') page: number, @Query('limit') limit: number, @Req() req: Request) {
+    const userId = req?.user?.userId;
+    const pageNumber = Math.max(1, parseInt(String(page), 10) || 1);
+    const limitNumber = Math.min(100, Math.max(1, parseInt(String(limit), 10) || 10));
+    return await this.reviewsService.findAllReceived(userId, limitNumber, pageNumber);
   }
 
-  @Get(':user_id/left')
-  async findAllLefted(@Param('user_id') user_id: string) {
-    return await this.reviewsService.findAllLeft(user_id);
+  @Get('left')
+  async findAllLefted(@Query('page') page: number, @Query('limit') limit: number, @Req() req: Request) {
+    const userId = req?.user?.userId;
+    const pageNumber = Math.max(1, parseInt(String(page), 10) || 1);
+    const limitNumber = Math.min(100, Math.max(1, parseInt(String(limit), 10) || 10));
+    return await this.reviewsService.findAllLeft(userId, limitNumber, pageNumber);
   }
 
   // @Get(':id')

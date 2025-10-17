@@ -859,15 +859,7 @@ export class BookingService {
       })
     })
 
-    // update package status to completed
-    await this.prisma.package.update({
-      where: {
-        id: booking_data.package_id,
-      },
-      data: {
-        status: 'completed',
-      },
-    });
+   
     // if (updated_booking_data.problem_photo) {
     //   updated_booking_data['problem_photo_url'] = SojebStorage.url(appConfig().storageUrl.pickUp + updated_booking_data.problem_photo);
     // }

@@ -541,7 +541,7 @@ model Package {
   created_at        DateTime @default(now())
   updated_at        DateTime @updatedAt
 
-  status String? @default("pending")  // pending, in_progress, completed, rejected
+  status String? @default("new")  // new, pending, in_progress, completed, rejected
 
   // traveller_id String?
   owner_id String

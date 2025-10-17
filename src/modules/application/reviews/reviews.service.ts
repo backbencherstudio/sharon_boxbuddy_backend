@@ -12,14 +12,14 @@ export class ReviewsService {
     const booking = await this.prisma.booking.findFirst({
       where: {
         id: createReviewDto.booking_id,
-       OR: [
-        {
-          owner_id: user_id,
-        },
-        {
-          traveller_id: user_id,
-        },
-       ],
+        OR: [
+          {
+            owner_id: user_id,
+          },
+          {
+            traveller_id: user_id,
+          },
+        ],
       },
     });
 
@@ -28,8 +28,8 @@ export class ReviewsService {
     }
 
     // check booking is completed or not
-    if (booking.status !== 'completed') {
-      throw new BadRequestException('Booking is not completed');
+    if (booking.status !== 'delivered') {
+      throw new BadRequestException('Booking is not delivered');
     }
 
     // check user has already reviewed this package or not
@@ -44,7 +44,6 @@ export class ReviewsService {
       throw new BadRequestException('You have already reviewed this package');
     }
 
-    console.log()
     // create review
     const data: any = {
       booking_id: createReviewDto.booking_id,
@@ -52,7 +51,7 @@ export class ReviewsService {
       rating: createReviewDto.rating,
       review_from: booking.traveller_id == user_id ? 'traveller' : 'package_owner',
       review_by_id: user_id,
-      review_for_id: booking.traveller_id == user_id ? booking.owner_id: booking.traveller_id,
+      review_for_id: booking.traveller_id == user_id ? booking.owner_id : booking.traveller_id,
     }
     const newReview = await this.prisma.review.create({
       data,
@@ -66,8 +65,9 @@ export class ReviewsService {
 
   }
 
-  async findAllReceived(user_id: string) {
+  async findAllReceived(user_id: string, limit: number, page: number) {
     // Fetch all reviews for the user
+    const offset = (page - 1) * limit;
     const reviews = await this.prisma.review.findMany({
       where: {
         review_for_id: user_id,
@@ -83,15 +83,17 @@ export class ReviewsService {
           },
         },
       },
+      skip: offset,
+      take: limit,
     });
-  
+
     // Calculate average rating and total count
     const totalReviews = reviews.length;
     const avgRating =
       totalReviews > 0
         ? reviews.reduce((sum, review) => sum + review.rating, 0) / totalReviews
         : 0;
-  
+
     return {
       success: true,
       message: "Reviews fetched successfully",
@@ -102,10 +104,21 @@ export class ReviewsService {
           average_rating: parseFloat(avgRating.toFixed(2)), // Rounds to 2 decimal places
         },
       },
-    };
+
+      pagination: {
+        total: totalReviews,
+        currentPage: page,
+        limit: limit,
+        totalPages: Math.ceil(totalReviews / limit),
+        hasNextPage: page * limit < totalReviews,
+        hasPreviousPage: page > 1,
+      },
+    }
+
   }
 
-  async findAllLeft(user_id: string) {
+  async findAllLeft(user_id: string, limit: number, page: number) {
+    const offset = (page - 1) * limit;
     // Fetch all reviews for the user
     const reviews = await this.prisma.review.findMany({
       where: {
@@ -122,15 +135,17 @@ export class ReviewsService {
           },
         },
       },
+      skip: offset,
+      take: limit,
     });
-  
+
     // Calculate average rating and total count
     const totalReviews = reviews.length;
     const avgRating =
       totalReviews > 0
         ? reviews.reduce((sum, review) => sum + review.rating, 0) / totalReviews
         : 0;
-  
+
     return {
       success: true,
       message: "Reviews fetched successfully",
@@ -141,11 +156,19 @@ export class ReviewsService {
           average_rating: parseFloat(avgRating.toFixed(2)), // Rounds to 2 decimal places
         },
       },
+      pagination: {
+        total: totalReviews,
+        currentPage: page,
+        limit: limit,
+        totalPages: Math.ceil(totalReviews / limit),
+        hasNextPage: page * limit < totalReviews,
+        hasPreviousPage: page > 1,
+      },
     };
   }
 
   // async findOne(id: string) {
-    
+
   // }
 
   // update(id: number, updateReviewDto: UpdateReviewDto) {
