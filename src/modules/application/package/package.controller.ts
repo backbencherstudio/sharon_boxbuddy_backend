@@ -106,6 +106,14 @@ async findAll(@Query() query: { page?: number, limit?: number }, @Req() req: Req
   }
 }
 
+// packages history
+@Get('/history')
+async findPackagesHistory(@Query() query: { page?: number, limit?: number }, @Req() req: Request) {
+    const page = Math.max(1, parseInt(String(query.page), 10) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(String(query.limit), 10) || 10));
+    return await this.packageService.findPackagesHistory({ page, limit }, req?.user?.userId);
+}
+
 @Get('/my-packages')
 async findMyPackages(@Req() req: Request) {
   try {

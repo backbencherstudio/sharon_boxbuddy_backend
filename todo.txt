@@ -14,6 +14,9 @@ done => 8. On delivery need otp function and need to increase wallet of travelle
 done => 9. upload image on submit package
 done => 10. during package creation check weight format
 done => 11. Without login user can view all the travels and package
-12. Select Multiple items
-13. Trustworthy person need to put some extra informations
+done => 12. Select Multiple items
+done => 13. Trustworthy person need to put some extra informations
+done => 14. History of travels
+done => 15 History of packagess
+
 

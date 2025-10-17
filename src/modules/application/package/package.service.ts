@@ -61,6 +61,7 @@ export class PackageService {
       const packages = await this.prisma.package.findMany({
         where: {
           owner_id: owner_id,
+          status: 'pending',
         },
       });
 
@@ -91,7 +92,7 @@ export class PackageService {
     try {
       const where = {
         publish: true,
-        status: 'new',
+        status: 'pending',
       };
 
       // console.log(userId)
@@ -144,12 +145,64 @@ export class PackageService {
     }
   }
 
+  async findPackagesHistory(query: { page?: number, limit?: number }, userId: string) {
+    try {
+      const { page, limit } = query;
+
+      const where = {
+        owner_id: userId,
+        status: 'completed',
+
+      };
+
+      const packages = await this.prisma.package.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+      });
+
+      packages.forEach((packageData) => {
+        if (packageData.photo) {
+          packageData['photo_url'] = SojebStorage.url(
+            appConfig().storageUrl.package + packageData.photo,
+          );
+        }
+      });
+
+      const total = await this.prisma.package.count({ where });
+      const totalPages = Math.ceil(total / limit);
+      const hasNextPage = page * limit < total;
+      const hasPreviousPage = page > 1;
+
+      return {
+        success: true,
+        message: 'packages history fetched successfully',
+        data: packages,
+        pagination: {
+          total,
+          totalPages,
+          currentPage: page,
+          limit: limit,
+          hasNextPage,
+          hasPreviousPage,
+        },
+      };
+     
+    } catch (err) {
+      return {
+        success: false,
+        message: 'packages history fetch failed',
+      };
+    }
+  }
+
   async findRegisteredPackages(userId: string) {
     try {
       const packages = await this.prisma.package.findMany({
         where: {
           owner_id: userId,
           publish: false,
+          status: 'pending',
         },
       });
 
@@ -179,6 +232,7 @@ export class PackageService {
         where: {
           owner_id: userId,
           publish: true,
+          status: 'pending',
         },
       });
 

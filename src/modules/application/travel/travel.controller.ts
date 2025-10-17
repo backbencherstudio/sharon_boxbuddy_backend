@@ -24,24 +24,24 @@ export class TravelController {
       createTravelDto.publish = true;
       return await this.travelService.create(createTravelDto);
     } catch (err) {
-      if(err instanceof BadRequestException) {
+      if (err instanceof BadRequestException) {
         return {
           success: false,
           message: err.message,
         };
 
-      }else{
+      } else {
         return {
           success: false,
           message: 'travel creation failed',
         };
       }
-      }
     }
-  
+  }
 
-    @Public()
-    @UseGuards(OptionalJwtAuthGuard)
+
+  @Public()
+  @UseGuards(OptionalJwtAuthGuard)
   @Get()
   async findAll(@Query() findAllDto: FindAllDto, @Req() req: Request) {
     try {
@@ -54,6 +54,27 @@ export class TravelController {
       return {
         success: false,
         message: 'travels fetch failed',
+      };
+    }
+  }
+
+  /**
+   * find travels history
+   * @param req
+   * @returns
+   */
+  @Get('history')
+  async findTravelHistory(@Query() query: { page?: number, limit?: number }, @Req() req: Request) {
+    try {
+      const page = Math.max(1, parseInt(String(query.page), 10) || 1);
+      const limit = Math.min(100, Math.max(1, parseInt(String(query.limit), 10) || 10));
+      query.page = page;
+      query.limit = limit;
+      return await this.travelService.findTravelHistory(query, req?.user?.userId);
+    } catch (err) {
+      return {
+        success: false,
+        message: 'travel history fetch failed',
       };
     }
   }
@@ -83,7 +104,7 @@ export class TravelController {
   }
 
   @Patch('request/:id/update')
-  async updateRequest(@Param('id') id: string, @Req() req: Request,  @Body() announcementRequestDto: AnnouncementRequestDto) {
+  async updateRequest(@Param('id') id: string, @Req() req: Request, @Body() announcementRequestDto: AnnouncementRequestDto) {
     try {
       return await this.travelService.updateRequest(id, req?.user?.userId, announcementRequestDto);
     } catch (err) {
@@ -94,7 +115,7 @@ export class TravelController {
     }
   }
 
-  
+
 
   @Get(':id')
   async findOne(@Param('id') id: string) {

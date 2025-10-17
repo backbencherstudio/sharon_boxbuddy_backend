@@ -113,6 +113,68 @@ export class TravelService {
     }
   }
 
+  async findTravelHistory(query: { page?: number, limit?: number }, userId: string) {
+    try {
+      const { page, limit } = query;
+
+      const where = {
+        publish: true,
+        user_id: userId,
+        arrival: {
+          lt: new Date(),
+        },
+      };
+
+
+
+      const travels = await this.prisma.travel.findMany({
+        where: where,
+        skip: (page - 1) * limit,
+        take: limit,
+        include: {
+          user: {
+            select: {
+              name: true,
+              avatar: true,
+            }
+          },
+        },
+        orderBy: [
+          {
+            departure: "asc",  // First ordering by departure date
+          },
+          {
+            arrival: "asc",  // Then ordering by arrival date
+          },
+        ],
+      });
+
+      const total = await this.prisma.travel.count({ where });
+      const totalPages = Math.ceil(total / limit);
+      const hasNextPage = page * limit < total;
+      const hasPreviousPage = page > 1;
+
+      return {
+        success: true,
+        message: 'travels history fetched successfully',
+        data: travels,
+        pagination: {
+          total,
+          totalPages,
+          currentPage: page,
+          limit: limit,
+          hasNextPage,
+          hasPreviousPage
+        }
+      };
+    } catch (err) {
+      return {
+        success: false, 
+        message: 'travels history fetch failed',
+      };
+    }
+  }
+
   async myCurrentTravels(userId: string) {
     try {
       const travels = await this.prisma.travel.findMany({
