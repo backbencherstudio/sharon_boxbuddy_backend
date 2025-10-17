@@ -36,6 +36,10 @@ export class WalletService implements OnModuleInit {
     await this.ensureCentralWalletExists();
   }
 
+  async getTransactionsByUser(userId: string, limit: number, page: number) {
+    return await TransactionRepository.getTransactionsByUser(userId, limit, page);
+  }
+
   private async ensureCentralWalletExists() {
     const centralWallet = await this.prisma.wallet.findUnique({
       where: { id: this.config.centralWalletId },

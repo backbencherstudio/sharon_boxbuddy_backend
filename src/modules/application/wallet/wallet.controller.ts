@@ -35,6 +35,17 @@ export class WalletController {
     private paymentAccountService: PaymentAccountService,
   ) {}
 
+  @Get('transactions')
+  @ApiOperation({ summary: 'Get wallet transactions by user' })
+  @ApiResponse({ status: 200, description: 'Returns wallet transactions by user' })
+  async getTransactionsByUser(@Req() req: Request, @Query('page') page = 1, @Query('limit') limit = 10) {
+    const userId = req?.user?.userId;
+    const pageNumber = Math.max(1, parseInt(String(page), 10) || 1);
+    const limitNumber = Math.min(100, Math.max(1, parseInt(String(limit), 10) || 10));
+
+    return await this.walletService.getTransactionsByUser(userId, limitNumber, pageNumber);
+  }
+
   @Get('accounts')
   async getAccounts(@Req() req: Request, @Query('provider') provider?: string) {
     const userId = req?.user?.userId;

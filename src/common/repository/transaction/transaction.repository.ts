@@ -130,11 +130,34 @@ export class TransactionRepository {
   /**
    * Get all transactions by user
    */
-  static async getTransactionsByUser(user_id: string) {
-    return await prisma.transaction.findMany({
+  static async getTransactionsByUser(user_id: string, limit: number, page: number) {
+    const offset = (page - 1) * limit;
+    const transactions = await prisma.transaction.findMany({
       where: { user_id },
       orderBy: { created_at: 'desc' },
+      skip: offset,
+      take: limit,
     });
+
+    const total = await prisma.transaction.count({ where: { user_id } });
+    const totalPages = Math.ceil(total / limit);
+    const hasNextPage = offset + limit < total;
+    const hasPreviousPage = offset > 0;
+
+
+    return {
+      success: true,
+      message: 'Transactions fetched successfully',
+      data: transactions,
+      pagination: {
+        total,
+        currentPage: page,
+        limit,
+        totalPages,
+        hasNextPage,
+        hasPreviousPage,
+      },
+    };
   }
 
   /**
