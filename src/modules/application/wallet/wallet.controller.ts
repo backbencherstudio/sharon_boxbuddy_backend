@@ -38,7 +38,13 @@ export class WalletController {
   @Get('create-customer')
   async createCustomer(@Req() req: Request) {
     const userId = req?.user?.userId;
-    return this.walletService.createCustomer(userId);
+    const customerId = await this.walletService.createCustomer(userId);
+    return {
+      success: true,
+      message: 'Customer created successfully',
+      customerId: customerId,
+    };
+
   }
 
   @Get('transactions')
