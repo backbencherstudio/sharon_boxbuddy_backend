@@ -35,6 +35,12 @@ export class WalletController {
     private paymentAccountService: PaymentAccountService,
   ) {}
 
+  @Get('create-customer')
+  async createCustomer(@Req() req: Request) {
+    const userId = req?.user?.userId;
+    return this.walletService.createCustomer(userId);
+  }
+
   @Get('transactions')
   @ApiOperation({ summary: 'Get wallet transactions by user' })
   @ApiResponse({ status: 200, description: 'Returns wallet transactions by user' })

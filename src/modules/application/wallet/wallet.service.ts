@@ -36,6 +36,34 @@ export class WalletService implements OnModuleInit {
     await this.ensureCentralWalletExists();
   }
 
+  async createCustomer(userId: string) {
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+    });
+
+    if (user.billing_id) {
+      return user.billing_id;
+    }
+
+    const customer = await StripePayment.createCustomer({
+      user_id: user.id,
+      email: user.email,
+      name: user.name,
+    });
+
+    if (customer) {
+      await this.prisma.user.update({
+        where: {
+          id: user.id,
+        },
+        data: {
+          billing_id: customer.id,
+        },
+      });
+    }
+    return customer.id;
+  }
+
   async getTransactionsByUser(userId: string, limit: number, page: number) {
     return await TransactionRepository.getTransactionsByUser(userId, limit, page);
   }
