@@ -35,6 +35,9 @@ export class WalletController {
     private paymentAccountService: PaymentAccountService,
   ) {}
 
+  // GET /wallet/create-customer => Create a new customer
+  @ApiOperation({ summary: 'Create a new customer' })
+  @ApiResponse({ status: 200, description: 'Returns the customer ID' })
   @Get('create-customer')
   async createCustomer(@Req() req: Request) {
     const userId = req?.user?.userId;

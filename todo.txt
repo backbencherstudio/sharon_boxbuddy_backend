@@ -20,5 +20,5 @@ done => 14. History of travels
 done => 15. History of packagess
 done => 16. Add transctions endpoint
 done => 17. reviews rewrite
-18. Test cron job and check if payment is completed then refund otherwize not
+done => 18. Test cron job and check if payment is completed then refund otherwize not
 
