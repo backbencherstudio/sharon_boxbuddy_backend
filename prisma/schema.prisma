@@ -702,6 +702,10 @@ model Travel {
   trip_details            String
   publish                 Boolean  @default(false)
 
+  // new fields
+  departure_from String?
+  arrival_to String?
+
   user    User   @relation("UserTravels", fields: [user_id], references: [id])
   user_id String
 
