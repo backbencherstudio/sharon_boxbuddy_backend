@@ -133,6 +133,14 @@ export class BookingService {
       where: {
         traveller_id: user_id,
         confirmed: true,
+        status: {
+          in: [
+            BookingStatus.pending,
+            BookingStatus.in_progress,
+            BookingStatus.pick_up,
+            BookingStatus.on_the_way,
+          ],
+        },
       },
       omit: {
         otp: true,
@@ -177,6 +185,14 @@ export class BookingService {
       where: {
         owner_id: user_id,
         confirmed: true,
+        status: {
+          in: [
+            BookingStatus.pending,
+            BookingStatus.in_progress,
+            BookingStatus.pick_up,
+            BookingStatus.on_the_way,
+          ],
+        },
       },
       include: {
         travel: true,
@@ -1088,7 +1104,14 @@ export class BookingService {
     const { page, limit } = query;
     const where = {
       owner_id: user_id,
-      status: BookingStatus.delivered,
+      status: {
+        notIn: [
+          BookingStatus.pending,
+          BookingStatus.in_progress,
+          BookingStatus.pick_up,
+          BookingStatus.on_the_way,
+        ],
+      },
     };
 
     const bookings = await this.prisma.booking.findMany({
@@ -1099,6 +1122,7 @@ export class BookingService {
         traveller: true,
         travel: true,
         package: true,
+        reviews: true,
       },
     });
 
@@ -1129,7 +1153,14 @@ export class BookingService {
     const { page, limit } = query;
     const where = {
       traveller_id: user_id,
-      status: BookingStatus.delivered,
+      status: {
+        notIn: [
+          BookingStatus.pending,
+          BookingStatus.in_progress,
+          BookingStatus.pick_up,
+          BookingStatus.on_the_way,
+        ],
+      },
     };
 
     const bookings = await this.prisma.booking.findMany({
@@ -1140,6 +1171,7 @@ export class BookingService {
         traveller: true,
         travel: true,
         package: true,
+        reviews: true,
       },
     });
     const total = await this.prisma.booking.count({ where });
