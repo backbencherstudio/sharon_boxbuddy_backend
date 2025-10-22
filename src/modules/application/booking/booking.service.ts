@@ -1,4 +1,9 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { UpdateBookingDto } from './dto/update-booking.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -12,11 +17,14 @@ import { MessageGateway } from 'src/modules/chat/message/message.gateway';
 import { DateHelper } from 'src/common/helper/date.helper';
 import { randomInt } from 'crypto';
 import { TransactionRepository } from 'src/common/repository/transaction/transaction.repository';
-import { TransactionType } from '@prisma/client';
+import { BookingStatus, TransactionType } from '@prisma/client';
 
 @Injectable()
 export class BookingService {
-  constructor(private readonly prisma: PrismaService, private gateway: MessageGateway) { }
+  constructor(
+    private readonly prisma: PrismaService,
+    private gateway: MessageGateway,
+  ) {}
   async create(createBookingDto: CreateBookingDto, user_id: string) {
     // check travel is exist or not
     const travel = await this.prisma.travel.findUnique({
@@ -29,7 +37,9 @@ export class BookingService {
     });
 
     if (!travel) {
-      throw new BadRequestException('Travel not found or travel date is expired');
+      throw new BadRequestException(
+        'Travel not found or travel date is expired',
+      );
     }
 
     // check package is exist or not
@@ -54,33 +64,30 @@ export class BookingService {
     }
 
     // calculate booking amount
-    const weight = this.parseWeight(package_data.weight)
+    const weight = this.parseWeight(package_data.weight);
 
-    if (!weight) throw new BadRequestException("Your package weight is missing or in wrong format. You can't book for this package.")
+    if (!weight)
+      throw new BadRequestException(
+        "Your package weight is missing or in wrong format. You can't book for this package.",
+      );
 
     // Fixed 20 euros + 6 euros per kg
     // Less than 1kg costs the same price as 1kg
-    const amount = 20 + (weight * 6)
+    const amount = 20 + weight * 6;
 
     const data: any = {
       ...createBookingDto,
       amount,
       traveller_id: travel.user_id,
       owner_id: user_id,
-    }
+    };
     // check with this data already any booking is exist or not with status in_progress
     let booking_data = await this.prisma.booking.findFirst({
       where: {
         travel_id: createBookingDto.travel_id,
         package_id: createBookingDto.package_id,
         status: {
-          in: [
-            "pending",
-            "in_progress",
-            "pick_up",
-            "on_the_way",
-            "delivered"
-          ],
+          in: ['pending', 'in_progress', 'pick_up', 'on_the_way', 'delivered'],
         },
       },
     });
@@ -125,7 +132,7 @@ export class BookingService {
     const bookings = await this.prisma.booking.findMany({
       where: {
         traveller_id: user_id,
-        confirmed: true
+        confirmed: true,
       },
       omit: {
         otp: true,
@@ -169,7 +176,7 @@ export class BookingService {
     const bookings = await this.prisma.booking.findMany({
       where: {
         owner_id: user_id,
-        confirmed: true
+        confirmed: true,
       },
       include: {
         travel: true,
@@ -250,9 +257,9 @@ export class BookingService {
     if (!booking_data) {
       throw new BadRequestException('Booking not found');
     }
-    
-    if(booking_data.otp && booking_data.traveller_id === user_id) {
-      delete booking_data.otp
+
+    if (booking_data.otp && booking_data.traveller_id === user_id) {
+      delete booking_data.otp;
     }
 
     return {
@@ -265,30 +272,30 @@ export class BookingService {
   async updateSummary(id: string, user_id: string, summary: string) {
     const booking = await this.prisma.booking.findFirst({
       where: {
-         id: id,
+        id: id,
         owner_id: user_id,
-      }
-    })
+      },
+    });
 
-    if(!booking) throw new NotFoundException('Booking not found');
-    if(booking.order_summary != "") throw new ForbiddenException('Your booking summary already submitted')
-    
+    if (!booking) throw new NotFoundException('Booking not found');
+    if (booking.order_summary != '')
+      throw new ForbiddenException('Your booking summary already submitted');
+
     await this.prisma.booking.update({
       where: {
         id: id,
         owner_id: user_id,
-        order_summary: "",
+        order_summary: '',
       },
       data: {
-        order_summary: summary
-      }
-    })
+        order_summary: summary,
+      },
+    });
 
     return {
       success: true,
-      message: 'Booking summary updated'
-    }
-
+      message: 'Booking summary updated',
+    };
   }
 
   // update(id: string, updateBookingDto: UpdateBookingDto) {
@@ -299,31 +306,35 @@ export class BookingService {
   //   return `This action removes a #${id} booking`;
   // }
 
-  async cancelBooking(id: string, user_id: string, cancelReasonDto: CancelReasonDto) {
+  async cancelBooking(
+    id: string,
+    user_id: string,
+    cancelReasonDto: CancelReasonDto,
+  ) {
     const booking_data = await this.prisma.booking.findFirst({
       where: {
         id,
         paid: true,
         confirmed: true,
-        payment_status: 'completed'
+        payment_status: 'completed',
       },
       include: {
         traveller: {
           select: {
             first_name: true,
-          }
+          },
         },
         owner: {
           select: {
             first_name: true,
-          }
+          },
         },
         travel: {
           select: {
             departure: true,
-          }
-        }
-      }
+          },
+        },
+      },
     });
 
     if (!booking_data) {
@@ -334,9 +345,13 @@ export class BookingService {
       throw new BadRequestException('Booking already cancelled');
     }
 
-
-    if (booking_data.traveller_id !== user_id && booking_data.owner_id !== user_id) {
-      throw new BadRequestException('You are not allowed to cancel this booking');
+    if (
+      booking_data.traveller_id !== user_id &&
+      booking_data.owner_id !== user_id
+    ) {
+      throw new BadRequestException(
+        'You are not allowed to cancel this booking',
+      );
     }
 
     const data: any = {
@@ -345,11 +360,11 @@ export class BookingService {
       cancel: true,
       status: 'cancel',
       payment_status: 'refunded',
-      cancel_at: new Date()
-    }
+      cancel_at: new Date(),
+    };
 
     if (booking_data.traveller_id === user_id) {
-      data['cancel_by_who'] = 'traveller'
+      data['cancel_by_who'] = 'traveller';
 
       // notification
       const notifications = await this.prisma.notification.createManyAndReturn({
@@ -357,24 +372,22 @@ export class BookingService {
           {
             notification_message: `${booking_data.traveller.first_name} has canceled the booking. You have been refunded.`,
             notification_type: 'canceled',
-            receiver_id: booking_data.owner_id
+            receiver_id: booking_data.owner_id,
           },
           // {
           //   notification_message: `You canceled ${booking_data.owner.first_name}'s booking request.`,
           //   notification_type: 'canceled',
           //   receiver_id: booking_data.traveller_id
           // }
-        ]
-      })
-
-
-      // notification
-      notifications.forEach(notification => {
-        this.gateway.server.to(notification.receiver_id).emit("notification", notification)
+        ],
       });
 
-
-
+      // notification
+      notifications.forEach((notification) => {
+        this.gateway.server
+          .to(notification.receiver_id)
+          .emit('notification', notification);
+      });
 
       // need to adjust wallet based on remaining hours
       /*
@@ -384,46 +397,43 @@ export class BookingService {
         May result in account suspension
       */
 
-      await this.prisma.$transaction(async tx => {
+      await this.prisma.$transaction(async (tx) => {
         await tx.user.update({
           where: {
             id: booking_data.traveller_id,
           },
           data: {
             total_booking_canceled: {
-              increment: 1
-            }
-          }
-        })
+              increment: 1,
+            },
+          },
+        });
 
         await tx.wallet.update({
           where: {
-            user_id: booking_data.owner_id
+            user_id: booking_data.owner_id,
           },
           data: {
             balance: {
-              increment: booking_data.amount
-            }
-          }
-        })
-      })
+              increment: booking_data.amount,
+            },
+          },
+        });
+      });
 
-      const pickUpTime = new Date(booking_data.travel.departure)
-      const now = new Date()
-      const hoursUntilPickup = (pickUpTime.getTime() - now.getTime()) / (1000 * 60 * 60)
+      const pickUpTime = new Date(booking_data.travel.departure);
+      const now = new Date();
+      const hoursUntilPickup =
+        (pickUpTime.getTime() - now.getTime()) / (1000 * 60 * 60);
 
       data['refund_details'] = {
         sender_refund: Number(booking_data.amount),
         traveler_amount: 0,
         platform_amount: 0,
-        cancellation_timeframe: `${Math.round(hoursUntilPickup)} hours before pick-up`
-      }
-
-
-
-
+        cancellation_timeframe: `${Math.round(hoursUntilPickup)} hours before pick-up`,
+      };
     } else {
-      data['cancel_by_who'] = 'package_owner'
+      data['cancel_by_who'] = 'package_owner';
 
       // notification
       const notifications = await this.prisma.notification.createManyAndReturn({
@@ -436,14 +446,16 @@ export class BookingService {
           {
             notification_message: `${booking_data.owner.first_name} canceled their booking request.`,
             notification_type: 'canceled',
-            receiver_id: booking_data.traveller_id
-          }
-        ]
-      })
+            receiver_id: booking_data.traveller_id,
+          },
+        ],
+      });
 
       // notification
-      notifications.forEach(notification => {
-        this.gateway.server.to(notification.receiver_id).emit("notification", notification)
+      notifications.forEach((notification) => {
+        this.gateway.server
+          .to(notification.receiver_id)
+          .emit('notification', notification);
       });
 
       // need to adjust wallet based on remaining hours
@@ -454,59 +466,60 @@ export class BookingService {
         Less than 24 hours before pick-up: 36% refund to sender, 36% to traveler, 28% to platform.
       */
 
-      await this.prisma.$transaction(async tx => {
-        const pickUpTime = new Date(booking_data.travel.departure)
-        const now = new Date()
-        const hoursUntilPickup = (pickUpTime.getTime() - now.getTime()) / (1000 * 60 * 60)
+      await this.prisma.$transaction(async (tx) => {
+        const pickUpTime = new Date(booking_data.travel.departure);
+        const now = new Date();
+        const hoursUntilPickup =
+          (pickUpTime.getTime() - now.getTime()) / (1000 * 60 * 60);
 
-        let senderRefund = 0
-        let travelerAmount = 0
-        let platformAmount = 0
+        let senderRefund = 0;
+        let travelerAmount = 0;
+        let platformAmount = 0;
 
         // 2. Calculate refunds based on cancellation time
         if (hoursUntilPickup > 48) {
           // Before 48 hours: 100% refund to sender
-          senderRefund = Number(booking_data.amount)
-          travelerAmount = 0
-          platformAmount = 0
+          senderRefund = Number(booking_data.amount);
+          travelerAmount = 0;
+          platformAmount = 0;
         } else if (hoursUntilPickup >= 24 && hoursUntilPickup <= 48) {
           // 24 to 47 hours: 80% refund to sender, 20% to platform
-          senderRefund = Number(booking_data.amount) * 0.8
-          platformAmount = Number(booking_data.amount) * 0.2
-          travelerAmount = 0
+          senderRefund = Number(booking_data.amount) * 0.8;
+          platformAmount = Number(booking_data.amount) * 0.2;
+          travelerAmount = 0;
         } else if (hoursUntilPickup < 24) {
           // Less than 24 hours: 36% refund to sender, 36% to traveler, 28% to platform
-          senderRefund = Number(booking_data.amount) * 0.36
-          travelerAmount = Number(booking_data.amount) * 0.36
-          platformAmount = Number(booking_data.amount) * 0.28
+          senderRefund = Number(booking_data.amount) * 0.36;
+          travelerAmount = Number(booking_data.amount) * 0.36;
+          platformAmount = Number(booking_data.amount) * 0.28;
         }
 
         // 3. Update sender's wallet (refund)
         if (senderRefund > 0) {
           await tx.wallet.update({
             where: {
-              user_id: booking_data.owner_id // Sender's wallet
+              user_id: booking_data.owner_id, // Sender's wallet
             },
             data: {
               balance: {
-                increment: senderRefund
-              }
-            }
-          })
+                increment: senderRefund,
+              },
+            },
+          });
         }
 
         // 4. Update traveler's wallet (if applicable)
         if (travelerAmount > 0) {
           await tx.wallet.update({
             where: {
-              user_id: booking_data.traveller_id
+              user_id: booking_data.traveller_id,
             },
             data: {
               balance: {
-                increment: travelerAmount
-              }
-            }
-          })
+                increment: travelerAmount,
+              },
+            },
+          });
         }
 
         // 5. Update platform wallet (if applicable)
@@ -515,32 +528,31 @@ export class BookingService {
           await tx.platformWallet.updateMany({
             data: {
               total_earnings: {
-                increment: platformAmount
-              }
-            }
-          })
+                increment: platformAmount,
+              },
+            },
+          });
         }
 
         // 6. Update sender's cancellation count
         await tx.user.update({
           where: {
-            id: booking_data.owner_id // Sender's user account
+            id: booking_data.owner_id, // Sender's user account
           },
           data: {
             total_booking_canceled: {
-              increment: 1
-            }
-          }
-        })
+              increment: 1,
+            },
+          },
+        });
 
         // 7. Update booking status and store refund details
         data['refund_details'] = {
           sender_refund: senderRefund,
           traveler_amount: travelerAmount,
           platform_amount: platformAmount,
-          cancellation_timeframe: `${Math.round(hoursUntilPickup)} hours before pick-up`
-        }
-
+          cancellation_timeframe: `${Math.round(hoursUntilPickup)} hours before pick-up`,
+        };
 
         // 8. Create transaction records for audit
         // const transactions = []
@@ -588,8 +600,7 @@ export class BookingService {
         // }
 
         // await Promise.all(transactions)
-      })
-
+      });
     }
 
     const updated_booking_data = await this.prisma.booking.update({
@@ -606,40 +617,45 @@ export class BookingService {
         package_id: updated_booking_data.package_id,
       },
       data: {
-        notification_type: 'canceled'
+        notification_type: 'canceled',
       },
       include: {
         package: {
           select: {
             owner_id: true,
-          }
+          },
         },
         travel: {
           select: {
-            user_id: true
-          }
-        }
-      }
-    })
+            user_id: true,
+          },
+        },
+      },
+    });
 
     // conversation
-    conversations.forEach(conv => {
+    conversations.forEach((conv) => {
       // sending to package owner
-      this.gateway.server.to(conv.package.owner_id).emit("conversation-notification-update", {
-        id: conv.id,
-        notification_type: conv.notification_type
-      })
-    })
+      this.gateway.server
+        .to(conv.package.owner_id)
+        .emit('conversation-notification-update', {
+          id: conv.id,
+          notification_type: conv.notification_type,
+        });
+    });
 
     return {
       success: true,
       message: 'Booking cancelled successfully',
       data: updated_booking_data,
     };
-
   }
 
-  async problemWithPackage(id: string, user_id: string, problemWithPackageDto: ProblemWithPackageDto) {
+  async problemWithPackage(
+    id: string,
+    user_id: string,
+    problemWithPackageDto: ProblemWithPackageDto,
+  ) {
     const booking_data = await this.prisma.booking.findFirst({
       where: {
         id,
@@ -652,14 +668,16 @@ export class BookingService {
     }
 
     if (booking_data.status !== 'on_the_way') {
-      throw new BadRequestException('You can not report a problem with the package');
+      throw new BadRequestException(
+        'You can not report a problem with the package',
+      );
     }
 
     const data: any = {
       ...problemWithPackageDto,
       problem: true,
-      status: 'problem_with_the_package'
-    }
+      status: 'problem_with_the_package',
+    };
 
     const updated_booking_data = await this.prisma.booking.update({
       where: {
@@ -675,12 +693,15 @@ export class BookingService {
     };
   }
 
-
-  async pickUp(id: string, user_id: string, photos: {
-    pick_up_photo: string,
-    pick_up_owner_sign: string,
-    pick_up_traveller_sign: string,
-  }) {
+  async pickUp(
+    id: string,
+    user_id: string,
+    photos: {
+      pick_up_photo: string;
+      pick_up_owner_sign: string;
+      pick_up_traveller_sign: string;
+    },
+  ) {
     const booking_data = await this.prisma.booking.findFirst({
       where: {
         id,
@@ -696,12 +717,11 @@ export class BookingService {
       throw new BadRequestException('You can not pick up the package');
     }
 
-
     const data: any = {
       status: 'on_the_way',
       ...photos,
-      otp: String(randomInt(100000, 1000000))
-    }
+      otp: String(randomInt(100000, 1000000)),
+    };
 
     const updated_booking_data = await this.prisma.booking.update({
       where: {
@@ -713,8 +733,6 @@ export class BookingService {
     if (!updated_booking_data) {
       throw new BadRequestException('Something went wrong');
     }
-
-
 
     // if (updated_booking_data.problem_photo) {
     //   updated_booking_data['problem_photo_url'] = SojebStorage.url(appConfig().storageUrl.pickUp + updated_booking_data.problem_photo);
@@ -737,14 +755,18 @@ export class BookingService {
       message: 'Package picked up successfully',
       data: updated_booking_data,
     };
-
   }
 
-  async dropOff(id: string, user_id: string, otp: string, photos: {
-    drop_off_photo: string,
-    drop_off_owner_sign: string,
-    drop_off_traveller_sign: string,
-  }) {
+  async dropOff(
+    id: string,
+    user_id: string,
+    otp: string,
+    photos: {
+      drop_off_photo: string;
+      drop_off_owner_sign: string;
+      drop_off_traveller_sign: string;
+    },
+  ) {
     const booking_data = await this.prisma.booking.findFirst({
       where: {
         id,
@@ -754,6 +776,10 @@ export class BookingService {
 
     if (!booking_data) {
       throw new BadRequestException('Booking not found');
+    }
+
+    if (booking_data.status == 'delivered') {
+      throw new BadRequestException('Package already delivered');
     }
 
     if (booking_data.status !== 'on_the_way') {
@@ -766,8 +792,8 @@ export class BookingService {
 
     const data: any = {
       status: 'delivered',
-      ...photos
-    }
+      ...photos,
+    };
 
     const updated_booking_data = await this.prisma.booking.update({
       where: {
@@ -778,12 +804,12 @@ export class BookingService {
         traveller: {
           select: {
             first_name: true,
-          }
+          },
         },
         owner: {
           select: {
             first_name: true,
-          }
+          },
         },
       },
     });
@@ -798,7 +824,7 @@ export class BookingService {
         user_id: booking_data.traveller_id,
       },
       data: {
-        balance: { increment: booking_data.amount }
+        balance: { increment: booking_data.amount },
       },
     });
 
@@ -810,27 +836,29 @@ export class BookingService {
       description: 'Delivery completed',
       reference_id: booking_data.id,
     });
-    
+
     // create notification for traveller and owner use createManyAndReturn
     const notifications = await this.prisma.notification.createManyAndReturn({
       data: [
         {
           notification_message: `You delivered ${updated_booking_data.owner.first_name}'s package`,
           notification_type: 'delivered',
-          receiver_id: booking_data.traveller_id
+          receiver_id: booking_data.traveller_id,
         },
         {
           notification_message: `Your package has been delivered by ${updated_booking_data.traveller.first_name}`,
           notification_type: 'delivered',
-          receiver_id: booking_data.owner_id
+          receiver_id: booking_data.owner_id,
         },
       ],
     });
 
     // sending notification for notification and conversation
     // notification
-    notifications.forEach(notification => {
-      this.gateway.server.to(notification.receiver_id).emit("notification", notification)
+    notifications.forEach((notification) => {
+      this.gateway.server
+        .to(notification.receiver_id)
+        .emit('notification', notification);
     });
 
     const conversations = await this.prisma.conversation.updateManyAndReturn({
@@ -839,27 +867,28 @@ export class BookingService {
         package_id: booking_data.package_id,
       },
       data: {
-        notification_type: 'delivered'
+        notification_type: 'delivered',
       },
       include: {
         package: {
           select: {
             owner_id: true,
-          }
+          },
         },
       },
     });
 
     // conversation
-    conversations.forEach(conv => {
+    conversations.forEach((conv) => {
       // sending to package owner
-      this.gateway.server.to(conv.package.owner_id).emit("conversation-notification-update", {
-        id: conv.id,
-        notification_type: conv.notification_type
-      })
-    })
+      this.gateway.server
+        .to(conv.package.owner_id)
+        .emit('conversation-notification-update', {
+          id: conv.id,
+          notification_type: conv.notification_type,
+        });
+    });
 
-   
     // if (updated_booking_data.problem_photo) {
     //   updated_booking_data['problem_photo_url'] = SojebStorage.url(appConfig().storageUrl.pickUp + updated_booking_data.problem_photo);
     // }
@@ -878,11 +907,9 @@ export class BookingService {
 
     return {
       success: true,
-      message: 'Package delivered successfully'
+      message: 'Package delivered successfully',
     };
-
   }
-
 
   async complete(id: string, user_id: string) {
     const booking_data = await this.prisma.booking.findFirst({
@@ -903,15 +930,14 @@ export class BookingService {
     const data: any = {
       status: 'completed',
       confirmed: true,
-
-    }
+    };
 
     const updated_booking_data = await this.prisma.booking.update({
       where: {
         id,
       },
       data: {
-        ...data
+        ...data,
       },
     });
 
@@ -939,7 +965,7 @@ export class BookingService {
     const data: any = {
       status: 'rejected',
       confirmed: false,
-    }
+    };
 
     const updated_booking_data = await this.prisma.booking.update({
       where: {
@@ -955,7 +981,11 @@ export class BookingService {
     };
   }
 
-  async allConditonsAreNotMet(id: string, user_id: string, allConditionsAreNotMetDto: AllConditionsAreNotMetDto) {
+  async allConditonsAreNotMet(
+    id: string,
+    user_id: string,
+    allConditionsAreNotMetDto: AllConditionsAreNotMetDto,
+  ) {
     const booking_data = await this.prisma.booking.findFirst({
       where: {
         id,
@@ -968,7 +998,9 @@ export class BookingService {
     }
 
     if (booking_data.status !== 'pick_up') {
-      throw new BadRequestException('You can not report all conditions are not met with the package');
+      throw new BadRequestException(
+        'You can not report all conditions are not met with the package',
+      );
     }
 
     if (allConditionsAreNotMetDto.report_details) {
@@ -977,16 +1009,17 @@ export class BookingService {
           package_id: booking_data.package_id,
           details_description: allConditionsAreNotMetDto.report_details,
           reported_by_id: user_id,
-          report_for: 'package'
-        }
-      })
+          report_for: 'package',
+        },
+      });
     }
 
     const data: any = {
       status: 'all_conditions_are_not_met',
       all_conditions_are_not_met: true,
-      all_conditions_are_not_met_reason: allConditionsAreNotMetDto.all_conditions_are_not_met_reason
-    }
+      all_conditions_are_not_met_reason:
+        allConditionsAreNotMetDto.all_conditions_are_not_met_reason,
+    };
 
     const updated_booking_data = await this.prisma.booking.update({
       where: {
@@ -1047,6 +1080,85 @@ export class BookingService {
   //   };
   // }
 
+  // booking history as package owner with pagination
+  async bookingHistoryAsPackageOwner(
+    user_id: string,
+    query: { page?: number; limit?: number },
+  ) {
+    const { page, limit } = query;
+    const where = {
+      owner_id: user_id,
+      status: BookingStatus.delivered,
+    };
 
+    const bookings = await this.prisma.booking.findMany({
+      where,
+      skip: (page - 1) * limit,
+      take: limit,
+      include: {
+        traveller: true,
+        travel: true,
+        package: true,
+      },
+    });
 
+    const total = await this.prisma.booking.count({ where });
+    const totalPages = Math.ceil(total / limit);
+    const hasNextPage = page * limit < total;
+    const hasPreviousPage = page > 1;
+    return {
+      success: true,
+      message: 'Bookings found successfully',
+      data: bookings,
+      pagination: {
+        total,
+        totalPages,
+        currentPage: page,
+        limit,
+        hasNextPage,
+        hasPreviousPage,
+      },
+    };
+  }
+
+  // booking history as traveller with pagination
+  async bookingHistoryAsTraveller(
+    user_id: string,
+    query: { page?: number; limit?: number },
+  ) {
+    const { page, limit } = query;
+    const where = {
+      traveller_id: user_id,
+      status: BookingStatus.delivered,
+    };
+
+    const bookings = await this.prisma.booking.findMany({
+      where,
+      skip: (page - 1) * limit,
+      take: limit,
+      include: {
+        traveller: true,
+        travel: true,
+        package: true,
+      },
+    });
+    const total = await this.prisma.booking.count({ where });
+    const totalPages = Math.ceil(total / limit);
+    const hasNextPage = page * limit < total;
+    const hasPreviousPage = page > 1;
+
+    return {
+      success: true,
+      message: 'Bookings found successfully',
+      data: bookings,
+      pagination: {
+        total,
+        totalPages,
+        currentPage: page,
+        limit,
+        hasNextPage,
+        hasPreviousPage,
+      },
+    };
+  }
 }
