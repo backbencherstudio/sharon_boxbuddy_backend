@@ -795,7 +795,7 @@ export class BookingService {
     }
 
     if (booking_data.status == 'delivered') {
-      throw new BadRequestException('Package already delivered');
+      throw new BadRequestException('Already delivered');
     }
 
     if (booking_data.status !== 'on_the_way') {
@@ -803,7 +803,7 @@ export class BookingService {
     }
 
     if (booking_data.otp !== otp) {
-      throw new BadRequestException('OTP is incorrect');
+      throw new BadRequestException('Code is not correct or expired');
     }
 
     const data: any = {
