@@ -73,7 +73,8 @@ export class BookingService {
 
     // Fixed 20 euros + 6 euros per kg
     // Less than 1kg costs the same price as 1kg
-    const amount = 20 + weight * 6;
+    const amount =
+      appConfig().cost.fixed_cost + weight * appConfig().cost.per_kg_cost;
 
     const data: any = {
       ...createBookingDto,

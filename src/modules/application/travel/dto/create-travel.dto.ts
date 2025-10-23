@@ -10,7 +10,7 @@ import {
 import { Type } from 'class-transformer';
 
 export class CreateTravelDto {
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   flight_number: string;
 

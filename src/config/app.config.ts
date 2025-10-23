@@ -5,7 +5,7 @@ export default () => ({
     url: process.env.APP_URL,
     client_app_url: process.env.CLIENT_APP_URL,
     port: parseInt(process.env.PORT, 10) || 3000,
-    currency: process.env.CURRENCY || 'EUR'
+    currency: process.env.CURRENCY || 'EUR',
   },
 
   fileSystems: {
@@ -67,6 +67,10 @@ export default () => ({
       webhook_secret: process.env.STRIPE_WEBHOOK_SECRET,
     },
   },
+  cost: {
+    fixed_cost: parseInt(process.env.FIXED_COST, 10) || 20,
+    per_kg_cost: parseInt(process.env.PER_KG_COST, 10) || 6,
+  },
 
   /**
    * Storage directory
@@ -85,7 +89,7 @@ export default () => ({
     dropOff: '/drop-off/',
     // chat
     attachment: '/attachment/',
-    message_attachment:  '/message-attachment/',
+    message_attachment: '/message-attachment/',
   },
 
   defaultUser: {
