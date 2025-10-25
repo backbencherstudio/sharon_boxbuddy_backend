@@ -7,38 +7,44 @@ import { DateHelper } from 'src/common/helper/date.helper';
 import { AnnouncementRequestDto } from './dto/announcement-request.dto';
 import { MessageGateway } from 'src/modules/chat/message/message.gateway';
 
-
-
 @Injectable()
 export class TravelService {
-  constructor(private readonly prisma: PrismaService, private gateway: MessageGateway) { }
+  constructor(
+    private readonly prisma: PrismaService,
+    private gateway: MessageGateway,
+  ) {}
 
   async create(createTravelDto: CreateTravelDto) {
+    // check departure date is not in the past
+    if (
+      DateHelper.normalizeDate(createTravelDto.departure) <
+      DateHelper.normalizeDate(new Date().toUTCString())
+    ) {
+      throw new BadRequestException('Departure date is in the past or invalid');
+    }
 
-      // check departure date is not in the past
-      if (DateHelper.normalizeDate(createTravelDto.departure) < DateHelper.normalizeDate(new Date().toUTCString())) {
-        throw new BadRequestException('Departure date is in the past or invalid');
-      }
+    // check arrival date is not in the past
+    if (
+      DateHelper.normalizeDate(createTravelDto.arrival) <
+      DateHelper.normalizeDate(new Date().toUTCString())
+    ) {
+      throw new BadRequestException('Arrival date is in the past or invalid');
+    }
 
-      // check arrival date is not in the past
-      if (DateHelper.normalizeDate(createTravelDto.arrival) < DateHelper.normalizeDate(new Date().toUTCString())) {
-        throw new BadRequestException('Arrival date is in the past or invalid');
-      }
+    const travel = await this.prisma.travel.create({
+      data: createTravelDto,
+    });
 
-      const travel = await this.prisma.travel.create({
-        data: createTravelDto,
-      });
-
-      return {
-        success: true,
-        message: 'travel created successfully',
-        data: travel,
-      }
+    return {
+      success: true,
+      message: 'travel created successfully',
+      data: travel,
+    };
   }
 
   async findAll(findAllDto: FindAllDto, userId?: string) {
     try {
-      const { arrival, departure } = findAllDto;
+      const { arrival, departure, arrival_to, departure_from } = findAllDto;
       const where = {
         publish: true,
       };
@@ -46,7 +52,7 @@ export class TravelService {
       if (userId) {
         where['user_id'] = {
           not: userId,
-        }
+        };
       }
 
       if (arrival) {
@@ -65,6 +71,26 @@ export class TravelService {
         };
       }
 
+      // if (arrival_to) {
+      //   where['arrival_to'] = {
+      //     contains: arrival_to,
+      //   };
+      // }
+
+      // if (departure_from) {
+      //   where['departure_from'] = {
+      //     contains: departure_from,
+      //   };
+      // }
+
+      if (arrival_to) {
+        where['arrival_to'] = arrival_to;
+      }
+
+      if (departure_from) {
+        where['departure_from'] = departure_from;
+      }
+
       const travels = await this.prisma.travel.findMany({
         where: where,
         skip: (findAllDto.page - 1) * findAllDto.limit,
@@ -74,15 +100,15 @@ export class TravelService {
             select: {
               name: true,
               avatar: true,
-            }
+            },
           },
         },
         orderBy: [
           {
-            departure: "asc",  // First ordering by departure date
+            departure: 'asc', // First ordering by departure date
           },
           {
-            arrival: "asc",  // Then ordering by arrival date
+            arrival: 'asc', // Then ordering by arrival date
           },
         ],
       });
@@ -102,8 +128,8 @@ export class TravelService {
           currentPage: findAllDto.page,
           limit: findAllDto.limit,
           hasNextPage,
-          hasPreviousPage
-        }
+          hasPreviousPage,
+        },
       };
     } catch (err) {
       return {
@@ -113,7 +139,10 @@ export class TravelService {
     }
   }
 
-  async findTravelHistory(query: { page?: number, limit?: number }, userId: string) {
+  async findTravelHistory(
+    query: { page?: number; limit?: number },
+    userId: string,
+  ) {
     try {
       const { page, limit } = query;
 
@@ -125,8 +154,6 @@ export class TravelService {
         },
       };
 
-
-
       const travels = await this.prisma.travel.findMany({
         where: where,
         skip: (page - 1) * limit,
@@ -136,15 +163,15 @@ export class TravelService {
             select: {
               name: true,
               avatar: true,
-            }
+            },
           },
         },
         orderBy: [
           {
-            departure: "asc",  // First ordering by departure date
+            departure: 'asc', // First ordering by departure date
           },
           {
-            arrival: "asc",  // Then ordering by arrival date
+            arrival: 'asc', // Then ordering by arrival date
           },
         ],
       });
@@ -164,12 +191,12 @@ export class TravelService {
           currentPage: page,
           limit: limit,
           hasNextPage,
-          hasPreviousPage
-        }
+          hasPreviousPage,
+        },
       };
     } catch (err) {
       return {
-        success: false, 
+        success: false,
         message: 'travels history fetch failed',
       };
     }
@@ -182,25 +209,23 @@ export class TravelService {
           user_id: userId,
           departure: {
             gte: DateHelper.normalizeDate(new Date().toUTCString()),
-          }
+          },
         },
         include: {
           announcement_requests: {
             include: {
               package: true,
-            }
+            },
           },
         },
         orderBy: [
           {
-            departure: "asc",  // First ordering by departure date
+            departure: 'asc', // First ordering by departure date
           },
           {
-            arrival: "asc",  // Then ordering by arrival date
+            arrival: 'asc', // Then ordering by arrival date
           },
         ],
-
-
       });
       return {
         success: true,
@@ -237,10 +262,10 @@ export class TravelService {
         },
         orderBy: [
           {
-            departure: "asc",
+            departure: 'asc',
           },
           {
-            arrival: "asc",
+            arrival: 'asc',
           },
         ],
       });
@@ -258,7 +283,6 @@ export class TravelService {
       };
     }
   }
-
 
   async findOne(id: string) {
     try {
@@ -340,9 +364,18 @@ export class TravelService {
     }
   }
 
-  async updateRequest(id: string, userId: string, announcementRequestDto: AnnouncementRequestDto) {
+  async updateRequest(
+    id: string,
+    userId: string,
+    announcementRequestDto: AnnouncementRequestDto,
+  ) {
     try {
-      if ((announcementRequestDto.is_accepted === undefined || announcementRequestDto.is_accepted === null) && (announcementRequestDto.is_refused === undefined || announcementRequestDto.is_refused === null)) {
+      if (
+        (announcementRequestDto.is_accepted === undefined ||
+          announcementRequestDto.is_accepted === null) &&
+        (announcementRequestDto.is_refused === undefined ||
+          announcementRequestDto.is_refused === null)
+      ) {
         return {
           success: false,
           message: 'Invalid request',
@@ -355,7 +388,7 @@ export class TravelService {
           id: id,
           is_accepted: false,
           is_refused: false,
-          is_processed: false
+          is_processed: false,
         },
         include: {
           travel: true, // Include the associated travel to check user_id
@@ -367,21 +400,21 @@ export class TravelService {
               owner: {
                 select: {
                   first_name: true,
-                }
+                },
               },
               traveller_id: true,
               traveller: {
                 select: {
                   first_name: true,
-                }
+                },
               },
-            }
+            },
           },
           package: {
             select: {
               owner_id: true,
-            }
-          }
+            },
+          },
         },
       });
 
@@ -402,16 +435,23 @@ export class TravelService {
       }
 
       const data: any = {
-        is_processed: true
-      }
+        is_processed: true,
+      };
 
-
-      if (announcementRequestDto.is_accepted === true || announcementRequestDto.is_accepted === false) {
+      if (
+        announcementRequestDto.is_accepted === true ||
+        announcementRequestDto.is_accepted === false
+      ) {
         data['is_accepted'] = announcementRequestDto.is_accepted;
-        if (announcementRequestDto.is_accepted === true) data['is_refused'] = false;
-      } else if (announcementRequestDto.is_refused === true || announcementRequestDto.is_refused === false) {
+        if (announcementRequestDto.is_accepted === true)
+          data['is_refused'] = false;
+      } else if (
+        announcementRequestDto.is_refused === true ||
+        announcementRequestDto.is_refused === false
+      ) {
         data['is_refused'] = announcementRequestDto.is_refused;
-        if (announcementRequestDto.is_refused === true) data['is_accepted'] = false;
+        if (announcementRequestDto.is_refused === true)
+          data['is_accepted'] = false;
       }
 
       // Step 3: Proceed with accepting the request and updating the travel data
@@ -424,66 +464,71 @@ export class TravelService {
       if (announcementRequestDto.is_accepted === true) {
         await this.prisma.booking.update({
           where: {
-            id: request.booking_id
+            id: request.booking_id,
           },
           data: {
             status: 'pick_up',
             confirmed: true,
-          }
-        })
+          },
+        });
         // conversation
-        const conversations = await this.prisma.conversation.updateManyAndReturn({
-          where: {
-            travel_id: request.travel_id,
-            package_id: request.package_id,
-          },
-          data: {
-            notification_type: 'accepted'
-          },
-          include: {
-            package: {
-              select: {
-                owner_id: true,
-              }
+        const conversations =
+          await this.prisma.conversation.updateManyAndReturn({
+            where: {
+              travel_id: request.travel_id,
+              package_id: request.package_id,
             },
-            travel: {
-              select: {
-                user_id: true
-              }
-            }
-          }
-        })
-
-        const notifications = await this.prisma.notification.createManyAndReturn({
-          data: [
-            {
-              notification_message: `Your booking has been accepted by ${request.booking.traveller.first_name}`,
+            data: {
               notification_type: 'accepted',
-              receiver_id: request.booking.owner_id
             },
-            {
-              notification_message: `You accepted the booking request from ${request.booking.owner.first_name}. Get ready for the package handover.`,
-              notification_type: 'accepted',
-              receiver_id: request.booking.traveller_id
-            }
-          ]
-        })
+            include: {
+              package: {
+                select: {
+                  owner_id: true,
+                },
+              },
+              travel: {
+                select: {
+                  user_id: true,
+                },
+              },
+            },
+          });
 
+        const notifications =
+          await this.prisma.notification.createManyAndReturn({
+            data: [
+              {
+                notification_message: `Your booking has been accepted by ${request.booking.traveller.first_name}`,
+                notification_type: 'accepted',
+                receiver_id: request.booking.owner_id,
+              },
+              {
+                notification_message: `You accepted the booking request from ${request.booking.owner.first_name}. Get ready for the package handover.`,
+                notification_type: 'accepted',
+                receiver_id: request.booking.traveller_id,
+              },
+            ],
+          });
 
         // sending notification for notification and conversation
         // notification
-        notifications.forEach(notification => {
-          this.gateway.server.to(notification.receiver_id).emit("notification", notification)
+        notifications.forEach((notification) => {
+          this.gateway.server
+            .to(notification.receiver_id)
+            .emit('notification', notification);
         });
 
         // conversation
-        conversations.forEach(conv => {
+        conversations.forEach((conv) => {
           // sending to package owner
-          this.gateway.server.to(conv.package.owner_id).emit("conversation-notification-update", {
-            id: conv.id,
-            notification_type: conv.notification_type
-          })
-        })
+          this.gateway.server
+            .to(conv.package.owner_id)
+            .emit('conversation-notification-update', {
+              id: conv.id,
+              notification_type: conv.notification_type,
+            });
+        });
       } else if (announcementRequestDto.is_refused === true) {
         // update booking, conversation, wallet, create notification for both
         // wallet
@@ -493,78 +538,80 @@ export class TravelService {
           },
           data: {
             balance: {
-              increment: request.booking.amount
-            }
-          }
-        })
+              increment: request.booking.amount,
+            },
+          },
+        });
 
         await this.prisma.booking.update({
           where: {
-            id: request.booking_id
+            id: request.booking_id,
           },
           data: {
             status: 'declined',
-            payment_status: 'refunded'
-          }
-        })
-
-
-        // conversation
-        const conversations = await this.prisma.conversation.updateManyAndReturn({
-          where: {
-            travel_id: request.travel_id,
-            package_id: request.package_id,
+            payment_status: 'refunded',
           },
-          data: {
-            notification_type: 'declined'
-          },
-          include: {
-            package: {
-              select: {
-                owner_id: true,
-              }
-            },
-            travel: {
-              select: {
-                user_id: true
-              }
-            }
-          }
-        })
-
-        // notification
-        const notifications = await this.prisma.notification.createManyAndReturn({
-          data: [
-            {
-              notification_message: `Your booking has been declined by ${request.booking.traveller.first_name}. You have been automatically refunded.`,
-              notification_type: 'declined',
-              receiver_id: request.booking.owner_id
-            },
-            {
-              notification_message: `You declined the booking request from ${request.booking.owner.first_name}. The sender has been refunded.`,
-              notification_type: 'declined',
-              receiver_id: request.booking.traveller_id
-            }
-          ]
-        })
-
-        // sending notification for notification and conversation
-        // notification
-        notifications.forEach(notification => {
-          this.gateway.server.to(notification.receiver_id).emit("notification", notification)
         });
 
         // conversation
-        conversations.forEach( conv => {
+        const conversations =
+          await this.prisma.conversation.updateManyAndReturn({
+            where: {
+              travel_id: request.travel_id,
+              package_id: request.package_id,
+            },
+            data: {
+              notification_type: 'declined',
+            },
+            include: {
+              package: {
+                select: {
+                  owner_id: true,
+                },
+              },
+              travel: {
+                select: {
+                  user_id: true,
+                },
+              },
+            },
+          });
+
+        // notification
+        const notifications =
+          await this.prisma.notification.createManyAndReturn({
+            data: [
+              {
+                notification_message: `Your booking has been declined by ${request.booking.traveller.first_name}. You have been automatically refunded.`,
+                notification_type: 'declined',
+                receiver_id: request.booking.owner_id,
+              },
+              {
+                notification_message: `You declined the booking request from ${request.booking.owner.first_name}. The sender has been refunded.`,
+                notification_type: 'declined',
+                receiver_id: request.booking.traveller_id,
+              },
+            ],
+          });
+
+        // sending notification for notification and conversation
+        // notification
+        notifications.forEach((notification) => {
+          this.gateway.server
+            .to(notification.receiver_id)
+            .emit('notification', notification);
+        });
+
+        // conversation
+        conversations.forEach((conv) => {
           // sending to package owner
-          this.gateway.server.to(conv.package.owner_id).emit("conversation-notification-update", {
-            id: conv.id,
-            notification_type: conv.notification_type
-          })
-        })
-
-
-
+          this.gateway.server
+            .to(conv.package.owner_id)
+            .emit('conversation-notification-update', {
+              id: conv.id,
+              notification_type: conv.notification_type,
+            });
+        });
       }
 
       return {
@@ -579,6 +626,4 @@ export class TravelService {
       };
     }
   }
-
-
 }
