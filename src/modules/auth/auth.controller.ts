@@ -239,7 +239,10 @@ export class AuthController {
             .fill(null)
             .map(() => Math.round(Math.random() * 16).toString(16))
             .join('');
-          return cb(null, `${randomName}${file.originalname.replace(/\s+/g, '-')}`);
+          return cb(
+            null,
+            `${randomName}${file.originalname.replace(/\s+/g, '-')}`,
+          );
         },
       }),
       // storage: memoryStorage(),
@@ -366,7 +369,7 @@ export class AuthController {
   @Post('change-password')
   async changePassword(
     @Req() req: Request,
-    @Body() data: { email: string; old_password: string; new_password: string },
+    @Body() data: { old_password: string; new_password: string },
   ) {
     try {
       // const email = data.email;
@@ -396,6 +399,10 @@ export class AuthController {
         newPassword: newPassword,
       });
     } catch (error) {
+      // check HttpException type
+      if (error instanceof HttpException) {
+        throw error;
+      }
       return {
         success: false,
         message: 'Failed to change password',
