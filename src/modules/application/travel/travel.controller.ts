@@ -1,4 +1,16 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, Query, BadRequestException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+  Req,
+  Query,
+  BadRequestException,
+} from '@nestjs/common';
 import { TravelService } from './travel.service';
 import { CreateTravelDto } from './dto/create-travel.dto';
 import { UpdateTravelDto } from './dto/update-travel.dto';
@@ -15,7 +27,7 @@ import { OptionalJwtAuthGuard } from 'src/modules/auth/guards/optional-jwt-auth.
 @UseGuards(JwtAuthGuard)
 @Controller('travels')
 export class TravelController {
-  constructor(private readonly travelService: TravelService) { }
+  constructor(private readonly travelService: TravelService) {}
 
   @Post()
   async create(@Body() createTravelDto: CreateTravelDto, @Req() req: Request) {
@@ -24,12 +36,12 @@ export class TravelController {
       createTravelDto.publish = true;
       return await this.travelService.create(createTravelDto);
     } catch (err) {
+      // console.log(err);
       if (err instanceof BadRequestException) {
         return {
           success: false,
           message: err.message,
         };
-
       } else {
         return {
           success: false,
@@ -39,14 +51,16 @@ export class TravelController {
     }
   }
 
-
   @Public()
   @UseGuards(OptionalJwtAuthGuard)
   @Get()
   async findAll(@Query() findAllDto: FindAllDto, @Req() req: Request) {
     try {
       const page = Math.max(1, parseInt(String(findAllDto.page), 10) || 1);
-      const limit = Math.min(100, Math.max(1, parseInt(String(findAllDto.limit), 10) || 10));
+      const limit = Math.min(
+        100,
+        Math.max(1, parseInt(String(findAllDto.limit), 10) || 10),
+      );
       findAllDto.page = page;
       findAllDto.limit = limit;
       return await this.travelService.findAll(findAllDto, req?.user?.userId);
@@ -64,13 +78,22 @@ export class TravelController {
    * @returns
    */
   @Get('history')
-  async findTravelHistory(@Query() query: { page?: number, limit?: number }, @Req() req: Request) {
+  async findTravelHistory(
+    @Query() query: { page?: number; limit?: number },
+    @Req() req: Request,
+  ) {
     try {
       const page = Math.max(1, parseInt(String(query.page), 10) || 1);
-      const limit = Math.min(100, Math.max(1, parseInt(String(query.limit), 10) || 10));
+      const limit = Math.min(
+        100,
+        Math.max(1, parseInt(String(query.limit), 10) || 10),
+      );
       query.page = page;
       query.limit = limit;
-      return await this.travelService.findTravelHistory(query, req?.user?.userId);
+      return await this.travelService.findTravelHistory(
+        query,
+        req?.user?.userId,
+      );
     } catch (err) {
       return {
         success: false,
@@ -94,7 +117,9 @@ export class TravelController {
   @Get('my-current-travels-with-announcements')
   async myCurrentTravelsWithAnnounments(@Req() req: Request) {
     try {
-      return await this.travelService.myCurrentTravelsWithAnnounments(req?.user?.userId);
+      return await this.travelService.myCurrentTravelsWithAnnounments(
+        req?.user?.userId,
+      );
     } catch (err) {
       return {
         success: false,
@@ -104,9 +129,17 @@ export class TravelController {
   }
 
   @Patch('request/:id/update')
-  async updateRequest(@Param('id') id: string, @Req() req: Request, @Body() announcementRequestDto: AnnouncementRequestDto) {
+  async updateRequest(
+    @Param('id') id: string,
+    @Req() req: Request,
+    @Body() announcementRequestDto: AnnouncementRequestDto,
+  ) {
     try {
-      return await this.travelService.updateRequest(id, req?.user?.userId, announcementRequestDto);
+      return await this.travelService.updateRequest(
+        id,
+        req?.user?.userId,
+        announcementRequestDto,
+      );
     } catch (err) {
       return {
         success: false,
@@ -114,8 +147,6 @@ export class TravelController {
       };
     }
   }
-
-
 
   @Get(':id')
   async findOne(@Param('id') id: string) {
@@ -130,9 +161,17 @@ export class TravelController {
   }
 
   @Patch(':id')
-  async update(@Param('id') id: string, @Body() updateTravelDto: UpdateTravelDto, @Req() req: Request) {
+  async update(
+    @Param('id') id: string,
+    @Body() updateTravelDto: UpdateTravelDto,
+    @Req() req: Request,
+  ) {
     try {
-      return await this.travelService.update(id, updateTravelDto, req?.user?.userId);
+      return await this.travelService.update(
+        id,
+        updateTravelDto,
+        req?.user?.userId,
+      );
     } catch (err) {
       return {
         success: false,

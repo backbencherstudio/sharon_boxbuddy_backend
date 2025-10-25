@@ -689,7 +689,7 @@ model Booking {
 
 model Travel {
   id                      String   @id @default(uuid())
-  flight_number           String
+  flight_number           String? 
   airline                 String
   duration                String
   departure               DateTime @db.Timestamptz
