@@ -11,30 +11,30 @@ export interface GetNotificationsOptions {
 
 @Injectable()
 export class NotificationService {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
   create(createNotificationDto: CreateNotificationDto) {
     return 'This action adds a new notification';
   }
 
   async findAll(userId: string, options: GetNotificationsOptions) {
-    const { page, limit } = options
+    const { page, limit } = options;
     const [notifications, total] = await Promise.all([
       this.prisma.notification.findMany({
         where: { receiver_id: userId },
         skip: (page - 1) * limit,
         take: limit,
-        orderBy: { created_at: 'desc' }
+        orderBy: { created_at: 'desc' },
       }),
-      this.prisma.notification.count({ where: { receiver_id: userId } })
+      this.prisma.notification.count({ where: { receiver_id: userId } }),
     ]);
 
     const totalPages = Math.ceil(total / limit);
     const hasPrevPage = page > 1;
     const hasNextPage = page < totalPages;
-  
+
     return {
       success: true,
-      message: "Notifications retrieved successfully",
+      message: 'Notifications retrieved successfully',
       data: notifications,
       meta: {
         currentPage: page,
@@ -42,8 +42,8 @@ export class NotificationService {
         total,
         totalPages,
         hasPrevPage,
-        hasNextPage
-      }
+        hasNextPage,
+      },
     };
   }
 
@@ -57,5 +57,26 @@ export class NotificationService {
 
   remove(id: number) {
     return `This action removes a #${id} notification`;
+  }
+
+  // unread notification count
+  async unreadCount(userId: string) {
+    const unreadCount = await this.prisma.notification.count({
+      where: { receiver_id: userId, read_at: null },
+    });
+    return {
+      success: true,
+      message: 'Unread notification count',
+      data: { count: unreadCount },
+    };
+  }
+
+  // read all notifications
+  async readAll(userId: string) {
+    await this.prisma.notification.updateMany({
+      where: { receiver_id: userId, read_at: null },
+      data: { read_at: new Date() },
+    });
+    return { success: true, message: 'All notifications read successfully' };
   }
 }

@@ -30,7 +30,7 @@ export class MessageController {
   constructor(
     private readonly messageService: MessageService,
     private readonly messageGateway: MessageGateway,
-  ) { }
+  ) {}
 
   // @ApiOperation({ summary: 'Send message' })
   // @Post()
@@ -69,14 +69,14 @@ export class MessageController {
   //   }
   // }
 
-
-
   @Post()
   @ApiOperation({ summary: 'Send a new message' })
   @UseInterceptors(
     FileFieldsInterceptor([{ name: 'attachments', maxCount: 10 }], {
       storage: diskStorage({
-        destination: appConfig().storageUrl.rootUrl + appConfig().storageUrl.message_attachment,
+        destination:
+          appConfig().storageUrl.rootUrl +
+          appConfig().storageUrl.message_attachment,
         filename: (req, file, cb) => {
           const randomName = Array(32)
             .fill(null)
@@ -99,7 +99,7 @@ export class MessageController {
     const user_id = req.user.userId;
 
     // Process attachments
-    const attachments = files?.attachments?.map(file => ({
+    const attachments = files?.attachments?.map((file) => ({
       name: file.originalname,
       type: file.mimetype,
       size: file.size,
@@ -128,8 +128,7 @@ export class MessageController {
       };
     }
 
-    throw new BadRequestException(result.error)
-
+    throw new BadRequestException(result.error);
 
     // return {
     //   success: false,
@@ -137,29 +136,30 @@ export class MessageController {
     // };
   }
 
+  @Get('unread-count')
+  @ApiOperation({ summary: 'Get unread message count' })
+  async unreadMessageCount(@Req() req: Request) {
+    const user_id = req.user.userId;
+    return await this.messageService.unreadMessageCount(user_id);
+  }
+
   @Patch('read/:id')
   @ApiOperation({ summary: 'Mark message as read' })
-  async markAsRead(
-    @Req() req: Request,
-    @Param('id') messageId: string,
-  ) {
+  async markAsRead(@Req() req: Request, @Param('id') messageId: string) {
     const user_id = req.user.userId;
     const result = await this.messageService.markAsRead(user_id, messageId);
 
     if (result.success) {
       const message = await this.messageService.getMessageById(messageId);
-      this.messageGateway.server
-        .to(message.receiver_id)
-        .emit('message_read', {
-          message_id: messageId,
-          read_by: user_id,
-          read_at: new Date(),
-        });
+      this.messageGateway.server.to(message.receiver_id).emit('message_read', {
+        message_id: messageId,
+        read_by: user_id,
+        read_at: new Date(),
+      });
     }
 
     return result;
   }
-
 
   @Patch(':conversationId/read')
   @ApiOperation({ summary: 'Mark all messages as read in conversation' })
@@ -170,7 +170,10 @@ export class MessageController {
     const user_id = req?.user?.userId;
 
     // Mark all unread messages as read in the conversation for the current user
-    const result = await this.messageService.markMessagesAsRead(user_id, conversationId);
+    const result = await this.messageService.markMessagesAsRead(
+      user_id,
+      conversationId,
+    );
 
     if (result.success) {
       // Fetch all the messages for the conversation that were marked as read
@@ -186,19 +189,17 @@ export class MessageController {
       //       read_at: new Date(),
       //     });
       // });
-      
+
       this.messageGateway.server
-       .to(result.sender_id)
-       .emit('messages_read', {
+        .to(result.data.sender_id)
+        .emit('messages_read', {
           conversation_id: conversationId,
           read_by: user_id,
         });
-
     }
 
     return result;
   }
-
 
   // @Get(':id')
   // @ApiOperation({ summary: 'Get message by ID' })
@@ -228,6 +229,9 @@ export class MessageController {
         limit,
         cursor,
       });
+
+      // here if last message is not read then
+
       return messages;
     } catch (error) {
       return {

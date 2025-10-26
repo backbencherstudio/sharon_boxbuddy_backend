@@ -181,6 +181,29 @@ export class MessageService {
     }
   }
 
+  // unread conversation
+  async unreadMessageCount(userId: string) {
+    const unreadConversations = await this.prisma.conversation.count({
+      where: {
+        messages: {
+          some: {
+            receiver_id: userId,
+            status: {
+              not: 'READ',
+            },
+          },
+        },
+      },
+    });
+
+    return {
+      success: true,
+      data: {
+        count: unreadConversations,
+      },
+    };
+  }
+
   async markAsRead(userId: string, messageId: string) {
     try {
       const message = await this.prisma.message.update({
@@ -261,7 +284,10 @@ export class MessageService {
     return {
       success: true,
       message: `Marked ${updatedMessages.count} messages as read.`,
-      sender_id: message?.sender_id,
+      data: {
+        count: updatedMessages.count,
+        sender_id: message?.sender_id,
+      },
     };
   }
 
@@ -302,6 +328,9 @@ export class MessageService {
           message: 'Conversation not found',
         };
       }
+
+      // if receiver then mark as read
+      await this.markMessagesAsRead(user_id, conversation.id);
 
       const paginationData = {};
       if (limit) {
