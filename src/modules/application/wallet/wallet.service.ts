@@ -17,7 +17,11 @@ import { PaymentAccountService } from './payment.service';
 import { StripePayment } from 'src/common/lib/Payment/stripe/StripePayment';
 import { GetPaymentFromExistingWalletDto } from './dto/get-payment-from-existing-wallet.dto';
 import { TransactionRepository } from 'src/common/repository/transaction/transaction.repository';
-import { BookingStatus, TransactionStatus, TransactionType } from '@prisma/client';
+import {
+  BookingStatus,
+  TransactionStatus,
+  TransactionType,
+} from '@prisma/client';
 import { MessageGateway } from 'src/modules/chat/message/message.gateway';
 
 @Injectable()
@@ -65,7 +69,11 @@ export class WalletService implements OnModuleInit {
   }
 
   async getTransactionsByUser(userId: string, limit: number, page: number) {
-    return await TransactionRepository.getTransactionsByUser(userId, limit, page);
+    return await TransactionRepository.getTransactionsByUser(
+      userId,
+      limit,
+      page,
+    );
   }
 
   private async ensureCentralWalletExists() {
@@ -313,7 +321,6 @@ export class WalletService implements OnModuleInit {
       //     status: TransactionStatus.COMPLETED,
       //   },
       // ]);
-      
 
       return { success: true };
     });
@@ -666,7 +673,6 @@ export class WalletService implements OnModuleInit {
   //   });
   // }
 
-
   // ------------------------------
   //           Add Card
   // ------------------------------
@@ -801,10 +807,8 @@ export class WalletService implements OnModuleInit {
       }
 
       const existingBooking = await tx.booking.findUnique({
-        where: { id: booking_id,
-          paid: false,
-         },
-         include: {
+        where: { id: booking_id, paid: false },
+        include: {
           traveller: {
             select: {
               id: true,
@@ -819,10 +823,10 @@ export class WalletService implements OnModuleInit {
               last_name: true,
             },
           },
-         }
+        },
       });
 
-      if (!existingBooking ) {
+      if (!existingBooking) {
         throw new ForbiddenException('Booking not found or already paid.');
       }
 
@@ -830,8 +834,6 @@ export class WalletService implements OnModuleInit {
         throw new ForbiddenException('Booking already processed.');
       }
 
-
-      
       if (wallet.balance.toNumber() < existingBooking.amount.toNumber()) {
         throw new BadRequestException('Insufficient wallet balance.');
       }
@@ -856,19 +858,17 @@ export class WalletService implements OnModuleInit {
         },
       });
 
-      
       // 4️⃣ Create transaction record
       await TransactionRepository.createTransaction({
-          user_id,
-          wallet_id: wallet.id,
-          booking_id,
-          amount: existingBooking.amount.toNumber(),
-          type: TransactionType.BOOKING_PAYMENT,
-          status: TransactionStatus.COMPLETED,
-          description: `Payment for booking ${booking_id}`,
-          reference_id: booking_id,
+        user_id,
+        wallet_id: wallet.id,
+        booking_id,
+        amount: existingBooking.amount.toNumber(),
+        type: TransactionType.BOOKING_PAYMENT,
+        status: TransactionStatus.COMPLETED,
+        description: `Payment for booking ${booking_id}`,
+        reference_id: booking_id,
       });
-      
 
       await this.prisma.announcementRequest.create({
         data: {
@@ -877,59 +877,62 @@ export class WalletService implements OnModuleInit {
           booking_id: existingBooking.id,
         },
       });
-  
+
       const notifications = await this.prisma.notification.createManyAndReturn({
         data: [
           {
             notification_message: `Your booking request is pending. Waiting for ${existingBooking.traveller.first_name}’s confirmation (up to 12h).`,
             notification_type: 'pending',
-            receiver_id: existingBooking.owner_id
+            receiver_id: existingBooking.owner_id,
           },
           {
             notification_message: `You have received a new booking request from ${existingBooking.owner.first_name}. Respond within 12 hours.`,
             notification_type: 'pending',
-            receiver_id: existingBooking.traveller_id
-          }
-        ]
-      })
-  
-  
+            receiver_id: existingBooking.traveller_id,
+          },
+        ],
+      });
+
       const conversations = await this.prisma.conversation.updateManyAndReturn({
         where: {
-            travel_id: existingBooking.travel_id,
-            package_id: existingBooking.package_id,
+          travel_id: existingBooking.travel_id,
+          package_id: existingBooking.package_id,
         },
         data: {
-          notification_type: 'pending'
+          notification_type: 'pending',
         },
         include: {
-            package: {
-              select: {
-                owner_id: true,
-              }
+          package: {
+            select: {
+              owner_id: true,
             },
-            travel: {
-              select: {
-                user_id: true
-              }
-            }
-          }
-      })
-  
+          },
+          travel: {
+            select: {
+              user_id: true,
+            },
+          },
+        },
+      });
+
       // sending notification for notification and conversation
-        // notification
-        notifications.forEach(notification => {
-          this.gateway.server.to(notification.receiver_id).emit("notification", notification);
-        });
-  
-        // conversation
-        conversations.forEach(conv => {
-          // sending to package owner
-          this.gateway.server.to(conv.package.owner_id).emit("conversation-notification-update", {
+      // notification
+      notifications.forEach((notification) => {
+        this.gateway.server
+          .to(notification.receiver_id)
+          .emit('notification', notification);
+      });
+
+      // conversation
+      conversations.forEach((conv) => {
+        // sending to package owner
+        this.gateway.server
+          .to(conv.package.owner_id)
+          .emit('conversation-notification-update', {
             id: conv.id,
-            notification_type: conv.notification_type
-          })
-        })
+            notification_type: conv.notification_type,
+          });
+      });
 
       return {
         success: true,
