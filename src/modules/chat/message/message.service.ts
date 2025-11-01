@@ -341,7 +341,7 @@ export class MessageService {
       }
 
       const messages = await this.prisma.message.findMany({
-        ...paginationData,
+        // ...paginationData,
         where: {
           conversation_id: conversation_id,
         },
