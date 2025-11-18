@@ -37,11 +37,11 @@ export class UserService {
   async findAll({
     q,
     type,
-    approved,
+    status,
   }: {
     q?: string;
     type?: string;
-    approved?: string;
+    status?: 'unblocked' | 'blocked' | 'all';
   }) {
     try {
       const where_condition = {};
@@ -56,9 +56,9 @@ export class UserService {
         where_condition['type'] = type;
       }
 
-      if (approved) {
-        where_condition['approved_at'] =
-          approved == 'approved' ? { not: null } : { equals: null };
+      if (status !== 'all') {
+        where_condition['is_blocked'] =
+          status == 'blocked' ? { equals: true } : { not: true };
       }
 
       const users = await this.prisma.user.findMany({
@@ -67,15 +67,12 @@ export class UserService {
         },
         select: {
           id: true,
-          name: true,
+          first_name: true,
+          last_name: true,
           email: true,
           phone_number: true,
-          address: true,
-          type: true,
-          approved_at: true,
+          is_blocked: true,
           created_at: true,
-          updated_at: true,
-          verification_status: true,
         },
       });
 
@@ -99,16 +96,25 @@ export class UserService {
         },
         select: {
           id: true,
-          name: true,
           email: true,
           type: true,
+          date_of_birth: true,
+          gender: true,
+          about_me: true,
+          first_name: true,
+          last_name: true,
+          address: true,
+          city: true,
+          country: true,
+          state: true,
+          zip_code: true,
           phone_number: true,
+          is_blocked: true,
           approved_at: true,
           created_at: true,
-          updated_at: true,
           avatar: true,
           billing_id: true,
-          verification_status: true,  
+          verification_status: true,
         },
       });
 
@@ -152,6 +158,32 @@ export class UserService {
       await this.prisma.user.update({
         where: { id: id },
         data: { approved_at: DateHelper.now() },
+      });
+      return {
+        success: true,
+        message: 'User approved successfully',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+  async updateBlockedStatus(id: string, status?: 'blocked' | 'unblocked') {
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { id: id },
+      });
+      if (!user) {
+        return {
+          success: false,
+          message: 'User not found',
+        };
+      }
+      await this.prisma.user.update({
+        where: { id: id },
+        data: { is_blocked: status == 'unblocked' ? false : true },
       });
       return {
         success: true,

@@ -43,14 +43,19 @@ export class UserController {
   @ApiResponse({ description: 'Get all users' })
   @Get()
   async findAll(
-    @Query() query: { q?: string; type?: string; approved?: string },
+    @Query()
+    query: {
+      q?: string;
+      type?: string;
+      status?: 'unblocked' | 'blocked' | 'all';
+    },
   ) {
     try {
       const q = query.q;
       const type = query.type;
-      const approved = query.approved;
+      const status = query.status;
 
-      const users = await this.userService.findAll({ q, type, approved });
+      const users = await this.userService.findAll({ q, type, status });
       return users;
     } catch (error) {
       return {
@@ -61,6 +66,23 @@ export class UserController {
   }
 
   // approve user
+  @Roles(Role.ADMIN)
+  @ApiResponse({ description: 'Approve a user' })
+  @Post(':id/blocked')
+  async updateBlockedStatus(
+    @Param('id') id: string,
+    @Query('status') status: 'blocked' | 'unblocked',
+  ) {
+    try {
+      const user = await this.userService.updateBlockedStatus(id, status);
+      return user;
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
   @Roles(Role.ADMIN)
   @ApiResponse({ description: 'Approve a user' })
   @Post(':id/approve')
