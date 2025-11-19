@@ -6,6 +6,7 @@ import { UserRepository } from '../../../common/repository/user/user.repository'
 import appConfig from '../../../config/app.config';
 import { SojebStorage } from '../../../common/lib/Disk/SojebStorage';
 import { DateHelper } from '../../../common/helper/date.helper';
+import { GetUserQueryDto } from './dto/query-user.dto';
 
 @Injectable()
 export class UserService {
@@ -34,20 +35,14 @@ export class UserService {
     }
   }
 
-  async findAll({
-    q,
-    type,
-    status,
-  }: {
-    q?: string;
-    type?: string;
-    status?: 'unblocked' | 'blocked' | 'all';
-  }) {
+  async findAll(query: GetUserQueryDto) {
     try {
+      const { q, type, status, limit = 10, page = 1 } = query;
       const where_condition = {};
       if (q) {
         where_condition['OR'] = [
-          { name: { contains: q, mode: 'insensitive' } },
+          { first_name: { contains: q, mode: 'insensitive' } },
+          { last_name: { contains: q, mode: 'insensitive' } },
           { email: { contains: q, mode: 'insensitive' } },
         ];
       }
@@ -60,7 +55,8 @@ export class UserService {
         where_condition['is_blocked'] =
           status == 'blocked' ? { equals: true } : { not: true };
       }
-
+      const take = limit;
+      const skip = (page - 1) * limit;
       const users = await this.prisma.user.findMany({
         where: {
           ...where_condition,
@@ -74,11 +70,22 @@ export class UserService {
           is_blocked: true,
           created_at: true,
         },
+        take: take,
+        skip: skip,
       });
-
+      const total = await this.prisma.user.count({
+        where: {
+          ...where_condition,
+        },
+      });
       return {
         success: true,
-        data: users,
+        data: {
+          users,
+          total,
+          page,
+          limit,
+        },
       };
     } catch (error) {
       return {
@@ -197,32 +204,32 @@ export class UserService {
     }
   }
 
-  async reject(id: string) {
-    try {
-      const user = await this.prisma.user.findUnique({
-        where: { id: id },
-      });
-      if (!user) {
-        return {
-          success: false,
-          message: 'User not found',
-        };
-      }
-      await this.prisma.user.update({
-        where: { id: id },
-        data: { approved_at: null },
-      });
-      return {
-        success: true,
-        message: 'User rejected successfully',
-      };
-    } catch (error) {
-      return {
-        success: false,
-        message: error.message,
-      };
-    }
-  }
+  // async reject(id: string) {
+  //   try {
+  //     const user = await this.prisma.user.findUnique({
+  //       where: { id: id },
+  //     });
+  //     if (!user) {
+  //       return {
+  //         success: false,
+  //         message: 'User not found',
+  //       };
+  //     }
+  //     await this.prisma.user.update({
+  //       where: { id: id },
+  //       data: { approved_at: null },
+  //     });
+  //     return {
+  //       success: true,
+  //       message: 'User rejected successfully',
+  //     };
+  //   } catch (error) {
+  //     return {
+  //       success: false,
+  //       message: error.message,
+  //     };
+  //   }
+  // }
 
   async update(id: string, updateUserDto: UpdateUserDto) {
     try {
@@ -247,15 +254,15 @@ export class UserService {
     }
   }
 
-  async remove(id: string) {
-    try {
-      const user = await UserRepository.deleteUser(id);
-      return user;
-    } catch (error) {
-      return {
-        success: false,
-        message: error.message,
-      };
-    }
-  }
+  // async remove(id: string) {
+  //   try {
+  //     const user = await UserRepository.deleteUser(id);
+  //     return user;
+  //   } catch (error) {
+  //     return {
+  //       success: false,
+  //       message: error.message,
+  //     };
+  //   }
+  // }
 }
