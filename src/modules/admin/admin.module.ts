@@ -8,6 +8,8 @@ import { NotificationModule } from './notification/notification.module';
 import { PlatformWalletModule } from './platform-wallet/platform-wallet.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { BookingModule } from './booking/booking.module';
+import { TravelModule } from './travel/travel.module';
+import { PackageModule } from './package/package.module';
 
 @Module({
   imports: [
@@ -20,6 +22,8 @@ import { BookingModule } from './booking/booking.module';
     PlatformWalletModule,
     AnalyticsModule,
     BookingModule,
+    TravelModule,
+    PackageModule,
   ],
 })
 export class AdminModule {}

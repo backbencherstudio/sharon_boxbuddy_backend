@@ -122,6 +122,29 @@ export class UserService {
           avatar: true,
           billing_id: true,
           verification_status: true,
+          _count: {
+            select: {
+              travels: true,
+              packages_owner: true,
+            },
+          },
+          reviews_for: {
+            select: {
+              rating: true,
+              review_from: true,
+            },
+          },
+          reviews_given: {
+            select: {
+              rating: true,
+            },
+          },
+          payment_transactions: {
+            select: {
+              amount: true,
+              type: true,
+            },
+          },
         },
       });
 
@@ -139,9 +162,50 @@ export class UserService {
         };
       }
 
+      const total_travels_created = user._count.travels;
+      const total_packages_sent = user._count.packages_owner;
+      const completed_deliveries = await this.prisma.booking.count({
+        where: {
+          owner_id: id,
+          status: 'completed',
+        },
+      });
+
+      const reviews_as_traveler = user.reviews_for.filter(
+        (review) => review['review_from'] === 'package_owner',
+      );
+      const ratings_as_traveler =
+        reviews_as_traveler.reduce((acc, review) => acc + review.rating, 0) /
+        (reviews_as_traveler.length || 1);
+
+      const reviews_as_sender = user.reviews_for.filter(
+        (review) => review['review_from'] === 'traveller',
+      );
+      const ratings_as_sender =
+        reviews_as_sender.reduce((acc, review) => acc + review.rating, 0) /
+        (reviews_as_sender.length || 1);
+
+      const total_earnings = user.payment_transactions
+        .filter((t) => t.type === 'order')
+        .reduce((acc, t) => acc + Number(t.amount), 0);
+      const total_payments_made = user.payment_transactions
+        .filter((t) => t.type === 'payment')
+        .reduce((acc, t) => acc + Number(t.amount), 0);
+
+      const { _count, reviews_for, reviews_given, payment_transactions, ...rest } = user;
+
       return {
         success: true,
-        data: user,
+        data: {
+          ...rest,
+          total_travels_created,
+          total_packages_sent,
+          completed_deliveries,
+          ratings_as_traveler: ratings_as_traveler.toFixed(2),
+          ratings_as_sender: ratings_as_sender.toFixed(2),
+          total_earnings,
+          total_payments_made,
+        },
       };
     } catch (error) {
       return {
@@ -194,7 +258,7 @@ export class UserService {
       });
       return {
         success: true,
-        message: 'User approved successfully',
+        message: `User ${status === 'unblocked' ? 'unblocked' : 'blocked'} successfully`,
       };
     } catch (error) {
       return {

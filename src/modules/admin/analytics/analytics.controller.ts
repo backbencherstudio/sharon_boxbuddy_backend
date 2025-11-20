@@ -37,22 +37,4 @@ export class AnalyticsController {
   getChart(@Query() query: ChartQueryDto) {
     return this.analyticsService.getChart(query);
   }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.analyticsService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(
-    @Param('id') id: string,
-    @Body() updateAnalyticsDto: UpdateAnalyticsDto,
-  ) {
-    return this.analyticsService.update(+id, updateAnalyticsDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.analyticsService.remove(+id);
-  }
 }

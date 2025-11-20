@@ -184,9 +184,46 @@ export class BookingService {
       };
     }
 
+    const conversation = await this.prisma.conversation.findFirst({
+      where: {
+        travel_id: booking.travel_id,
+        package_id: booking.package_id,
+      },
+      include: {
+        messages: {
+          orderBy: {
+            created_at: 'asc',
+          },
+        },
+      },
+    });
+
     return {
       success: true,
-      data: booking,
+      data: { ...booking, conversation },
+    };
+  }
+
+  async updateStatus(id: string, status: BookingStatus) {
+    const booking = await this.prisma.booking.findUnique({
+      where: { id },
+    });
+
+    if (!booking) {
+      return {
+        success: false,
+        message: 'Booking not found',
+      };
+    }
+
+    await this.prisma.booking.update({
+      where: { id },
+      data: { status },
+    });
+
+    return {
+      success: true,
+      message: 'Booking status updated successfully',
     };
   }
 }

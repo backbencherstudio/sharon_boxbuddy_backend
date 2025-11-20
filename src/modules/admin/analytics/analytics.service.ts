@@ -21,8 +21,8 @@ export class AnalyticsService {
         data = await this.prisma.$queryRaw`
         SELECT 
           DATE(created_at) AS date,
-          SUM(CASE WHEN status = 'completed' THEN amount ELSE 0 END) AS total_earnings,
-          COUNT(*) AS total_bookings
+          COALESCE(SUM(CASE WHEN status = 'completed' THEN amount ELSE 0 END), 0)::float8 AS total_earnings,
+          COUNT(*)::int AS total_bookings
         FROM bookings
         WHERE created_at >= NOW() - INTERVAL '7 days'
         GROUP BY DATE(created_at)
@@ -35,8 +35,8 @@ export class AnalyticsService {
         data = await this.prisma.$queryRaw`
         SELECT
           DATE(created_at - ((EXTRACT(day FROM created_at)::int % 3) || ' days')::interval) AS day_group,
-          SUM(CASE WHEN status = 'completed' THEN amount ELSE 0 END) AS total_earnings,
-          COUNT(*) AS total_bookings
+          COALESCE(SUM(CASE WHEN status = 'completed' THEN amount ELSE 0 END), 0)::float8 AS total_earnings,
+          COUNT(*)::int AS total_bookings
         FROM bookings
         WHERE created_at >= NOW() - INTERVAL '1 month'
         GROUP BY day_group
@@ -48,15 +48,14 @@ export class AnalyticsService {
       case 'year':
         data = await this.prisma.$queryRaw`
         SELECT 
-          DATE_TRUNC('month', created_at) AS month,
-          SUM(CASE WHEN status = 'completed' THEN amount ELSE 0 END) AS total_earnings,
-          COUNT(*) AS total_bookings
+          DATE_TRUNC('month', created_at)::date AS month,
+          COALESCE(SUM(CASE WHEN status = 'completed' THEN amount ELSE 0 END), 0)::float8 AS total_earnings,
+          COUNT(*)::int AS total_bookings
         FROM bookings
         WHERE created_at >= NOW() - INTERVAL '1 year'
         GROUP BY DATE_TRUNC('month', created_at)
         ORDER BY DATE_TRUNC('month', created_at);
-        `;
-
+      `;
         break;
 
       default:
@@ -100,17 +99,5 @@ export class AnalyticsService {
         total_revenue: +platformWallet?.total_earnings || 0,
       },
     };
-  }
-
-  findOne(id: number) {
-    return `This action returns a #${id} analytics`;
-  }
-
-  update(id: number, updateAnalyticsDto: UpdateAnalyticsDto) {
-    return `This action updates a #${id} analytics`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} analytics`;
   }
 }
