@@ -7,8 +7,9 @@ export class PackageService {
   constructor(private prisma: PrismaService) {}
 
   async findAll(query: GetPackageQueryDto) {
-    const { q, status, limit = 10, page = 1 } = query;
+    const { q, status, limit = 10, page = 1, owner_id } = query;
     const where_condition = {};
+
     if (q) {
       where_condition['OR'] = [
         { pick_up_location: { contains: q, mode: 'insensitive' } },
@@ -19,6 +20,10 @@ export class PackageService {
 
     if (status) {
       where_condition['status'] = status;
+    }
+
+    if (owner_id) {
+      where_condition['owner_id'] = owner_id;
     }
 
     const take = limit;

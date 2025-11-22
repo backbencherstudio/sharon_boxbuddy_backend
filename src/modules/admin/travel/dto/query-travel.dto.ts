@@ -25,4 +25,8 @@ export class GetTravelQueryDto {
   @Transform(({ value }) => parseInt(value))
   @IsNumber()
   page: number;
+
+  @IsOptional()
+  @IsString()
+  user_id?: string;
 }

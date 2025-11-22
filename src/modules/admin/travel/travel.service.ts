@@ -7,7 +7,7 @@ export class TravelService {
   constructor(private prisma: PrismaService) {}
 
   async findAll(query: GetTravelQueryDto) {
-    const { q, status, limit = 10, page = 1 } = query;
+    const { q, status, limit = 10, page = 1, user_id } = query;
     const where_condition = {};
     if (q) {
       where_condition['OR'] = [
@@ -16,6 +16,10 @@ export class TravelService {
         { departure_from: { contains: q, mode: 'insensitive' } },
         { arrival_to: { contains: q, mode: 'insensitive' } },
       ];
+    }
+
+    if (user_id) {
+      where_condition['user_id'] = user_id;
     }
 
     const now = new Date();
