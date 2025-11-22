@@ -1,14 +1,14 @@
 import { Injectable } from '@nestjs/common';
-import { CreateAnalyticsDto } from './dto/create-analytics.dto';
-import { UpdateAnalyticsDto } from './dto/update-analytics.dto';
-import { ChartQueryDto } from './dto/query-analytics.dto';
+import { CreateOverviewDto } from './dto/create-overview.dto';
+import { UpdateOverviewDto } from './dto/update-overview.dto';
+import { ChartQueryDto } from './dto/query-overview.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
-export class AnalyticsService {
+export class OverviewService {
   constructor(private prisma: PrismaService) {}
-  create(createAnalyticsDto: CreateAnalyticsDto) {
-    return 'This action adds a new analytics';
+  create(CreateOverviewDto: CreateOverviewDto) {
+    return 'This action adds a new overview';
   }
 
   async getChart(query?: ChartQueryDto) {
