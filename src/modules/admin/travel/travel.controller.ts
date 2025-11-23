@@ -1,4 +1,11 @@
-import { Controller, Get, Param, Patch, UseGuards, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  Patch,
+  UseGuards,
+  Query,
+} from '@nestjs/common';
 import { TravelService } from './travel.service';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
@@ -25,8 +32,8 @@ export class TravelController {
     return this.travelService.findOne(id);
   }
 
-  @Patch(':id/cancel')
+  @Patch(':id/unpublished')
   cancel(@Param('id') id: string) {
-    return this.travelService.cancel(id);
+    return this.travelService.unpublished(id);
   }
 }

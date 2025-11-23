@@ -77,7 +77,7 @@ export class TravelService {
     };
   }
 
-  async cancel(id: string) {
+  async unpublished(id: string) {
     await this.prisma.travel.update({
       where: { id },
       data: { publish: false },
