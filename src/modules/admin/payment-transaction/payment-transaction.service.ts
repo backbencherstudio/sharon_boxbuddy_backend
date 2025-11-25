@@ -4,7 +4,7 @@ import { GetPaymentTransactionQueryDto } from './dto/query-payment-transaction.d
 
 @Injectable()
 export class PaymentTransactionService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async findAll(query: GetPaymentTransactionQueryDto) {
     const {
@@ -147,7 +147,10 @@ export class PaymentTransactionService {
       data: {
         totalTransactions,
         totalAmount: totalAmount._sum.amount,
-        statusCounts,
+        statusCounts: statusCounts.map((statusCount) => ({
+          status: statusCount.status,
+          count: statusCount._count.status,
+        })),
       },
     };
   }
