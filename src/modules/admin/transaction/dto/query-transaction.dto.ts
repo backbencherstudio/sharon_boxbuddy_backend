@@ -1,14 +1,15 @@
 import { Transform } from 'class-transformer';
-import { IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsEnum, IsNumber, IsOptional, IsString } from 'class-validator';
+import { TransactionStatus, TransactionType } from '@prisma/client';
 
-export class GetPaymentTransactionQueryDto {
+export class GetTransactionQueryDto {
   @IsOptional()
   @IsString()
   q?: string;
 
   @IsOptional()
-  @IsString()
-  status?: string;
+  @IsEnum(TransactionStatus)
+  status?: TransactionStatus;
 
   @IsOptional()
   @Transform(({ value }) => parseInt(value))
@@ -25,6 +26,6 @@ export class GetPaymentTransactionQueryDto {
   user_id?: string;
 
   @IsOptional()
-  @IsString()
-  provider?: string;
+  @IsEnum(TransactionType)
+  type?: TransactionType;
 }

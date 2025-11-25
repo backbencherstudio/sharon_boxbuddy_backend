@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { FaqModule } from './faq/faq.module';
 import { ContactModule } from './contact/contact.module';
 import { WebsiteInfoModule } from './website-info/website-info.module';
-import { PaymentTransactionModule } from './payment-transaction/payment-transaction.module';
+import { TransactionModule } from './transaction/transaction.module';
 import { UserModule } from './user/user.module';
 import { NotificationModule } from './notification/notification.module';
 import { PlatformWalletModule } from './platform-wallet/platform-wallet.module';
@@ -16,7 +16,7 @@ import { PackageModule } from './package/package.module';
     FaqModule,
     ContactModule,
     WebsiteInfoModule,
-    PaymentTransactionModule,
+    TransactionModule,
     UserModule,
     NotificationModule,
     PlatformWalletModule,

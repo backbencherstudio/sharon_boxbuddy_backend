@@ -31,10 +31,17 @@ export class PackageService {
 
     const packages = await this.prisma.package.findMany({
       where: where_condition,
-      include: {
+      select: {
+        id: true,
+        pick_up_location: true,
+        drop_off_location: true,
+        category: true,
+        status: true,
+        weight: true,
+        value: true,
+        created_at: true,
         owner: {
           select: {
-            id: true,
             first_name: true,
             last_name: true,
           },
@@ -42,13 +49,28 @@ export class PackageService {
       },
       take: take,
       skip: skip,
+      orderBy: {
+        created_at: 'desc',
+      },
     });
     const total = await this.prisma.package.count({ where: where_condition });
+
+    // Format for table display
+    const formattedPackages = packages.map((pkg) => ({
+      id: pkg.id,
+      route: `${pkg.pick_up_location} → ${pkg.drop_off_location}`,
+      category: pkg.category.join(', '),
+      status: pkg.status,
+      weight: pkg.weight,
+      value: pkg.value,
+      owner_name: `${pkg.owner.first_name} ${pkg.owner.last_name}`,
+      created_at: pkg.created_at,
+    }));
 
     return {
       success: true,
       data: {
-        packages,
+        packages: formattedPackages,
         total,
         page,
         limit,

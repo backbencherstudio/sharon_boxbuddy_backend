@@ -47,20 +47,20 @@ export class ContactService {
 
   async findAll({ q = null, status = null }: { q?: string; status?: number }) {
     try {
-      const whereClause = {};
+      const whereClause: any = {};
       if (q) {
         whereClause['OR'] = [
           { first_name: { contains: q, mode: 'insensitive' } },
           { last_name: { contains: q, mode: 'insensitive' } },
           { email: { contains: q, mode: 'insensitive' } },
-          { phone_number: { contains: q, mode: 'insensitive' } },
         ];
       }
-      if (status) {
-        whereClause['status'] = Number(status);
+      if (status !== null) {
+        whereClause['status'] = status;
       }
 
       const contacts = await this.prisma.contact.findMany({
+        where: whereClause,
         select: {
           id: true,
           first_name: true,
@@ -68,6 +68,11 @@ export class ContactService {
           email: true,
           phone_number: true,
           message: true,
+          status: true,
+          created_at: true,
+        },
+        orderBy: {
+          created_at: 'desc',
         },
       });
       return {

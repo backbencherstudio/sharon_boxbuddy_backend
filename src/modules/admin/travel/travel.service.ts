@@ -37,10 +37,18 @@ export class TravelService {
 
     const travels = await this.prisma.travel.findMany({
       where: where_condition,
-      include: {
+      select: {
+        id: true,
+        flight_number: true,
+        airline: true,
+        departure_from: true,
+        arrival_to: true,
+        departure: true,
+        arrival: true,
+        publish: true,
+        created_at: true,
         user: {
           select: {
-            id: true,
             first_name: true,
             last_name: true,
           },
@@ -48,13 +56,29 @@ export class TravelService {
       },
       take: take,
       skip: skip,
+      orderBy: {
+        created_at: 'desc',
+      },
     });
     const total = await this.prisma.travel.count({ where: where_condition });
+
+    // Format for table display
+    const formattedTravels = travels.map((travel) => ({
+      id: travel.id,
+      flight_number: travel.flight_number,
+      airline: travel.airline,
+      route: `${travel.departure_from} → ${travel.arrival_to}`,
+      departure: travel.departure,
+      arrival: travel.arrival,
+      publish: travel.publish,
+      traveller_name: `${travel.user.first_name} ${travel.user.last_name}`,
+      created_at: travel.created_at,
+    }));
 
     return {
       success: true,
       data: {
-        travels,
+        travels: formattedTravels,
         total,
         page,
         limit,

@@ -17,7 +17,7 @@ export class BookingService {
       package_id,
       travel_id,
     } = query;
-    const where_condition = {};
+    const where_condition: any = {};
 
     if (q) {
       where_condition['OR'] = [
@@ -55,10 +55,14 @@ export class BookingService {
 
     const bookings = await this.prisma.booking.findMany({
       where: where_condition,
-      include: {
+      select: {
+        id: true,
+        status: true,
+        amount: true,
+        paid: true,
+        created_at: true,
         owner: {
           select: {
-            id: true,
             first_name: true,
             last_name: true,
             email: true,
@@ -66,14 +70,23 @@ export class BookingService {
         },
         traveller: {
           select: {
-            id: true,
             first_name: true,
             last_name: true,
-            email: true,
           },
         },
-        package: true,
-        travel: true,
+        package: {
+          select: {
+            pick_up_location: true,
+            drop_off_location: true,
+          },
+        },
+        travel: {
+          select: {
+            departure_from: true,
+            arrival_to: true,
+            departure: true,
+          },
+        },
       },
       take: take,
       skip: skip,
@@ -84,10 +97,25 @@ export class BookingService {
 
     const total = await this.prisma.booking.count({ where: where_condition });
 
+    // Format for table display
+    const formattedBookings = bookings.map((booking) => ({
+      id: booking.id,
+      status: booking.status,
+      amount: booking.amount,
+      paid: booking.paid,
+      owner_name: `${booking.owner.first_name} ${booking.owner.last_name}`,
+      owner_email: booking.owner.email,
+      traveller_name: `${booking.traveller.first_name} ${booking.traveller.last_name}`,
+      route: `${booking.package.pick_up_location} → ${booking.package.drop_off_location}`,
+      flight: `${booking.travel.departure_from} → ${booking.travel.arrival_to}`,
+      departure_date: booking.travel.departure,
+      created_at: booking.created_at,
+    }));
+
     return {
       success: true,
       data: {
-        bookings,
+        bookings: formattedBookings,
         total,
         page,
         limit,
@@ -111,10 +139,14 @@ export class BookingService {
 
     const bookings = await this.prisma.booking.findMany({
       where: where_condition,
-      include: {
+      select: {
+        id: true,
+        status: true,
+        amount: true,
+        paid: true,
+        created_at: true,
         owner: {
           select: {
-            id: true,
             first_name: true,
             last_name: true,
             email: true,
@@ -122,14 +154,23 @@ export class BookingService {
         },
         traveller: {
           select: {
-            id: true,
             first_name: true,
             last_name: true,
-            email: true,
           },
         },
-        package: true,
-        travel: true,
+        package: {
+          select: {
+            pick_up_location: true,
+            drop_off_location: true,
+          },
+        },
+        travel: {
+          select: {
+            departure_from: true,
+            arrival_to: true,
+            departure: true,
+          },
+        },
       },
       take: take,
       skip: skip,
@@ -140,10 +181,25 @@ export class BookingService {
 
     const total = await this.prisma.booking.count({ where: where_condition });
 
+    // Format for table display
+    const formattedBookings = bookings.map((booking) => ({
+      id: booking.id,
+      status: booking.status,
+      amount: booking.amount,
+      paid: booking.paid,
+      owner_name: `${booking.owner.first_name} ${booking.owner.last_name}`,
+      owner_email: booking.owner.email,
+      traveller_name: `${booking.traveller.first_name} ${booking.traveller.last_name}`,
+      route: `${booking.package.pick_up_location} → ${booking.package.drop_off_location}`,
+      flight: `${booking.travel.departure_from} → ${booking.travel.arrival_to}`,
+      departure_date: booking.travel.departure,
+      created_at: booking.created_at,
+    }));
+
     return {
       success: true,
       data: {
-        bookings,
+        bookings: formattedBookings,
         total,
         page,
         limit,
