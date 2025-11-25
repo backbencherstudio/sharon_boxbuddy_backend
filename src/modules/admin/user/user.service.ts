@@ -10,7 +10,7 @@ import { GetUserQueryDto } from './dto/query-user.dto';
 
 @Injectable()
 export class UserService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async create(createUserDto: CreateUserDto) {
     try {
@@ -51,9 +51,9 @@ export class UserService {
         where_condition['type'] = type;
       }
 
-      if (status !== 'all') {
+      if (status && status !== 'all') {
         where_condition['is_blocked'] =
-          status == 'blocked' ? { equals: true } : { not: true };
+          status == 'blocked' ? { equals: true } : { equals: false };
       }
       const take = limit;
       const skip = (page - 1) * limit;
