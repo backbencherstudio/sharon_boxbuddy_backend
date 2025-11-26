@@ -31,7 +31,8 @@ export class BookingController {
 
   @Get('problematic')
   findAllProblematic(@Query() query: GetBookingQueryDto) {
-    return this.bookingService.findAllProblematic(query);
+    // Pass problematic flag to use the same service method
+    return this.bookingService.findAll({ ...query, problematic: true });
   }
 
   @Get(':id')

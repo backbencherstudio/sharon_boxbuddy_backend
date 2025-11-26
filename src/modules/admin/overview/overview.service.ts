@@ -1,15 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { CreateOverviewDto } from './dto/create-overview.dto';
-import { UpdateOverviewDto } from './dto/update-overview.dto';
 import { ChartQueryDto } from './dto/query-overview.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class OverviewService {
   constructor(private prisma: PrismaService) {}
-  create(CreateOverviewDto: CreateOverviewDto) {
-    return 'This action adds a new overview';
-  }
 
   async getChart(query?: ChartQueryDto) {
     const period = query.period || 'week';
