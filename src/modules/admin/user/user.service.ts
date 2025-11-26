@@ -30,7 +30,8 @@ export class UserService {
 
   async findAll(query: GetUserQueryDto) {
     const { q, type, status, limit = 10, page = 1 } = query;
-    const where_condition = {};
+    const where_condition: any = {};
+
     if (q) {
       where_condition['OR'] = [
         { first_name: { contains: q, mode: 'insensitive' } },
@@ -47,29 +48,27 @@ export class UserService {
       where_condition['is_blocked'] =
         status == 'blocked' ? { equals: true } : { equals: false };
     }
-    const take = limit;
+
     const skip = (page - 1) * limit;
-    const users = await this.prisma.user.findMany({
-      where: {
-        ...where_condition,
-      },
-      select: {
-        id: true,
-        first_name: true,
-        last_name: true,
-        email: true,
-        phone_number: true,
-        is_blocked: true,
-        created_at: true,
-      },
-      take: take,
-      skip: skip,
-    });
-    const total = await this.prisma.user.count({
-      where: {
-        ...where_condition,
-      },
-    });
+
+    const [users, total] = await Promise.all([
+      this.prisma.user.findMany({
+        where: where_condition,
+        select: {
+          id: true,
+          first_name: true,
+          last_name: true,
+          email: true,
+          phone_number: true,
+          is_blocked: true,
+          created_at: true,
+        },
+        take: limit,
+        skip,
+      }),
+      this.prisma.user.count({ where: where_condition }),
+    ]);
+
     return {
       success: true,
       message: 'Users retrieved successfully',

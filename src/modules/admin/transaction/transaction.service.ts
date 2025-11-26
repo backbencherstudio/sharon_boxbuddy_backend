@@ -10,12 +10,26 @@ export class TransactionService {
     const { q, status, limit = 10, page = 1, user_id, type } = query;
     const where_condition: any = {};
 
+    // Search in reference_id AND user name/email
     if (q) {
+      // First, find users matching the search query
+      const matchingUsers = await this.prisma.user.findMany({
+        where: {
+          OR: [
+            { first_name: { contains: q, mode: 'insensitive' } },
+            { last_name: { contains: q, mode: 'insensitive' } },
+            { email: { contains: q, mode: 'insensitive' } },
+          ],
+        },
+        select: { id: true },
+      });
+
+      const userIds = matchingUsers.map((user) => user.id);
+
+      // Search in both reference_id and matching user_ids
       where_condition['OR'] = [
         { reference_id: { contains: q, mode: 'insensitive' } },
-        { user: { first_name: { contains: q, mode: 'insensitive' } } },
-        { user: { last_name: { contains: q, mode: 'insensitive' } } },
-        { user: { email: { contains: q, mode: 'insensitive' } } },
+        ...(userIds.length > 0 ? [{ user_id: { in: userIds } }] : []),
       ];
     }
 
@@ -31,33 +45,31 @@ export class TransactionService {
       where_condition['type'] = type;
     }
 
-    const take = limit;
     const skip = (page - 1) * limit;
 
-    const transactions = await this.prisma.transaction.findMany({
-      where: where_condition,
-      select: {
-        id: true,
-        type: true,
-        amount: true,
-        status: true,
-        reference_id: true,
-        user_id: true,
-        created_at: true,
-      },
-      take: take,
-      skip: skip,
-      orderBy: {
-        created_at: 'desc',
-      },
-    });
-
-    const total = await this.prisma.transaction.count({
-      where: where_condition,
-    });
+    const [transactions, total] = await Promise.all([
+      this.prisma.transaction.findMany({
+        where: where_condition,
+        select: {
+          id: true,
+          type: true,
+          amount: true,
+          status: true,
+          reference_id: true,
+          user_id: true,
+          created_at: true,
+        },
+        take: limit,
+        skip,
+        orderBy: {
+          created_at: 'desc',
+        },
+      }),
+      this.prisma.transaction.count({ where: where_condition }),
+    ]);
 
     // Fetch user details for table display
-    const transactionsWithUser = await Promise.all(
+    const formattedTransactions = await Promise.all(
       transactions.map(async (transaction) => {
         const user = await this.prisma.user.findUnique({
           where: { id: transaction.user_id },
@@ -85,7 +97,7 @@ export class TransactionService {
       success: true,
       message: 'Transactions retrieved successfully',
       data: {
-        transactions: transactionsWithUser,
+        transactions: formattedTransactions,
         total,
         page,
         limit,
