@@ -2,7 +2,6 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CreateMessageDto {
-
   @IsNotEmpty()
   @IsString()
   @ApiProperty()
@@ -17,5 +16,4 @@ export class CreateMessageDto {
   @IsString({ each: true })
   @ApiProperty()
   attachments?: string[];
-
 }

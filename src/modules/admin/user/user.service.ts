@@ -10,262 +10,235 @@ import { GetUserQueryDto } from './dto/query-user.dto';
 
 @Injectable()
 export class UserService {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   async create(createUserDto: CreateUserDto) {
-    try {
-      const user = await UserRepository.createUser(createUserDto);
+    const user = await UserRepository.createUser(createUserDto);
 
-      if (user.success) {
-        return {
-          success: user.success,
-          message: user.message,
-        };
-      } else {
-        return {
-          success: user.success,
-          message: user.message,
-        };
-      }
-    } catch (error) {
+    if (user.success) {
       return {
-        success: false,
-        message: error.message,
+        success: user.success,
+        message: user.message,
+      };
+    } else {
+      return {
+        success: user.success,
+        message: user.message,
       };
     }
   }
 
   async findAll(query: GetUserQueryDto) {
-    try {
-      const { q, type, status, limit = 10, page = 1 } = query;
-      const where_condition = {};
-      if (q) {
-        where_condition['OR'] = [
-          { first_name: { contains: q, mode: 'insensitive' } },
-          { last_name: { contains: q, mode: 'insensitive' } },
-          { email: { contains: q, mode: 'insensitive' } },
-        ];
-      }
-
-      if (type) {
-        where_condition['type'] = type;
-      }
-
-      if (status && status !== 'all') {
-        where_condition['is_blocked'] =
-          status == 'blocked' ? { equals: true } : { equals: false };
-      }
-      const take = limit;
-      const skip = (page - 1) * limit;
-      const users = await this.prisma.user.findMany({
-        where: {
-          ...where_condition,
-        },
-        select: {
-          id: true,
-          first_name: true,
-          last_name: true,
-          email: true,
-          phone_number: true,
-          is_blocked: true,
-          created_at: true,
-        },
-        take: take,
-        skip: skip,
-      });
-      const total = await this.prisma.user.count({
-        where: {
-          ...where_condition,
-        },
-      });
-      return {
-        success: true,
-        data: {
-          users,
-          total,
-          page,
-          limit,
-        },
-      };
-    } catch (error) {
-      return {
-        success: false,
-        message: error.message,
-      };
+    const { q, type, status, limit = 10, page = 1 } = query;
+    const where_condition = {};
+    if (q) {
+      where_condition['OR'] = [
+        { first_name: { contains: q, mode: 'insensitive' } },
+        { last_name: { contains: q, mode: 'insensitive' } },
+        { email: { contains: q, mode: 'insensitive' } },
+      ];
     }
+
+    if (type) {
+      where_condition['type'] = type;
+    }
+
+    if (status && status !== 'all') {
+      where_condition['is_blocked'] =
+        status == 'blocked' ? { equals: true } : { equals: false };
+    }
+    const take = limit;
+    const skip = (page - 1) * limit;
+    const users = await this.prisma.user.findMany({
+      where: {
+        ...where_condition,
+      },
+      select: {
+        id: true,
+        first_name: true,
+        last_name: true,
+        email: true,
+        phone_number: true,
+        is_blocked: true,
+        created_at: true,
+      },
+      take: take,
+      skip: skip,
+    });
+    const total = await this.prisma.user.count({
+      where: {
+        ...where_condition,
+      },
+    });
+    return {
+      success: true,
+      message: 'Users retrieved successfully',
+      data: {
+        users,
+        total,
+        page,
+        limit,
+      },
+    };
   }
 
   async findOne(id: string) {
-    try {
-      const user = await this.prisma.user.findUnique({
-        where: {
-          id: id,
-        },
-        select: {
-          id: true,
-          email: true,
-          type: true,
-          date_of_birth: true,
-          gender: true,
-          about_me: true,
-          first_name: true,
-          last_name: true,
-          address: true,
-          city: true,
-          country: true,
-          state: true,
-          zip_code: true,
-          phone_number: true,
-          is_blocked: true,
-          approved_at: true,
-          created_at: true,
-          avatar: true,
-          billing_id: true,
-          verification_status: true,
-          _count: {
-            select: {
-              travels: true,
-              packages_owner: true,
-            },
-          },
-          reviews_for: {
-            select: {
-              rating: true,
-              review_from: true,
-            },
-          },
-          reviews_given: {
-            select: {
-              rating: true,
-            },
-          },
-          payment_transactions: {
-            select: {
-              amount: true,
-              type: true,
-            },
+    const user = await this.prisma.user.findUnique({
+      where: {
+        id: id,
+      },
+      select: {
+        id: true,
+        email: true,
+        type: true,
+        date_of_birth: true,
+        gender: true,
+        about_me: true,
+        first_name: true,
+        last_name: true,
+        address: true,
+        city: true,
+        country: true,
+        state: true,
+        zip_code: true,
+        phone_number: true,
+        is_blocked: true,
+        approved_at: true,
+        created_at: true,
+        avatar: true,
+        billing_id: true,
+        verification_status: true,
+        _count: {
+          select: {
+            travels: true,
+            packages_owner: true,
           },
         },
-      });
-
-      // add avatar url to user
-      if (user.avatar) {
-        user['avatar_url'] = SojebStorage.url(
-          appConfig().storageUrl.avatar + user.avatar,
-        );
-      }
-
-      if (!user) {
-        return {
-          success: false,
-          message: 'User not found',
-        };
-      }
-
-      const total_travels_created = user._count.travels;
-      const total_packages_sent = user._count.packages_owner;
-      const completed_deliveries = await this.prisma.booking.count({
-        where: {
-          owner_id: id,
-          status: 'completed',
+        reviews_for: {
+          select: {
+            rating: true,
+            review_from: true,
+          },
         },
-      });
+        reviews_given: {
+          select: {
+            rating: true,
+          },
+        },
+        payment_transactions: {
+          select: {
+            amount: true,
+            type: true,
+          },
+        },
+      },
+    });
 
-      const reviews_as_traveler = user.reviews_for.filter(
-        (review) => review['review_from'] === 'package_owner',
+    // add avatar url to user
+    if (user.avatar) {
+      user['avatar_url'] = SojebStorage.url(
+        appConfig().storageUrl.avatar + user.avatar,
       );
-      const ratings_as_traveler =
-        reviews_as_traveler.reduce((acc, review) => acc + review.rating, 0) /
-        (reviews_as_traveler.length || 1);
+    }
 
-      const reviews_as_sender = user.reviews_for.filter(
-        (review) => review['review_from'] === 'traveller',
-      );
-      const ratings_as_sender =
-        reviews_as_sender.reduce((acc, review) => acc + review.rating, 0) /
-        (reviews_as_sender.length || 1);
-
-      const total_earnings = user.payment_transactions
-        .filter((t) => t.type === 'order')
-        .reduce((acc, t) => acc + Number(t.amount), 0);
-      const total_payments_made = user.payment_transactions
-        .filter((t) => t.type === 'payment')
-        .reduce((acc, t) => acc + Number(t.amount), 0);
-
-      const { _count, reviews_for, reviews_given, payment_transactions, ...rest } = user;
-
-      return {
-        success: true,
-        data: {
-          ...rest,
-          total_travels_created,
-          total_packages_sent,
-          completed_deliveries,
-          ratings_as_traveler: ratings_as_traveler.toFixed(2),
-          ratings_as_sender: ratings_as_sender.toFixed(2),
-          total_earnings,
-          total_payments_made,
-        },
-      };
-    } catch (error) {
+    if (!user) {
       return {
         success: false,
-        message: error.message,
+        message: 'User not found',
       };
     }
+
+    const total_travels_created = user._count.travels;
+    const total_packages_sent = user._count.packages_owner;
+    const completed_deliveries = await this.prisma.booking.count({
+      where: {
+        owner_id: id,
+        status: 'completed',
+      },
+    });
+
+    const reviews_as_traveler = user.reviews_for.filter(
+      (review) => review['review_from'] === 'package_owner',
+    );
+    const ratings_as_traveler =
+      reviews_as_traveler.reduce((acc, review) => acc + review.rating, 0) /
+      (reviews_as_traveler.length || 1);
+
+    const reviews_as_sender = user.reviews_for.filter(
+      (review) => review['review_from'] === 'traveller',
+    );
+    const ratings_as_sender =
+      reviews_as_sender.reduce((acc, review) => acc + review.rating, 0) /
+      (reviews_as_sender.length || 1);
+
+    const total_earnings = user.payment_transactions
+      .filter((t) => t.type === 'order')
+      .reduce((acc, t) => acc + Number(t.amount), 0);
+    const total_payments_made = user.payment_transactions
+      .filter((t) => t.type === 'payment')
+      .reduce((acc, t) => acc + Number(t.amount), 0);
+
+    const {
+      _count,
+      reviews_for,
+      reviews_given,
+      payment_transactions,
+      ...rest
+    } = user;
+
+    return {
+      success: true,
+      message: 'User retrieved successfully',
+      data: {
+        ...rest,
+        total_travels_created,
+        total_packages_sent,
+        completed_deliveries,
+        ratings_as_traveler: ratings_as_traveler.toFixed(2),
+        ratings_as_sender: ratings_as_sender.toFixed(2),
+        total_earnings,
+        total_payments_made,
+      },
+    };
   }
 
   async approve(id: string) {
-    try {
-      const user = await this.prisma.user.findUnique({
-        where: { id: id },
-      });
-      if (!user) {
-        return {
-          success: false,
-          message: 'User not found',
-        };
-      }
-      await this.prisma.user.update({
-        where: { id: id },
-        data: { approved_at: DateHelper.now() },
-      });
-      return {
-        success: true,
-        message: 'User approved successfully',
-      };
-    } catch (error) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: id },
+    });
+    if (!user) {
       return {
         success: false,
-        message: error.message,
+        message: 'User not found',
       };
     }
+    await this.prisma.user.update({
+      where: { id: id },
+      data: { approved_at: DateHelper.now() },
+    });
+    return {
+      success: true,
+      message: 'User approved successfully',
+    };
   }
   async updateBlockedStatus(id: string, status?: 'blocked' | 'unblocked') {
-    try {
-      const user = await this.prisma.user.findUnique({
-        where: { id: id },
-      });
-      if (!user) {
-        return {
-          success: false,
-          message: 'User not found',
-        };
-      }
-      await this.prisma.user.update({
-        where: { id: id },
-        data: { is_blocked: status == 'unblocked' ? false : true },
-      });
-      return {
-        success: true,
-        message: `User ${status === 'unblocked' ? 'unblocked' : 'blocked'} successfully`,
-      };
-    } catch (error) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: id },
+    });
+    if (!user) {
       return {
         success: false,
-        message: error.message,
+        message: 'User not found',
       };
     }
+    await this.prisma.user.update({
+      where: { id: id },
+      data: { is_blocked: status == 'unblocked' ? false : true },
+    });
+    return {
+      success: true,
+      message: `User ${status === 'unblocked' ? 'unblocked' : 'blocked'} successfully`,
+    };
   }
 
   // async reject(id: string) {
@@ -296,24 +269,17 @@ export class UserService {
   // }
 
   async update(id: string, updateUserDto: UpdateUserDto) {
-    try {
-      const user = await UserRepository.updateUser(id, updateUserDto);
+    const user = await UserRepository.updateUser(id, updateUserDto);
 
-      if (user.success) {
-        return {
-          success: user.success,
-          message: user.message,
-        };
-      } else {
-        return {
-          success: user.success,
-          message: user.message,
-        };
-      }
-    } catch (error) {
+    if (user.success) {
       return {
-        success: false,
-        message: error.message,
+        success: user.success,
+        message: user.message,
+      };
+    } else {
+      return {
+        success: user.success,
+        message: user.message,
       };
     }
   }

@@ -1,10 +1,9 @@
 import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
 
 export class PaymentIntentDto {
-
   @IsString()
   @IsNotEmpty()
-  bookingId: string
+  bookingId: string;
 
   // @IsNumber()
   // @IsNotEmpty()

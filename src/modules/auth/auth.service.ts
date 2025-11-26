@@ -123,10 +123,9 @@ export class AuthService {
         data.date_of_birth = DateHelper.format(updateUserDto.date_of_birth);
       }
 
-      if(updateUserDto.about_me) {
+      if (updateUserDto.about_me) {
         data.about_me = updateUserDto.about_me;
       }
-
 
       if (image) {
         // delete old image from storage
@@ -147,7 +146,7 @@ export class AuthService {
         //   image.buffer,
         // );
 
-        const fileName = image.filename
+        const fileName = image.filename;
         data.avatar = fileName;
       }
       const user = await UserRepository.getUserDetails(userId);
@@ -211,23 +210,23 @@ export class AuthService {
         };
         const token = this.jwtService.sign(payload);
 
-              // create stripe customer account
-      const stripeCustomer = await StripePayment.createCustomer({
-        user_id: user.data.id,
-        email: email,
-        name: name,
-      });
-
-      if (stripeCustomer) {
-        await this.prisma.user.update({
-          where: {
-            id: user.data.id,
-          },
-          data: {
-            billing_id: stripeCustomer.id,
-          },
+        // create stripe customer account
+        const stripeCustomer = await StripePayment.createCustomer({
+          user_id: user.data.id,
+          email: email,
+          name: name,
         });
-      }
+
+        if (stripeCustomer) {
+          await this.prisma.user.update({
+            where: {
+              id: user.data.id,
+            },
+            data: {
+              billing_id: stripeCustomer.id,
+            },
+          });
+        }
 
         await this.walletService.createUserWallet(user.data.id);
 
@@ -257,7 +256,7 @@ export class AuthService {
 
       if (user) {
         const payload = { email: email, sub: user.id, role: user.type };
-        const token =  this.jwtService.sign(payload);
+        const token = this.jwtService.sign(payload);
 
         return {
           success: true,
@@ -281,24 +280,24 @@ export class AuthService {
         };
         const token = this.jwtService.sign(payload);
 
-              // create stripe customer account
-      const stripeCustomer = await StripePayment.createCustomer({
-        user_id: user.data.id,
-        email: email,
-        name: name,
-      });
-
-      if (stripeCustomer) {
-        await this.prisma.user.update({
-          where: {
-            id: user.data.id,
-          },
-          data: {
-            billing_id: stripeCustomer.id,
-          },
+        // create stripe customer account
+        const stripeCustomer = await StripePayment.createCustomer({
+          user_id: user.data.id,
+          email: email,
+          name: name,
         });
-      }
-      
+
+        if (stripeCustomer) {
+          await this.prisma.user.update({
+            where: {
+              id: user.data.id,
+            },
+            data: {
+              billing_id: stripeCustomer.id,
+            },
+          });
+        }
+
         await this.walletService.createUserWallet(user.data.id);
 
         return {

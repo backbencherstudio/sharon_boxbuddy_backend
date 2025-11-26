@@ -77,6 +77,7 @@ export class TravelService {
 
     return {
       success: true,
+      message: 'Travels retrieved successfully',
       data: {
         travels: formattedTravels,
         total,
@@ -97,6 +98,7 @@ export class TravelService {
     });
     return {
       success: true,
+      message: 'Travel retrieved successfully',
       data: travel,
     };
   }

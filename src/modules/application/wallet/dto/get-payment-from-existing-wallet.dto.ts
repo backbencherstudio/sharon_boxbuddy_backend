@@ -2,8 +2,7 @@
 import { IsOptional, IsString, IsNotEmpty } from 'class-validator';
 
 export class GetPaymentFromExistingWalletDto {
-
- @IsOptional()
+  @IsOptional()
   @IsString()
   user_id: string;
 

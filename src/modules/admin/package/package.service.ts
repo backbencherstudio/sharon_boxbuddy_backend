@@ -69,6 +69,7 @@ export class PackageService {
 
     return {
       success: true,
+      message: 'Packages retrieved successfully',
       data: {
         packages: formattedPackages,
         total,
@@ -89,6 +90,7 @@ export class PackageService {
     });
     return {
       success: true,
+      message: 'Package retrieved successfully',
       data: pkg,
     };
   }

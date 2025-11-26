@@ -114,6 +114,7 @@ export class BookingService {
 
     return {
       success: true,
+      message: 'Bookings retrieved successfully',
       data: {
         bookings: formattedBookings,
         total,
@@ -198,6 +199,7 @@ export class BookingService {
 
     return {
       success: true,
+      message: 'Bookings retrieved successfully',
       data: {
         bookings: formattedBookings,
         total,
@@ -256,6 +258,7 @@ export class BookingService {
 
     return {
       success: true,
+      message: 'Booking retrieved successfully',
       data: { ...booking, conversation },
     };
   }

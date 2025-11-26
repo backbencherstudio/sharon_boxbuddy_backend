@@ -20,9 +20,7 @@ import { GetTransactionQueryDto } from './dto/query-transaction.dto';
 @Roles(Role.ADMIN)
 @Controller('admin/transaction')
 export class TransactionController {
-  constructor(
-    private readonly transactionService: TransactionService,
-  ) { }
+  constructor(private readonly transactionService: TransactionService) {}
 
   @ApiOperation({ summary: 'Get all transactions' })
   @Get()

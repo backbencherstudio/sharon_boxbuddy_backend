@@ -83,6 +83,7 @@ export class TransactionService {
 
     return {
       success: true,
+      message: 'Transactions retrieved successfully',
       data: {
         transactions: transactionsWithUser,
         total,
@@ -130,6 +131,7 @@ export class TransactionService {
 
     return {
       success: true,
+      message: 'Transaction retrieved successfully',
       data: {
         ...transaction,
         user,
@@ -176,9 +178,10 @@ export class TransactionService {
 
     return {
       success: true,
+      message: 'Transaction stats retrieved successfully',
       data: {
         totalTransactions,
-        totalAmount: totalAmount._sum.amount,
+        totalAmount: +totalAmount._sum.amount,
         statusCounts: statusCounts.map((statusCount) => ({
           status: statusCount.status,
           count: statusCount._count.status,
