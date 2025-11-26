@@ -68,7 +68,6 @@ export class ContactService {
           email: true,
           phone_number: true,
           message: true,
-          status: true,
           created_at: true,
         },
         orderBy: {
