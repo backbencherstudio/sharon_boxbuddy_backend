@@ -1,139 +1,157 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { UserRepository } from '../../../common/repository/user/user.repository';
+import { GetPaymentTransactionQueryDto } from './dto/query-payment-transaction.dto';
 
 @Injectable()
 export class PaymentTransactionService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
-  async findAll(user_id?: string) {
-    try {
-      const userDetails = await UserRepository.getUserDetails(user_id);
+  async findAll(query: GetPaymentTransactionQueryDto) {
+    const {
+      q,
+      status,
+      limit = 10,
+      page = 1,
+      user_id,
+      provider,
+    } = query;
+    const where_condition = {};
 
-      const whereClause = {};
-      if (userDetails.type == 'vendor') {
-        whereClause['user_id'] = user_id;
-      }
+    if (q) {
+      where_condition['OR'] = [
+        { reference_number: { contains: q, mode: 'insensitive' } },
+        { user: { first_name: { contains: q, mode: 'insensitive' } } },
+        { user: { last_name: { contains: q, mode: 'insensitive' } } },
+        { user: { email: { contains: q, mode: 'insensitive' } } },
+      ];
+    }
 
-      const paymentTransactions = await this.prisma.paymentTransaction.findMany(
-        {
-          where: {
-            ...whereClause,
-          },
+    if (status) {
+      where_condition['status'] = status;
+    }
+
+    if (user_id) {
+      where_condition['user_id'] = user_id;
+    }
+
+    if (provider) {
+      where_condition['provider'] = provider;
+    }
+
+    const take = limit;
+    const skip = (page - 1) * limit;
+
+    const paymentTransactions = await this.prisma.paymentTransaction.findMany({
+      where: where_condition,
+      include: {
+        user: {
           select: {
             id: true,
-            reference_number: true,
-            status: true,
-            provider: true,
-            amount: true,
-            currency: true,
-            paid_amount: true,
-            paid_currency: true,
-            created_at: true,
-            updated_at: true,
+            first_name: true,
+            last_name: true,
+            email: true,
           },
         },
-      );
+      },
+      take: take,
+      skip: skip,
+      orderBy: {
+        created_at: 'desc',
+      },
+    });
 
-      return {
-        success: true,
-        data: paymentTransactions,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        message: error.message,
-      };
-    }
+    const total = await this.prisma.paymentTransaction.count({
+      where: where_condition,
+    });
+
+    return {
+      success: true,
+      data: {
+        paymentTransactions,
+        total,
+        page,
+        limit,
+      },
+    };
   }
 
-  async findOne(id: string, user_id?: string) {
-    try {
-      const userDetails = await UserRepository.getUserDetails(user_id);
-
-      const whereClause = {};
-      if (userDetails.type == 'vendor') {
-        whereClause['user_id'] = user_id;
-      }
-
-      const paymentTransaction =
-        await this.prisma.paymentTransaction.findUnique({
-          where: {
-            id: id,
-            ...whereClause,
+  async findOne(id: string) {
+    const paymentTransaction =
+      await this.prisma.paymentTransaction.findUnique({
+        where: { id },
+        include: {
+          user: {
+            select: {
+              id: true,
+              first_name: true,
+              last_name: true,
+              email: true,
+            },
           },
-          select: {
-            id: true,
-            reference_number: true,
-            status: true,
-            provider: true,
-            amount: true,
-            currency: true,
-            paid_amount: true,
-            paid_currency: true,
-            created_at: true,
-            updated_at: true,
-          },
-        });
-
-      if (!paymentTransaction) {
-        return {
-          success: false,
-          message: 'Payment transaction not found',
-        };
-      }
-
-      return {
-        success: true,
-        data: paymentTransaction,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        message: error.message,
-      };
-    }
-  }
-
-  async remove(id: string, user_id?: string) {
-    try {
-      const userDetails = await UserRepository.getUserDetails(user_id);
-
-      const whereClause = {};
-      if (userDetails.type == 'vendor') {
-        whereClause['user_id'] = user_id;
-      }
-
-      const paymentTransaction =
-        await this.prisma.paymentTransaction.findUnique({
-          where: {
-            id: id,
-            ...whereClause,
-          },
-        });
-
-      if (!paymentTransaction) {
-        return {
-          success: false,
-          message: 'Payment transaction not found',
-        };
-      }
-
-      await this.prisma.paymentTransaction.delete({
-        where: {
-          id: id,
         },
       });
 
-      return {
-        success: true,
-        message: 'Payment transaction deleted successfully',
-      };
-    } catch (error) {
+    if (!paymentTransaction) {
       return {
         success: false,
-        message: error.message,
+        message: 'Payment transaction not found',
       };
     }
+
+    return {
+      success: true,
+      data: paymentTransaction,
+    };
+  }
+
+  async remove(id: string) {
+    const paymentTransaction =
+      await this.prisma.paymentTransaction.findUnique({
+        where: { id },
+      });
+
+    if (!paymentTransaction) {
+      return {
+        success: false,
+        message: 'Payment transaction not found',
+      };
+    }
+
+    await this.prisma.paymentTransaction.delete({
+      where: { id },
+    });
+
+    return {
+      success: true,
+      message: 'Payment transaction deleted successfully',
+    };
+  }
+
+  async getStats() {
+    const totalTransactions = await this.prisma.paymentTransaction.count();
+    const totalAmount = await this.prisma.paymentTransaction.aggregate({
+      _sum: {
+        amount: true,
+      },
+    });
+
+    const statusCounts = await this.prisma.paymentTransaction.groupBy({
+      by: ['status'],
+      _count: {
+        status: true,
+      },
+    });
+
+    return {
+      success: true,
+      data: {
+        totalTransactions,
+        totalAmount: totalAmount._sum.amount,
+        statusCounts: statusCounts.map((statusCount) => ({
+          status: statusCount.status,
+          count: statusCount._count.status,
+        })),
+      },
+    };
   }
 }

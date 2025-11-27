@@ -6,6 +6,10 @@ import { PaymentTransactionModule } from './payment-transaction/payment-transact
 import { UserModule } from './user/user.module';
 import { NotificationModule } from './notification/notification.module';
 import { PlatformWalletModule } from './platform-wallet/platform-wallet.module';
+import { OverviewModule } from './overview/overview.module';
+import { BookingModule } from './booking/booking.module';
+import { TravelModule } from './travel/travel.module';
+import { PackageModule } from './package/package.module';
 
 @Module({
   imports: [
@@ -16,6 +20,10 @@ import { PlatformWalletModule } from './platform-wallet/platform-wallet.module';
     UserModule,
     NotificationModule,
     PlatformWalletModule,
+    OverviewModule,
+    BookingModule,
+    TravelModule,
+    PackageModule,
   ],
 })
 export class AdminModule {}
