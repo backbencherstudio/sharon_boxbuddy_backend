@@ -460,6 +460,26 @@ export class StripeService {
 
       const amountInCents = Math.round(amount * 100); // Convert to cents
 
+      // need to check balance before transfer
+      const balance = await this.stripe.balance.retrieve();
+      console.log(balance)
+
+//       {
+//   object: 'balance',
+//   available: [ { amount: 0, currency: 'usd', source_types: [Object] } ],
+//   connect_reserved: [ { amount: 0, currency: 'usd' } ],
+//   livemode: false,
+//   pending: [ { amount: 6359, currency: 'usd', source_types: [Object] } ],
+//   refund_and_dispute_prefunding: { available: [ [Object] ], pending: [ [Object] ] }
+// }
+
+      const availableBalance = balance.available.find(b => b.currency.toLowerCase() === currency.toLowerCase());
+      if (!availableBalance || availableBalance.amount < amountInCents) {
+        throw new BadRequestException('Insufficient balance for this currency on the platform. Please try again later. Or contact support.');
+      }
+
+      
+
       // Transfer funds to the connected account
       const transfer = await this.stripe.transfers.create({
         amount: amountInCents,
@@ -520,7 +540,7 @@ export class StripeService {
       //   this.logger.error(`Stripe error: ${error.message}`);
       //   throw new BadRequestException(`Stripe error: ${error.message}`);
       // }
-
+ console.log("error => ", error)
       // // Handle known custom errors (optional)
       if (error instanceof BadRequestException) {
         throw error; // rethrow as is
