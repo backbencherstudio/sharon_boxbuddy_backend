@@ -28,9 +28,14 @@ export class UserService {
     }
   }
 
-  async findAll(query: GetUserQueryDto) {
+  async findAll(query: GetUserQueryDto, currentUserId: string) {
     const { q, type, status, limit = 10, page = 1 } = query;
-    const where_condition: any = {};
+    const where_condition: any = {
+      // Exclude current logged-in user
+      id: {
+        not: currentUserId,
+      },
+    };
 
     if (q) {
       where_condition['OR'] = [
@@ -62,6 +67,20 @@ export class UserService {
           phone_number: true,
           is_blocked: true,
           created_at: true,
+          _count: {
+            select: {
+              bookings_owner: {
+                where: {
+                  status: 'cancel',
+                },
+              },
+              bookings: {
+                where: {
+                  status: 'cancel',
+                },
+              },
+            },
+          },
         },
         take: limit,
         skip,
@@ -69,11 +88,23 @@ export class UserService {
       this.prisma.user.count({ where: where_condition }),
     ]);
 
+    // Format users to include total cancelled bookings
+    const formattedUsers = users.map((user) => ({
+      id: user.id,
+      first_name: user.first_name,
+      last_name: user.last_name,
+      email: user.email,
+      phone_number: user.phone_number,
+      is_blocked: user.is_blocked,
+      created_at: user.created_at,
+      cancelled_bookings: user._count.bookings_owner + user._count.bookings,
+    }));
+
     return {
       success: true,
       message: 'Users retrieved successfully',
       data: {
-        users,
+        users: formattedUsers,
         total,
         page,
         limit,
@@ -111,6 +142,16 @@ export class UserService {
           select: {
             travels: true,
             packages_owner: true,
+            bookings_owner: {
+              where: {
+                status: 'cancel',
+              },
+            },
+            bookings: {
+              where: {
+                status: 'cancel',
+              },
+            },
           },
         },
         reviews_for: {
@@ -149,6 +190,8 @@ export class UserService {
 
     const total_travels_created = user._count.travels;
     const total_packages_sent = user._count.packages_owner;
+    const cancelled_bookings =
+      user._count.bookings_owner + user._count.bookings;
     const completed_deliveries = await this.prisma.booking.count({
       where: {
         owner_id: id,
@@ -192,6 +235,7 @@ export class UserService {
         ...rest,
         total_travels_created,
         total_packages_sent,
+        cancelled_bookings,
         completed_deliveries,
         ratings_as_traveler: ratings_as_traveler.toFixed(2),
         ratings_as_sender: ratings_as_sender.toFixed(2),

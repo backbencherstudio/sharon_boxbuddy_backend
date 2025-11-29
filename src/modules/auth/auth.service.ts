@@ -151,6 +151,14 @@ export class AuthService {
       }
       const user = await UserRepository.getUserDetails(userId);
       if (user) {
+        // Check if user is blocked
+        if (user.is_blocked) {
+          return {
+            success: false,
+            message: 'Your account has been blocked. Please contact support.',
+          };
+        }
+
         await this.prisma.user.update({
           where: { id: userId },
           data: {
@@ -186,6 +194,14 @@ export class AuthService {
       const user = await UserRepository.getUserByEmail(email);
 
       if (user) {
+        // Check if user is blocked
+        if (user.is_blocked) {
+          return {
+            success: false,
+            message: 'Your account has been blocked. Please contact support.',
+          };
+        }
+
         const payload = { email: email, sub: user.id, role: user.type };
         const token = this.jwtService.sign(payload);
 
@@ -255,6 +271,14 @@ export class AuthService {
       const user = await UserRepository.getUserByFacebookId(facebook_id);
 
       if (user) {
+        // Check if user is blocked
+        if (user.is_blocked) {
+          return {
+            success: false,
+            message: 'Your account has been blocked. Please contact support.',
+          };
+        }
+
         const payload = { email: email, sub: user.id, role: user.type };
         const token = this.jwtService.sign(payload);
 
@@ -331,6 +355,14 @@ export class AuthService {
       if (!user.email_verified_at) {
         throw new UnauthorizedException('Email not verified');
       }
+
+      // Check if user is blocked
+      if (user.is_blocked) {
+        throw new UnauthorizedException(
+          'Your account has been blocked. Please contact support.',
+        );
+      }
+
       const _isValidPassword = await UserRepository.validatePassword({
         email: email,
         password: _password,
@@ -516,6 +548,14 @@ export class AuthService {
       });
 
       if (user) {
+        // Check if user is blocked
+        if (user.is_blocked) {
+          return {
+            success: false,
+            message: 'Your account has been blocked. Please contact support.',
+          };
+        }
+
         const token = await UcodeRepository.createToken({
           userId: user.id,
           isOtp: true,
@@ -553,6 +593,14 @@ export class AuthService {
       });
 
       if (user) {
+        // Check if user is blocked
+        if (user.is_blocked) {
+          return {
+            success: false,
+            message: 'Your account has been blocked. Please contact support.',
+          };
+        }
+
         const existToken = await UcodeRepository.validateToken({
           email: email,
           token: token,
@@ -602,6 +650,14 @@ export class AuthService {
       });
 
       if (user) {
+        // Check if user is blocked
+        if (user.is_blocked) {
+          return {
+            success: false,
+            message: 'Your account has been blocked. Please contact support.',
+          };
+        }
+
         const existToken = await UcodeRepository.validateToken({
           email: email,
           token: token,

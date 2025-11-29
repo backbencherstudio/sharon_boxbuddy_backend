@@ -59,6 +59,7 @@ export class PackageService {
           created_at: true,
           owner: {
             select: {
+              id: true,
               first_name: true,
               last_name: true,
             },
@@ -82,6 +83,7 @@ export class PackageService {
       weight: pkg.weight,
       value: pkg.value,
       owner_name: `${pkg.owner.first_name} ${pkg.owner.last_name}`,
+      owner_id: pkg.owner.id,
       created_at: pkg.created_at,
     }));
 

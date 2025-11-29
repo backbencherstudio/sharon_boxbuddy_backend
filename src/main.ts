@@ -23,16 +23,16 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api');
   app.enableCors({
-    // origin: '*',
-    origin: [
-      'https://colisr.com',
-      'https://backend.colisr.com',
-      'http://colisr.com',
-      'http://backend.colisr.com',
-      appConfig().app.client_app_url,
-      'http://localhost:3000',
-    ],
-    // credentials: true,
+    origin: '*',
+    // origin: [
+    //   'https://colisr.com',
+    //   'https://backend.colisr.com',
+    //   'http://colisr.com',
+    //   'http://backend.colisr.com',
+    //   appConfig().app.client_app_url,
+    //   'http://localhost:3000',
+    // ],
+    credentials: true,
   });
 
   app.use(helmet());

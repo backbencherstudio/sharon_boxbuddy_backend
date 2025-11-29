@@ -29,13 +29,13 @@ export class OverviewService {
       case 'month':
         data = await this.prisma.$queryRaw`
         SELECT
-          DATE(created_at - ((EXTRACT(day FROM created_at)::int % 3) || ' days')::interval) AS day_group,
+          DATE(created_at) AS date,
           COALESCE(SUM(CASE WHEN status = 'completed' THEN amount ELSE 0 END), 0)::float8 AS total_earnings,
           COUNT(*)::int AS total_bookings
         FROM bookings
-        WHERE created_at >= NOW() - INTERVAL '1 month'
-        GROUP BY day_group
-        ORDER BY day_group;
+        WHERE created_at >= NOW() - INTERVAL '30 days'
+        GROUP BY DATE(created_at)
+        ORDER BY DATE(created_at);
       `;
         break;
 
