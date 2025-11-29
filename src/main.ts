@@ -27,10 +27,10 @@ async function bootstrap() {
     // origin: [
     //   'https://colisr.com',
     //   'https://backend.colisr.com',
-    //   'http://colisr.com',
+    //   "http://colisr.com",
     //   'http://backend.colisr.com',
     //   appConfig().app.client_app_url,
-    //   'http://localhost:3000',
+    //   'http://localhost:3000'
     // ],
     credentials: true,
   });
