@@ -29,7 +29,6 @@ export class StripeService {
     return StripePayment.handleWebhook(rawBody, sig);
   }
 
-<<<<<<< HEAD
   async test() {
     try {
       const account = await this.stripe.accounts.retrieve();
@@ -41,8 +40,6 @@ export class StripeService {
     }
   }
 
-=======
->>>>>>> 6ffb4315467e81ed743dabb8d8680aaac3e141cd
   async saveCard(userId: string, paymentMethodId: string) {
     // 1. Find the user in your database
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
@@ -448,9 +445,9 @@ export class StripeService {
       const account = await this.getActiveConnectedAccount(user_id);
 
       console.log('account => ', account);
-    const stripeAccount = await this.stripe.accounts.retrieve(
-      account.stripe_account_id,
-    );
+      const stripeAccount = await this.stripe.accounts.retrieve(
+        account.stripe_account_id,
+      );
 
       // const stripeAccount = await this.stripe.accounts.retrieve(
       //   account.stripe_account_id,
@@ -499,23 +496,25 @@ export class StripeService {
 
       // need to check balance before transfer
       const balance = await this.stripe.balance.retrieve();
-      console.log(balance)
+      console.log(balance);
 
-//       {
-//   object: 'balance',
-//   available: [ { amount: 0, currency: 'usd', source_types: [Object] } ],
-//   connect_reserved: [ { amount: 0, currency: 'usd' } ],
-//   livemode: false,
-//   pending: [ { amount: 6359, currency: 'usd', source_types: [Object] } ],
-//   refund_and_dispute_prefunding: { available: [ [Object] ], pending: [ [Object] ] }
-// }
+      //       {
+      //   object: 'balance',
+      //   available: [ { amount: 0, currency: 'usd', source_types: [Object] } ],
+      //   connect_reserved: [ { amount: 0, currency: 'usd' } ],
+      //   livemode: false,
+      //   pending: [ { amount: 6359, currency: 'usd', source_types: [Object] } ],
+      //   refund_and_dispute_prefunding: { available: [ [Object] ], pending: [ [Object] ] }
+      // }
 
-      const availableBalance = balance.available.find(b => b.currency.toLowerCase() === currency.toLowerCase());
+      const availableBalance = balance.available.find(
+        (b) => b.currency.toLowerCase() === currency.toLowerCase(),
+      );
       if (!availableBalance || availableBalance.amount < amountInCents) {
-        throw new BadRequestException('Insufficient balance for this currency on the platform. Please try again later. Or contact support.');
+        throw new BadRequestException(
+          'Insufficient balance for this currency on the platform. Please try again later. Or contact support.',
+        );
       }
-
-      
 
       // Transfer funds to the connected account
       const transfer = await this.stripe.transfers.create({
@@ -576,7 +575,7 @@ export class StripeService {
       //   this.logger.error(`Stripe error: ${error.message}`);
       //   throw new BadRequestException(`Stripe error: ${error.message}`);
       // }
- console.log("error => ", error)
+      console.log('error => ', error);
       // // Handle known custom errors (optional)
       if (error instanceof BadRequestException) {
         throw error; // rethrow as is
