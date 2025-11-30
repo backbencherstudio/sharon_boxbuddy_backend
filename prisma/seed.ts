@@ -5,7 +5,7 @@ const prisma = new PrismaClient();
 
 async function main() {
   // Create admin user
-  const adminEmail = 'admin@chattersticks.com';
+  const adminEmail = 'admin@colisr.com';
   const adminPassword = 'AdminPassword123!'; // Change this to a secure password
 
   // Check if admin already exists
