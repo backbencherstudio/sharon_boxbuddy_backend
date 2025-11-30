@@ -66,12 +66,14 @@ model User {
   type              String?   @default("user")
   email_verified_at DateTime?
 
+  is_blocked Boolean @default(false)
+
   is_two_factor_enabled Int?    @default(0)
   two_factor_secret     String? // secret key for two factor authentication
   facebook_id           String?
 
-  verification_status String  ? @default("pending")
-  stripeSessionId    String?
+  verification_status String? @default("pending")
+  stripeSessionId     String?
 
   accounts                  Account[]
   creator_conversations     Conversation[] @relation("creator")
@@ -101,15 +103,15 @@ model User {
   paymentAccounts      PaymentAccount[]
   payment_methods      PaymentMethod[]
   stripeCustomerId     String?              @map("stripe_customer_id")
-  wallet Wallet?
+  wallet               Wallet?
 
   // bookings
   total_booking_completed Int @default(0)
   total_booking_canceled  Int @default(0)
-  total_orders            Int @default(0)       
-  
+  total_orders            Int @default(0)
+
   // Relations
-  stripe_account       StripeAccount?  
+  stripe_account StripeAccount?
 
   @@map("users")
 }
@@ -132,9 +134,8 @@ model PaymentMethod {
   expYear           Int?
   is_default        Boolean @default(false)
 
-  created_at              DateTime @default(now())
-  updated_at              DateTime @default(now()) @updatedAt
-
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
 }
 
 // model PaymentMethod {
@@ -402,8 +403,8 @@ model Conversation {
   notification_type String? @default("") //  pending, declined, accepted, canceled, expired
   show_book_button  Boolean @default(true)
 
-  @@index([travel_id, package_id])
   @@unique([travel_id, package_id])
+  @@index([travel_id, package_id])
   @@map("conversations")
 }
 
@@ -522,26 +523,26 @@ model UserSetting {
 // }
 
 model Package {
-  id                String   @id @default(uuid())
-  category          String[]   
-  weight            String
-  value             String
-  length            String?
-  depth             String?
-  width             String?
-  is_electronic     Boolean? @default(false)
-  photo             String?
-  pick_up_location  String
-  pick_up_person    String
-  pick_up_person_info Json?
-  drop_off_location String
-  drop_off_person   String
+  id                   String   @id @default(uuid())
+  category             String[]
+  weight               String
+  value                String
+  length               String?
+  depth                String?
+  width                String?
+  is_electronic        Boolean? @default(false)
+  photo                String?
+  pick_up_location     String
+  pick_up_person       String
+  pick_up_person_info  Json?
+  drop_off_location    String
+  drop_off_person      String
   drop_off_person_info Json?
-  publish           Boolean  @default(false)
-  created_at        DateTime @default(now())
-  updated_at        DateTime @updatedAt
+  publish              Boolean  @default(false)
+  created_at           DateTime @default(now())
+  updated_at           DateTime @updatedAt
 
-  status String? @default("new")  // new, pending, in_progress, completed, rejected
+  status String? @default("new") // new, pending, in_progress, completed, rejected
 
   // traveller_id String?
   owner_id String
@@ -613,14 +614,13 @@ enum BookingStatus {
   all_conditions_are_not_met
   declined
   expired
-
 }
 
 model Booking {
   id     String        @id @default(cuid())
   status BookingStatus @default(pending) // ShipmentStatus
   paid   Boolean       @default(false)
-  amount Decimal?     @db.Decimal(15, 4)
+  amount Decimal?      @db.Decimal(15, 4)
 
   // pick up
   pick_up_photo          String?
@@ -633,13 +633,13 @@ model Booking {
   drop_off_traveller_sign String?
 
   // cancel
-  cancel        Boolean @default(false)
+  cancel        Boolean   @default(false)
   cancel_reason Json?
   // cancel_description           String?
   cancel_by_id  String?
-  cancel_by     User?   @relation("UserBookingsCancelBy", fields: [cancel_by_id], references: [id])
+  cancel_by     User?     @relation("UserBookingsCancelBy", fields: [cancel_by_id], references: [id])
   cancel_by_who String? // package_owner or traveller
-  cancel_at     DateTime? 
+  cancel_at     DateTime?
 
   refund_details Json?
 
@@ -665,9 +665,8 @@ model Booking {
   travel_id String
   travel    Travel @relation(fields: [travel_id], references: [id])
 
-  reviews Review[]
+  reviews     Review[]
   announcment AnnouncementRequest?
-  
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -683,13 +682,9 @@ model Booking {
   @@map("bookings")
 }
 
-
-
-
-
 model Travel {
   id                      String   @id @default(uuid())
-  flight_number           String? 
+  flight_number           String?
   airline                 String
   duration                String
   departure               DateTime @db.Timestamptz
@@ -704,7 +699,7 @@ model Travel {
 
   // new fields
   departure_from String?
-  arrival_to String?
+  arrival_to     String?
 
   user    User   @relation("UserTravels", fields: [user_id], references: [id])
   user_id String
@@ -762,21 +757,21 @@ model ProblemWithPackage {
 }
 
 model AnnouncementRequest {
-  id          String   @id @default(cuid())
-  is_accepted Boolean  @default(false)
-  is_refused  Boolean  @default(false)
+  id          String  @id @default(cuid())
+  is_accepted Boolean @default(false)
+  is_refused  Boolean @default(false)
   package_id  String
-  package     Package  @relation(fields: [package_id], references: [id], onDelete: Cascade)
+  package     Package @relation(fields: [package_id], references: [id], onDelete: Cascade)
   travel_id   String
-  travel      Travel   @relation(fields: [travel_id], references: [id], onDelete: Cascade)
-  
-  booking_id   String? @unique
-  booking      Booking?   @relation(fields: [booking_id], references: [id], onDelete: Cascade)
-  
-  is_processed Boolean  @default(false)
+  travel      Travel  @relation(fields: [travel_id], references: [id], onDelete: Cascade)
 
-  created_at  DateTime @default(now())
-  updated_at  DateTime @updatedAt
+  booking_id String?  @unique
+  booking    Booking? @relation(fields: [booking_id], references: [id], onDelete: Cascade)
+
+  is_processed Boolean @default(false)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
   @@map("announcement_requests")
 }
@@ -797,30 +792,25 @@ model AnnouncementRequest {
 //   REFUNDED
 // }
 
-
-
-
-
 // Platform Wallet to track total earnings
 model PlatformWallet {
-  id          String   @id @default(cuid())
-  total_earnings Decimal @db.Decimal(15, 4) @default(0)
+  id             String  @id @default(cuid())
+  total_earnings Decimal @default(0) @db.Decimal(15, 4)
 
-  created_at  DateTime @default(now())
-  updated_at  DateTime @updatedAt
-  
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
   @@map("platform_wallet")
 }
 
-
 model Wallet {
-  id           String              @id @default(uuid())
-  user_id      String?             @unique
-  user         User?               @relation(fields: [user_id], references: [id])
-  balance      Decimal               @db.Decimal(15, 4) @default(0)
-  currency     String              @default("usd")
-  created_at   DateTime            @default(now())
-  updated_at   DateTime            @updatedAt
+  id         String   @id @default(uuid())
+  user_id    String?  @unique
+  user       User?    @relation(fields: [user_id], references: [id])
+  balance    Decimal  @default(0) @db.Decimal(15, 4)
+  currency   String   @default("usd")
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
   // transactions WalletTransaction[]
 
   @@index([user_id])
@@ -844,14 +834,13 @@ model Wallet {
 //   @@map("wallet_transactions")
 // }
 
-
 enum TransactionType {
-  STRIPE_PAYMENT  // Payment via Stripe
-  WALLET_TOPUP    // Adding money to wallet
+  STRIPE_PAYMENT // Payment via Stripe
+  WALLET_TOPUP // Adding money to wallet
   BOOKING_PAYMENT // Payment for booking
-  WALLET_REFUND   // Refund to wallet
-  CASHBACK        // Cashback/delivery bonus
-  COMMISSION      // Commission earned
+  WALLET_REFUND // Refund to wallet
+  CASHBACK // Cashback/delivery bonus
+  COMMISSION // Commission earned
   WALLET_WITHDRAW // Withdraw from wallet
   PLATFORM_PAYOUT // Platform Payout
 }
@@ -864,32 +853,30 @@ enum TransactionStatus {
 }
 
 model Transaction {
-  id          String      @id @default(cuid())
-  type        TransactionType
-  amount      Decimal
-  status      TransactionStatus @default(COMPLETED)
-  description String?
+  id           String            @id @default(cuid())
+  type         TransactionType
+  amount       Decimal
+  status       TransactionStatus @default(COMPLETED)
+  description  String?
   reference_id String? // Stripe payment intent ID or booking ID
-  
+
   // Foreign keys
-  user_id      String 
-  wallet_id    String?
-  booking_id   String?
-  
+  user_id    String
+  wallet_id  String?
+  booking_id String?
+
   // Timestamps
-  created_at   DateTime @default(now())
-  updated_at   DateTime @updatedAt
-  
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
   // Relationships
   // user        User    @relation(fields: [userId], references: [id])
   // wallet      Wallet? @relation(fields: [walletId], references: [id])
   // booking     Booking? @relation(fields: [bookingId], references: [id])
-  
-  @@index([user_id])
 
+  @@index([user_id])
   @@map("transactions")
 }
-
 
 model WalletConfig {
   id                  Int    @id @default(autoincrement())
@@ -918,17 +905,14 @@ model PaymentAccount {
   @@map("payment_accounts")
 }
 
-
-
 model StripeAccount {
-  id                 String   @id @default(cuid())
-  user_id            String   @unique
-  stripe_account_id  String   @unique
-  is_active          Boolean  @default(true)
-  created_at         DateTime @default(now())
-  updated_at         DateTime @updatedAt
-  
+  id                String   @id @default(cuid())
+  user_id           String   @unique
+  stripe_account_id String   @unique
+  is_active         Boolean  @default(true)
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
   // Relations
   user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
 }
-

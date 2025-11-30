@@ -5,7 +5,6 @@ import {
   Body,
   Patch,
   Param,
-  Delete,
   UseGuards,
   Query,
 } from '@nestjs/common';
@@ -17,6 +16,8 @@ import { Role } from '../../../common/guard/role/role.enum';
 import { Roles } from '../../../common/guard/role/roles.decorator';
 import { RolesGuard } from '../../../common/guard/role/roles.guard';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { GetUserQueryDto } from './dto/query-user.dto';
+import { GetUser } from '../../auth/decorators/get-user.decorator';
 
 @ApiBearerAuth()
 @ApiTags('User')
@@ -43,15 +44,12 @@ export class UserController {
   @ApiResponse({ description: 'Get all users' })
   @Get()
   async findAll(
-    @Query() query: { q?: string; type?: string; approved?: string },
+    @Query()
+    query: GetUserQueryDto,
+    @GetUser('id') currentUserId: string,
   ) {
     try {
-      const q = query.q;
-      const type = query.type;
-      const approved = query.approved;
-
-      const users = await this.userService.findAll({ q, type, approved });
-      return users;
+      return await this.userService.findAll(query, currentUserId);
     } catch (error) {
       return {
         success: false,
@@ -63,10 +61,13 @@ export class UserController {
   // approve user
   @Roles(Role.ADMIN)
   @ApiResponse({ description: 'Approve a user' })
-  @Post(':id/approve')
-  async approve(@Param('id') id: string) {
+  @Patch(':id/blocked')
+  async updateBlockedStatus(
+    @Param('id') id: string,
+    @Query('status') status: 'blocked' | 'unblocked',
+  ) {
     try {
-      const user = await this.userService.approve(id);
+      const user = await this.userService.updateBlockedStatus(id, status);
       return user;
     } catch (error) {
       return {
@@ -75,22 +76,36 @@ export class UserController {
       };
     }
   }
+  // @Roles(Role.ADMIN)
+  // @ApiResponse({ description: 'Approve a user' })
+  // @Post(':id/approve')
+  // async approve(@Param('id') id: string) {
+  //   try {
+  //     const user = await this.userService.approve(id);
+  //     return user;
+  //   } catch (error) {
+  //     return {
+  //       success: false,
+  //       message: error.message,
+  //     };
+  //   }
+  // }
 
   // reject user
-  @Roles(Role.ADMIN)
-  @ApiResponse({ description: 'Reject a user' })
-  @Post(':id/reject')
-  async reject(@Param('id') id: string) {
-    try {
-      const user = await this.userService.reject(id);
-      return user;
-    } catch (error) {
-      return {
-        success: false,
-        message: error.message,
-      };
-    }
-  }
+  // @Roles(Role.ADMIN)
+  // @ApiResponse({ description: 'Reject a user' })
+  // @Post(':id/reject')
+  // async reject(@Param('id') id: string) {
+  //   try {
+  //     const user = await this.userService.reject(id);
+  //     return user;
+  //   } catch (error) {
+  //     return {
+  //       success: false,
+  //       message: error.message,
+  //     };
+  //   }
+  // }
 
   @ApiResponse({ description: 'Get a user by id' })
   @Get(':id')
@@ -119,16 +134,16 @@ export class UserController {
     }
   }
 
-  @Delete(':id')
-  async remove(@Param('id') id: string) {
-    try {
-      const user = await this.userService.remove(id);
-      return user;
-    } catch (error) {
-      return {
-        success: false,
-        message: error.message,
-      };
-    }
-  }
+  // @Delete(':id')
+  // async remove(@Param('id') id: string) {
+  //   try {
+  //     const user = await this.userService.remove(id);
+  //     return user;
+  //   } catch (error) {
+  //     return {
+  //       success: false,
+  //       message: error.message,
+  //     };
+  //   }
+  // }
 }

@@ -5,7 +5,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class ReviewsService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   async create(createReviewDto: CreateReviewDto, user_id: string) {
     // check booking exists or not
@@ -49,10 +49,14 @@ export class ReviewsService {
       booking_id: createReviewDto.booking_id,
       review_text: createReviewDto.review_text,
       rating: createReviewDto.rating,
-      review_from: booking.traveller_id == user_id ? 'traveller' : 'package_owner',
+      review_from:
+        booking.traveller_id == user_id ? 'traveller' : 'package_owner',
       review_by_id: user_id,
-      review_for_id: booking.traveller_id == user_id ? booking.owner_id : booking.traveller_id,
-    }
+      review_for_id:
+        booking.traveller_id == user_id
+          ? booking.owner_id
+          : booking.traveller_id,
+    };
     const newReview = await this.prisma.review.create({
       data,
     });
@@ -61,8 +65,7 @@ export class ReviewsService {
       success: true,
       message: 'Review created successfully',
       data: newReview,
-    }
-
+    };
   }
 
   async findAllReceived(user_id: string, limit: number, page: number) {
@@ -96,7 +99,7 @@ export class ReviewsService {
 
     return {
       success: true,
-      message: "Reviews fetched successfully",
+      message: 'Reviews fetched successfully',
       data: {
         reviews, // The full list of reviews
         summary: {
@@ -113,8 +116,7 @@ export class ReviewsService {
         hasNextPage: page * limit < totalReviews,
         hasPreviousPage: page > 1,
       },
-    }
-
+    };
   }
 
   async findAllLeft(user_id: string, limit: number, page: number) {
@@ -148,7 +150,7 @@ export class ReviewsService {
 
     return {
       success: true,
-      message: "Reviews fetched successfully",
+      message: 'Reviews fetched successfully',
       data: {
         reviews, // The full list of reviews
         summary: {

@@ -1,11 +1,11 @@
-import { IsNotEmpty, IsNumber, IsString } from "class-validator";
+import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
 
 export class PlatformPayoutDto {
-    @IsNotEmpty()
-    @IsNumber()
-    amount: number;
+  @IsNotEmpty()
+  @IsNumber()
+  amount: number;
 
-    @IsNotEmpty()
-    @IsString()
-    currency: string;
+  @IsNotEmpty()
+  @IsString()
+  currency: string;
 }

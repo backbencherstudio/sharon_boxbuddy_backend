@@ -47,18 +47,31 @@ export class WalletController {
       message: 'Customer created successfully',
       customerId: customerId,
     };
-
   }
 
   @Get('transactions')
   @ApiOperation({ summary: 'Get wallet transactions by user' })
-  @ApiResponse({ status: 200, description: 'Returns wallet transactions by user' })
-  async getTransactionsByUser(@Req() req: Request, @Query('page') page = 1, @Query('limit') limit = 10) {
+  @ApiResponse({
+    status: 200,
+    description: 'Returns wallet transactions by user',
+  })
+  async getTransactionsByUser(
+    @Req() req: Request,
+    @Query('page') page = 1,
+    @Query('limit') limit = 10,
+  ) {
     const userId = req?.user?.userId;
     const pageNumber = Math.max(1, parseInt(String(page), 10) || 1);
-    const limitNumber = Math.min(100, Math.max(1, parseInt(String(limit), 10) || 10));
+    const limitNumber = Math.min(
+      100,
+      Math.max(1, parseInt(String(limit), 10) || 10),
+    );
 
-    return await this.walletService.getTransactionsByUser(userId, limitNumber, pageNumber);
+    return await this.walletService.getTransactionsByUser(
+      userId,
+      limitNumber,
+      pageNumber,
+    );
   }
 
   @Get('accounts')
@@ -172,7 +185,6 @@ export class WalletController {
   //   );
   // }
 
-
   // // ----------------------
   // //        Add Card
   // // ----------------------
@@ -209,11 +221,12 @@ export class WalletController {
   // }
 
   @Post('pay')
-  async payExistingBooking(@Body() dto: GetPaymentFromExistingWalletDto, @Req() req: Request) {
+  async payExistingBooking(
+    @Body() dto: GetPaymentFromExistingWalletDto,
+    @Req() req: Request,
+  ) {
     const userId = req?.user?.userId;
     dto.user_id = userId;
     return this.walletService.completeBookingWithWallet(dto);
   }
-
-
 }

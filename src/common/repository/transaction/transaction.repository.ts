@@ -1,4 +1,8 @@
-import { PrismaClient, TransactionStatus, TransactionType } from '@prisma/client';
+import {
+  PrismaClient,
+  TransactionStatus,
+  TransactionType,
+} from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -43,19 +47,21 @@ export class TransactionRepository {
   }
 
   /*
-  * create many transactions
-  * @returns
-  */
-  static async createManyTransactions(data: {
-    user_id: string;
-    wallet_id?: string;
-    booking_id?: string;
-    type: TransactionType;
-    amount: number;
-    status?: TransactionStatus;
-    description?: string;
-    reference_id?: string;
-  }[]) {
+   * create many transactions
+   * @returns
+   */
+  static async createManyTransactions(
+    data: {
+      user_id: string;
+      wallet_id?: string;
+      booking_id?: string;
+      type: TransactionType;
+      amount: number;
+      status?: TransactionStatus;
+      description?: string;
+      reference_id?: string;
+    }[],
+  ) {
     const dataArray = data.map((item) => {
       const data: any = {};
       if (item.user_id) data['user_id'] = item.user_id;
@@ -63,10 +69,10 @@ export class TransactionRepository {
       if (item.booking_id) data['booking_id'] = item.booking_id;
       if (item.type) data['type'] = item.type;
       if (item.amount) data['amount'] = item.amount;
-        if (item.status) data['status'] = item.status;
+      if (item.status) data['status'] = item.status;
       if (item.description) data['description'] = item.description;
       if (item.reference_id) data['reference_id'] = item.reference_id;
-          return data;
+      return data;
     });
 
     return await prisma.transaction.createMany({
@@ -130,7 +136,11 @@ export class TransactionRepository {
   /**
    * Get all transactions by user
    */
-  static async getTransactionsByUser(user_id: string, limit: number, page: number) {
+  static async getTransactionsByUser(
+    user_id: string,
+    limit: number,
+    page: number,
+  ) {
     const offset = (page - 1) * limit;
     const transactions = await prisma.transaction.findMany({
       where: { user_id },
@@ -143,7 +153,6 @@ export class TransactionRepository {
     const totalPages = Math.ceil(total / limit);
     const hasNextPage = offset + limit < total;
     const hasPreviousPage = offset > 0;
-
 
     return {
       success: true,
@@ -169,9 +178,6 @@ export class TransactionRepository {
     });
   }
 }
-
-
-
 
 // import { PrismaClient } from '@prisma/client';
 

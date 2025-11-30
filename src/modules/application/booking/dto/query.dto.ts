@@ -4,7 +4,7 @@ import { IsString, IsNotEmpty, IsNumber } from 'class-validator';
 
 export class QueryDto {
   @Transform(({ value }) => parseInt(value))
-    @IsNumber()
+  @IsNumber()
   @IsNotEmpty()
   id: number; // ID of the package owner
 }

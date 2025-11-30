@@ -22,8 +22,21 @@ export class BillingController {
   }
 
   @Post('pay')
-  pay(@Body() body: { userId: string; paymentMethodId: string; amountInCents: number; currency?: string }) {
-    return this.billing.payWithSavedCard(body.userId, body.paymentMethodId, body.amountInCents, body.currency);
+  pay(
+    @Body()
+    body: {
+      userId: string;
+      paymentMethodId: string;
+      amountInCents: number;
+      currency?: string;
+    },
+  ) {
+    return this.billing.payWithSavedCard(
+      body.userId,
+      body.paymentMethodId,
+      body.amountInCents,
+      body.currency,
+    );
   }
 
   @Post('cards/detach')

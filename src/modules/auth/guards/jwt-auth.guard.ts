@@ -11,11 +11,11 @@ import { PUBLIC_KEY } from 'src/common/guard/public';
 export class JwtAuthGuard extends AuthGuard('jwt') {
   canActivate(context: ExecutionContext) {
     const reflector = new Reflector();
-     const isPublic = reflector.getAllAndOverride<boolean>(PUBLIC_KEY, [
+    const isPublic = reflector.getAllAndOverride<boolean>(PUBLIC_KEY, [
       context.getHandler(),
       context.getClass(),
     ]);
- 
+
     if (isPublic) {
       // If route is public, bypass authentication
       return true;

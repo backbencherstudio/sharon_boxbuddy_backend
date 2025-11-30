@@ -123,10 +123,9 @@ export class AuthService {
         data.date_of_birth = DateHelper.format(updateUserDto.date_of_birth);
       }
 
-      if(updateUserDto.about_me) {
+      if (updateUserDto.about_me) {
         data.about_me = updateUserDto.about_me;
       }
-
 
       if (image) {
         // delete old image from storage
@@ -147,11 +146,19 @@ export class AuthService {
         //   image.buffer,
         // );
 
-        const fileName = image.filename
+        const fileName = image.filename;
         data.avatar = fileName;
       }
       const user = await UserRepository.getUserDetails(userId);
       if (user) {
+        // Check if user is blocked
+        if (user.is_blocked) {
+          return {
+            success: false,
+            message: 'Your account has been blocked. Please contact support.',
+          };
+        }
+
         await this.prisma.user.update({
           where: { id: userId },
           data: {
@@ -187,6 +194,14 @@ export class AuthService {
       const user = await UserRepository.getUserByEmail(email);
 
       if (user) {
+        // Check if user is blocked
+        if (user.is_blocked) {
+          return {
+            success: false,
+            message: 'Your account has been blocked. Please contact support.',
+          };
+        }
+
         const payload = { email: email, sub: user.id, role: user.type };
         const token = this.jwtService.sign(payload);
 
@@ -211,23 +226,23 @@ export class AuthService {
         };
         const token = this.jwtService.sign(payload);
 
-              // create stripe customer account
-      const stripeCustomer = await StripePayment.createCustomer({
-        user_id: user.data.id,
-        email: email,
-        name: name,
-      });
-
-      if (stripeCustomer) {
-        await this.prisma.user.update({
-          where: {
-            id: user.data.id,
-          },
-          data: {
-            billing_id: stripeCustomer.id,
-          },
+        // create stripe customer account
+        const stripeCustomer = await StripePayment.createCustomer({
+          user_id: user.data.id,
+          email: email,
+          name: name,
         });
-      }
+
+        if (stripeCustomer) {
+          await this.prisma.user.update({
+            where: {
+              id: user.data.id,
+            },
+            data: {
+              billing_id: stripeCustomer.id,
+            },
+          });
+        }
 
         await this.walletService.createUserWallet(user.data.id);
 
@@ -256,8 +271,16 @@ export class AuthService {
       const user = await UserRepository.getUserByFacebookId(facebook_id);
 
       if (user) {
+        // Check if user is blocked
+        if (user.is_blocked) {
+          return {
+            success: false,
+            message: 'Your account has been blocked. Please contact support.',
+          };
+        }
+
         const payload = { email: email, sub: user.id, role: user.type };
-        const token =  this.jwtService.sign(payload);
+        const token = this.jwtService.sign(payload);
 
         return {
           success: true,
@@ -281,24 +304,24 @@ export class AuthService {
         };
         const token = this.jwtService.sign(payload);
 
-              // create stripe customer account
-      const stripeCustomer = await StripePayment.createCustomer({
-        user_id: user.data.id,
-        email: email,
-        name: name,
-      });
-
-      if (stripeCustomer) {
-        await this.prisma.user.update({
-          where: {
-            id: user.data.id,
-          },
-          data: {
-            billing_id: stripeCustomer.id,
-          },
+        // create stripe customer account
+        const stripeCustomer = await StripePayment.createCustomer({
+          user_id: user.data.id,
+          email: email,
+          name: name,
         });
-      }
-      
+
+        if (stripeCustomer) {
+          await this.prisma.user.update({
+            where: {
+              id: user.data.id,
+            },
+            data: {
+              billing_id: stripeCustomer.id,
+            },
+          });
+        }
+
         await this.walletService.createUserWallet(user.data.id);
 
         return {
@@ -332,6 +355,14 @@ export class AuthService {
       if (!user.email_verified_at) {
         throw new UnauthorizedException('Email not verified');
       }
+
+      // Check if user is blocked
+      if (user.is_blocked) {
+        throw new UnauthorizedException(
+          'Your account has been blocked. Please contact support.',
+        );
+      }
+
       const _isValidPassword = await UserRepository.validatePassword({
         email: email,
         password: _password,
@@ -517,6 +548,14 @@ export class AuthService {
       });
 
       if (user) {
+        // Check if user is blocked
+        if (user.is_blocked) {
+          return {
+            success: false,
+            message: 'Your account has been blocked. Please contact support.',
+          };
+        }
+
         const token = await UcodeRepository.createToken({
           userId: user.id,
           isOtp: true,
@@ -554,6 +593,14 @@ export class AuthService {
       });
 
       if (user) {
+        // Check if user is blocked
+        if (user.is_blocked) {
+          return {
+            success: false,
+            message: 'Your account has been blocked. Please contact support.',
+          };
+        }
+
         const existToken = await UcodeRepository.validateToken({
           email: email,
           token: token,
@@ -603,6 +650,14 @@ export class AuthService {
       });
 
       if (user) {
+        // Check if user is blocked
+        if (user.is_blocked) {
+          return {
+            success: false,
+            message: 'Your account has been blocked. Please contact support.',
+          };
+        }
+
         const existToken = await UcodeRepository.validateToken({
           email: email,
           token: token,

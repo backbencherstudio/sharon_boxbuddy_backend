@@ -32,7 +32,7 @@ export class CustomExceptionFilter implements ExceptionFilter {
         };
       } else {
         responseBody = {
-          message: `File upload error: ${exception.message}`
+          message: `File upload error: ${exception.message}`,
         };
       }
 
@@ -40,22 +40,19 @@ export class CustomExceptionFilter implements ExceptionFilter {
         success: false,
         ...responseBody,
       });
-
     }
 
     if (isObject(exceptionResponse)) {
       responseBody = exceptionResponse;
-    } else if(isString(exceptionResponse)) {
+    } else if (isString(exceptionResponse)) {
       responseBody = {
         message: exceptionResponse,
       };
-    }else {
+    } else {
       responseBody = {
         message: 'Internal Server Error',
       };
     }
-
-
 
     // console.log('exception', exception.getResponse());
     // Return custom error response format

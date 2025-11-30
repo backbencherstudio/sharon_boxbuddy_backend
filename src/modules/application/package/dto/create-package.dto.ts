@@ -15,13 +15,14 @@ import {
 } from 'class-validator';
 
 export class CreatePackageDto {
-
   @Transform(({ value }) => {
     try {
       // If the value comes as a stringified JSON, parse it
       return typeof value === 'string' ? JSON.parse(value) : value;
     } catch {
-      throw new BadRequestException('Invalid format for category. category must be an array');
+      throw new BadRequestException(
+        'Invalid format for category. category must be an array',
+      );
     }
   })
   @IsArray({ message: 'category must be an array' })
@@ -62,8 +63,10 @@ export class CreatePackageDto {
   @IsString()
   @IsNotEmpty()
   // check valid value
-  @IsIn(['Trusted Person', 'Self'], { message: 'pick_up_person must be either Trusted Person or Self' })
-  pick_up_person: string; 
+  @IsIn(['Trusted Person', 'Self'], {
+    message: 'pick_up_person must be either Trusted Person or Self',
+  })
+  pick_up_person: string;
 
   // // pick up person info
   // @IsOptional()
@@ -85,12 +88,13 @@ export class CreatePackageDto {
       }
       return pick_up_person_info;
     } catch (e) {
-      throw new BadRequestException('Invalid JSON format for pick_up_person_info');
+      throw new BadRequestException(
+        'Invalid JSON format for pick_up_person_info',
+      );
     }
   })
   @IsObject({ message: 'pick_up_person_info must be a valid JSON object' })
   pick_up_person_info?: Record<string, any>;
-
 
   @IsString()
   @IsNotEmpty()
@@ -99,7 +103,9 @@ export class CreatePackageDto {
   @IsNotEmpty()
   @IsString()
   // check valid value
-  @IsIn(['Trusted Person', 'Self'], { message: 'drop_off_person must be either Trusted Person or Self' })
+  @IsIn(['Trusted Person', 'Self'], {
+    message: 'drop_off_person must be either Trusted Person or Self',
+  })
   drop_off_person: string;
 
   // pick up person info
@@ -107,7 +113,6 @@ export class CreatePackageDto {
   // @IsString()
   // @Transform(({ value }) => JSON.parse(value))
   // drop_person_info: any;
-
 
   @ValidateIf((o) => o.drop_off_person === 'Trusted Person')
   @Transform(({ value }) => {
@@ -122,7 +127,9 @@ export class CreatePackageDto {
       }
       return drop_off_person_info;
     } catch (e) {
-      throw new BadRequestException('Invalid JSON format for drop_off_person_info');
+      throw new BadRequestException(
+        'Invalid JSON format for drop_off_person_info',
+      );
     }
   })
   @IsObject({ message: 'drop_off_person_info must be a valid JSON object' })

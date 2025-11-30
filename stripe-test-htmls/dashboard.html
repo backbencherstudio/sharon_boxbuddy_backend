@@ -292,28 +292,29 @@
         }
       }
 
-      // Account Management
-      async function connectStripe() {
-        const button = document.getElementById('connect-stripe-btn');
-        setLoading(button, true);
-
+      // API Calls
+      async function apiCall(endpoint, options = {}) {
         try {
-          // Step 1: Initialize Stripe Connect
-          await apiCall('/init-connect', { method: 'POST' });
-
-          // Step 2: Get onboarding link
-          const response = await apiCall('/onboarding-link', {
-            method: 'POST',
-            data: {
-              return_url: `${window.location.origin}/success.html`,
-              refresh_url: `${window.location.origin}/reauth.html`,
+          // In a real app, you'd include your auth token
+          const config = {
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization:
+                'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImppdmV3b2MzMTFAYWlrdW5rdW4uY29tIiwic3ViIjoiY21pOGZqM21wMDAwNXVndW9mN2R6Yjl1ZSIsImlhdCI6MTc2MzcwMzU1MywiZXhwIjoxNzYzNzg5OTUzfQ.HhReGt1pVqqfbF0fUl56_pIaXUmWJaS9Fo47UMY-_eU',
             },
-          });
+            ...options,
+          };
 
-          // Step 3: Redirect to Stripe
-          window.location.href = response.url;
+          const response = await axios(`${API_BASE}${endpoint}`, config);
+          return response.data;
         } catch (error) {
-          setLoading(button, false);
+          console.error('API Error:', error);
+          const message =
+            error.response?.data?.message ||
+            error.message ||
+            'Something went wrong';
+          showAlert(message, 'error');
+          throw error;
         }
       }
 

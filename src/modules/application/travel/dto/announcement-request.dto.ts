@@ -19,5 +19,4 @@ export class AnnouncementRequestDto {
   @IsOptional()
   @IsBoolean()
   is_refused?: boolean;
-
 }

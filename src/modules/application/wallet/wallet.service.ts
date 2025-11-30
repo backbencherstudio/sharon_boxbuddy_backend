@@ -23,6 +23,7 @@ import {
   TransactionType,
 } from '@prisma/client';
 import { MessageGateway } from 'src/modules/chat/message/message.gateway';
+import appConfig from 'src/config/app.config';
 
 @Injectable()
 export class WalletService implements OnModuleInit {
@@ -142,6 +143,8 @@ export class WalletService implements OnModuleInit {
         metadata: {
           user_id: userId, // Your user ID (can be passed dynamically)
         },
+        // redirect url
+        return_url: `${appConfig().app.client_app_url}/my-profile`,
       });
       return session;
     } catch (error) {
