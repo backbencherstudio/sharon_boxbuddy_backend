@@ -7,7 +7,10 @@ import { PrismaService } from 'src/prisma/prisma.service';
 export class AnnouncementCronService {
   private readonly logger = new Logger(AnnouncementCronService.name);
 
-  constructor(private prisma: PrismaService, private gateway: MessageGateway) { }
+  constructor(
+    private prisma: PrismaService,
+    private gateway: MessageGateway,
+  ) {}
 
   @Cron(CronExpression.EVERY_10_MINUTES) // CronExpression.EVERY_30_MINUTES // runs every hour
   async handleCron() {
@@ -22,8 +25,8 @@ export class AnnouncementCronService {
         is_processed: false, // only unprocessed ones
         created_at: { lt: twelveHoursAgo },
         booking: {
-          payment_status: 'completed'
-        }
+          payment_status: 'completed',
+        },
       },
       include: {
         travel: true, // Include the associated travel to check user_id
@@ -35,22 +38,22 @@ export class AnnouncementCronService {
             owner: {
               select: {
                 first_name: true,
-              }
+              },
             },
             traveller_id: true,
             traveller: {
               select: {
                 first_name: true,
-              }
+              },
             },
             payment_status: true,
-          }
+          },
         },
         package: {
           select: {
             owner_id: true,
-          }
-        }
+          },
+        },
       },
     });
 
@@ -68,19 +71,19 @@ export class AnnouncementCronService {
         },
         data: {
           balance: {
-            increment: request.booking.amount
-          }
-        }
-      })
+            increment: request.booking.amount,
+          },
+        },
+      });
 
-
-      const pickUpTime = new Date(request.travel.departure)
-      const now = new Date()
-      const hoursUntilPickup = (pickUpTime.getTime() - now.getTime()) / (1000 * 60 * 60)
+      const pickUpTime = new Date(request.travel.departure);
+      const now = new Date();
+      const hoursUntilPickup =
+        (pickUpTime.getTime() - now.getTime()) / (1000 * 60 * 60);
 
       await this.prisma.booking.update({
         where: {
-          id: request.booking_id
+          id: request.booking_id,
         },
         data: {
           status: 'expired',
@@ -89,11 +92,10 @@ export class AnnouncementCronService {
             sender_refund: Number(request.booking.amount),
             traveler_amount: 0,
             platform_amount: 0,
-            cancellation_timeframe: `${Math.round(hoursUntilPickup)} hours before pick-up`
-          }
-        }
-      })
-
+            cancellation_timeframe: `${Math.round(hoursUntilPickup)} hours before pick-up`,
+          },
+        },
+      });
 
       // conversation
       const conversations = await this.prisma.conversation.updateManyAndReturn({
@@ -102,21 +104,21 @@ export class AnnouncementCronService {
           package_id: request.package_id,
         },
         data: {
-          notification_type: 'expired'
+          notification_type: 'expired',
         },
         include: {
           package: {
             select: {
               owner_id: true,
-            }
+            },
           },
           travel: {
             select: {
-              user_id: true
-            }
-          }
-        }
-      })
+              user_id: true,
+            },
+          },
+        },
+      });
 
       // notification
       const notifications = await this.prisma.notification.createManyAndReturn({
@@ -124,39 +126,40 @@ export class AnnouncementCronService {
           {
             notification_message: `Your booking request expired. ${request.booking.traveller.first_name} did not confirm within 12h. You have been refunded.`,
             notification_type: 'expired',
-            receiver_id: request.booking.owner_id
+            receiver_id: request.booking.owner_id,
           },
           {
             notification_message: `You missed ${request.booking.owner.first_name}’s booking request. It expired after 12h.`,
             notification_type: 'expired',
-            receiver_id: request.booking.traveller_id
-          }
-        ]
-      })
+            receiver_id: request.booking.traveller_id,
+          },
+        ],
+      });
 
       // Mark as processed
       await this.prisma.announcementRequest.update({
         where: { id: request.id },
-        data: { is_processed: true }
+        data: { is_processed: true },
       });
 
       // sending notification for notification and conversation
       // notification
-      notifications.forEach(notification => {
-        this.gateway.server.to(notification.receiver_id).emit("notification", notification)
+      notifications.forEach((notification) => {
+        this.gateway.server
+          .to(notification.receiver_id)
+          .emit('notification', notification);
       });
 
       // conversation
-      conversations.forEach(conv => {
+      conversations.forEach((conv) => {
         // sending to package owner
-        this.gateway.server.to(conv.package.owner_id).emit("conversation-notification-update", {
-          id: conv.id,
-          notification_type: conv.notification_type
-        })
-      })
-
-
-
+        this.gateway.server
+          .to(conv.package.owner_id)
+          .emit('conversation-notification-update', {
+            id: conv.id,
+            notification_type: conv.notification_type,
+          });
+      });
     }
 
     this.logger.log(`Processed ${requests.length} requests`);

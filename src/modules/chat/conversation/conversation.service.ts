@@ -13,7 +13,7 @@ export class ConversationService {
   constructor(
     private prisma: PrismaService,
     private readonly messageGateway: MessageGateway,
-  ) { }
+  ) {}
 
   async create(createConversationDto: CreateConversationDto) {
     try {
@@ -85,9 +85,8 @@ export class ConversationService {
 
       // }
 
-
       // check if conversation exists
-      
+
       let conversation = await this.prisma.conversation.findFirst({
         select: {
           id: true,
@@ -107,7 +106,6 @@ export class ConversationService {
               phone_number: true,
               date_of_birth: true,
               gender: true,
-
             },
           },
           participant: {
@@ -120,8 +118,7 @@ export class ConversationService {
               about_me: true,
               phone_number: true,
               date_of_birth: true,
-              gender: true
-
+              gender: true,
             },
           },
           // messages: {
@@ -151,14 +148,12 @@ export class ConversationService {
             {
               creator_id: data.participant_id,
               participant_id: data.creator_id,
-            }
-          ]
-        }
-
+            },
+          ],
+        },
       });
 
       if (conversation) {
-
         // add image url
         if (conversation.creator.avatar) {
           conversation.creator['avatar_url'] = SojebStorage.url(
@@ -196,7 +191,6 @@ export class ConversationService {
               phone_number: true,
               date_of_birth: true,
               gender: true,
-
             },
           },
           participant: {
@@ -211,7 +205,6 @@ export class ConversationService {
               gender: true,
 
               availability: true,
-
             },
           },
           // messages: {
@@ -229,7 +222,7 @@ export class ConversationService {
           package: true,
           travel: true,
           last_message_id: true,
-          last_message: true
+          last_message: true,
         },
         data: {
           ...data,
@@ -271,19 +264,18 @@ export class ConversationService {
     }
   }
 
-
   async findAll(userId: string) {
     try {
       const conversations = await this.prisma.conversation.findMany({
         where: {
           OR: [
             {
-              creator_id: userId
-            }, 
+              creator_id: userId,
+            },
             {
-              participant_id: userId
-            }
-          ]
+              participant_id: userId,
+            },
+          ],
         },
         orderBy: {
           updated_at: 'desc',
@@ -318,7 +310,6 @@ export class ConversationService {
               phone_number: true,
               date_of_birth: true,
               gender: true,
-
             },
           },
           package: true,
@@ -336,7 +327,6 @@ export class ConversationService {
           //     created_at: true,
           //   },
           // },
-
         },
       });
 
@@ -389,7 +379,6 @@ export class ConversationService {
               phone_number: true,
               date_of_birth: true,
               gender: true,
-
             },
           },
           participant: {
@@ -403,7 +392,6 @@ export class ConversationService {
               phone_number: true,
               date_of_birth: true,
               gender: true,
-
             },
           },
         },

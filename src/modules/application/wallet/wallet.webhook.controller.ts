@@ -20,15 +20,13 @@ import { TransactionStatus, TransactionType } from '@prisma/client';
 //   },
 // }
 
-
-
 @Controller('wallet/webhook')
 export class WalletWebhookController {
   constructor(
     private readonly walletService: WalletService,
     private readonly config: WalletConfig,
-    private gateway: MessageGateway
-  ) { }
+    private gateway: MessageGateway,
+  ) {}
 
   @Post()
   async handleWebhook(
@@ -74,7 +72,6 @@ export class WalletWebhookController {
           await this.upsertPaymentMethod(userId, pmId);
         }
         break;
-
       }
 
       case 'payment_method.attached': {
@@ -100,7 +97,8 @@ export class WalletWebhookController {
         // If default payment method changed in Stripe Dashboard, reflect in DB
         const c = event.data.object as Stripe.Customer;
         const userId = await this.findUserIdByCustomerId(c.id);
-        const defaultPm = (c.invoice_settings?.default_payment_method as string) || null;
+        const defaultPm =
+          (c.invoice_settings?.default_payment_method as string) || null;
 
         if (userId) {
           // Reset all flags
@@ -109,15 +107,16 @@ export class WalletWebhookController {
             data: { is_default: false },
           });
           if (defaultPm) {
-            await this.walletService['prisma'].paymentMethod.update({
-              where: { stripePaymentMethodId: defaultPm },
-              data: { is_default: true },
-            }).catch(() => { });
+            await this.walletService['prisma'].paymentMethod
+              .update({
+                where: { stripePaymentMethodId: defaultPm },
+                data: { is_default: true },
+              })
+              .catch(() => {});
           }
         }
         break;
       }
-
     }
 
     res.status(HttpStatus.OK).send();
@@ -142,7 +141,6 @@ export class WalletWebhookController {
     });
   }
 
-
   private async upsertPaymentMethod(userId: string, pmId: string) {
     const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
     const pm = await stripe.paymentMethods.retrieve(pmId);
@@ -164,9 +162,13 @@ export class WalletWebhookController {
     };
   }
 
-  private async findUserIdByCustomerId(customerId: string | null): Promise<string | null> {
+  private async findUserIdByCustomerId(
+    customerId: string | null,
+  ): Promise<string | null> {
     if (!customerId) return null;
-    const user = await this.walletService['prisma'].user.findFirst({ where: { stripeCustomerId: customerId } });
+    const user = await this.walletService['prisma'].user.findFirst({
+      where: { stripeCustomerId: customerId },
+    });
     return user?.id ?? null;
   }
 
@@ -209,18 +211,15 @@ export class WalletWebhookController {
     // console.log(JSON.stringify(paymentIntent, null, 4))
     // console.log("amount => ", paymentIntent.amount, parseFloat(paymentIntent.amount) / 100)
 
-
     await this.walletService['prisma'].booking.update({
       where: { id: metadata.booking_id },
       data: {
         paid: true,
         payment_status: 'complated',
         payment_intent_id: paymentIntent.id,
-        amount: (paymentIntent.amount / 100).toFixed(4)  || 0
-      }
-    })  
-
-    
+        amount: (paymentIntent.amount / 100).toFixed(4) || 0,
+      },
+    });
 
     await this.walletService['prisma'].announcementRequest.create({
       data: {
@@ -230,43 +229,46 @@ export class WalletWebhookController {
       },
     });
 
-    const notifications = await this.walletService['prisma'].notification.createManyAndReturn({
+    const notifications = await this.walletService[
+      'prisma'
+    ].notification.createManyAndReturn({
       data: [
         {
           notification_message: `Your booking request is pending. Waiting for ${metadata.traveller_first_name}’s confirmation (up to 12h).`,
           notification_type: 'pending',
-          receiver_id: metadata.owner_id
+          receiver_id: metadata.owner_id,
         },
         {
           notification_message: `You have received a new booking request from ${metadata.owner_first_name}. Respond within 12 hours.`,
           notification_type: 'pending',
-          receiver_id: metadata.traveller_id
-        }
-      ]
-    })
+          receiver_id: metadata.traveller_id,
+        },
+      ],
+    });
 
-
-    const conversations = await this.walletService['prisma'].conversation.updateManyAndReturn({
+    const conversations = await this.walletService[
+      'prisma'
+    ].conversation.updateManyAndReturn({
       where: {
-          travel_id: metadata.travel_id,
-          package_id: metadata.package_id,
+        travel_id: metadata.travel_id,
+        package_id: metadata.package_id,
       },
       data: {
-        notification_type: 'pending'
+        notification_type: 'pending',
       },
       include: {
-          package: {
-            select: {
-              owner_id: true,
-            }
+        package: {
+          select: {
+            owner_id: true,
           },
-          travel: {
-            select: {
-              user_id: true
-            }
-          }
-        }
-    })
+        },
+        travel: {
+          select: {
+            user_id: true,
+          },
+        },
+      },
+    });
 
     await TransactionRepository.createTransaction({
       user_id: metadata.owner_id,
@@ -278,21 +280,23 @@ export class WalletWebhookController {
     });
 
     // sending notification for notification and conversation
-      // notification
-      notifications.forEach(notification => {
-        this.gateway.server.to(notification.receiver_id).emit("notification", notification)
-      });
+    // notification
+    notifications.forEach((notification) => {
+      this.gateway.server
+        .to(notification.receiver_id)
+        .emit('notification', notification);
+    });
 
-      // conversation
-      conversations.forEach(conv => {
-        // sending to package owner
-        this.gateway.server.to(conv.package.owner_id).emit("conversation-notification-update", {
+    // conversation
+    conversations.forEach((conv) => {
+      // sending to package owner
+      this.gateway.server
+        .to(conv.package.owner_id)
+        .emit('conversation-notification-update', {
           id: conv.id,
-          notification_type: conv.notification_type
-        })
-      })
-
-
+          notification_type: conv.notification_type,
+        });
+    });
   }
 
   private async handlePaymentFailed(event: any) {
@@ -347,7 +351,7 @@ export class WalletWebhookController {
         //     type: 'WALLET_REFUND',
         //     amount: transaction.amount,
         //     status: 'COMPLETED',
-        //     user_id:  
+        //     user_id:
         //     // metadata: {
         //     //   originalTransactionId: metadata.transactionId,
         //     //   reason: 'Payout failed',

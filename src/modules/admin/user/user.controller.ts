@@ -5,7 +5,6 @@ import {
   Body,
   Patch,
   Param,
-  Delete,
   UseGuards,
   Query,
 } from '@nestjs/common';
@@ -18,6 +17,7 @@ import { Roles } from '../../../common/guard/role/roles.decorator';
 import { RolesGuard } from '../../../common/guard/role/roles.guard';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { GetUserQueryDto } from './dto/query-user.dto';
+import { GetUser } from '../../auth/decorators/get-user.decorator';
 
 @ApiBearerAuth()
 @ApiTags('User')
@@ -46,9 +46,10 @@ export class UserController {
   async findAll(
     @Query()
     query: GetUserQueryDto,
+    @GetUser('id') currentUserId: string,
   ) {
     try {
-      return await this.userService.findAll(query);
+      return await this.userService.findAll(query, currentUserId);
     } catch (error) {
       return {
         success: false,
@@ -60,7 +61,7 @@ export class UserController {
   // approve user
   @Roles(Role.ADMIN)
   @ApiResponse({ description: 'Approve a user' })
-  @Post(':id/blocked')
+  @Patch(':id/blocked')
   async updateBlockedStatus(
     @Param('id') id: string,
     @Query('status') status: 'blocked' | 'unblocked',

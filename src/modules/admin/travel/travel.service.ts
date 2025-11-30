@@ -8,13 +8,31 @@ export class TravelService {
 
   async findAll(query: GetTravelQueryDto) {
     const { q, status, limit = 10, page = 1, user_id } = query;
-    const where_condition = {};
+    const where_condition: any = {};
+
+    // Search in travel fields AND user name/email
     if (q) {
+      // First, find users matching the search query
+      const matchingUsers = await this.prisma.user.findMany({
+        where: {
+          OR: [
+            { first_name: { contains: q, mode: 'insensitive' } },
+            { last_name: { contains: q, mode: 'insensitive' } },
+            { email: { contains: q, mode: 'insensitive' } },
+          ],
+        },
+        select: { id: true },
+      });
+
+      const userIds = matchingUsers.map((user) => user.id);
+
+      // Search in travel fields and matching user_ids
       where_condition['OR'] = [
         { flight_number: { contains: q, mode: 'insensitive' } },
         { airline: { contains: q, mode: 'insensitive' } },
         { departure_from: { contains: q, mode: 'insensitive' } },
         { arrival_to: { contains: q, mode: 'insensitive' } },
+        ...(userIds.length > 0 ? [{ user_id: { in: userIds } }] : []),
       ];
     }
 
@@ -32,29 +50,55 @@ export class TravelService {
       where_condition['arrival'] = { lte: now };
     }
 
-    const take = limit;
     const skip = (page - 1) * limit;
 
-    const travels = await this.prisma.travel.findMany({
-      where: where_condition,
-      include: {
-        user: {
-          select: {
-            id: true,
-            first_name: true,
-            last_name: true,
+    const [travels, total] = await Promise.all([
+      this.prisma.travel.findMany({
+        where: where_condition,
+        select: {
+          id: true,
+          flight_number: true,
+          airline: true,
+          departure_from: true,
+          arrival_to: true,
+          departure: true,
+          arrival: true,
+          publish: true,
+          created_at: true,
+          user: {
+            select: {
+              first_name: true,
+              last_name: true,
+            },
           },
         },
-      },
-      take: take,
-      skip: skip,
-    });
-    const total = await this.prisma.travel.count({ where: where_condition });
+        take: limit,
+        skip,
+        orderBy: {
+          created_at: 'desc',
+        },
+      }),
+      this.prisma.travel.count({ where: where_condition }),
+    ]);
+
+    // Format for table display
+    const formattedTravels = travels.map((travel) => ({
+      id: travel.id,
+      flight_number: travel.flight_number,
+      airline: travel.airline,
+      route: `${travel.departure_from} → ${travel.arrival_to}`,
+      departure: travel.departure,
+      arrival: travel.arrival,
+      publish: travel.publish,
+      traveller_name: `${travel.user.first_name} ${travel.user.last_name}`,
+      created_at: travel.created_at,
+    }));
 
     return {
       success: true,
+      message: 'Travels retrieved successfully',
       data: {
-        travels,
+        travels: formattedTravels,
         total,
         page,
         limit,
@@ -73,6 +117,7 @@ export class TravelService {
     });
     return {
       success: true,
+      message: 'Travel retrieved successfully',
       data: travel,
     };
   }

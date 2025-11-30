@@ -9,6 +9,15 @@ import { ReviewsModule } from './reviews/reviews.module';
 import { WalletModule } from './wallet/wallet.module';
 
 @Module({
-  imports: [NotificationModule, ContactModule, FaqModule, PackageModule, TravelModule, BookingModule, ReviewsModule, WalletModule],
+  imports: [
+    NotificationModule,
+    ContactModule,
+    FaqModule,
+    PackageModule,
+    TravelModule,
+    BookingModule,
+    ReviewsModule,
+    WalletModule,
+  ],
 })
 export class ApplicationModule {}

@@ -25,7 +25,10 @@ export class ConversationController {
 
   @ApiOperation({ summary: 'Create conversation' })
   @Post()
-  async create(@Body() createConversationDto: CreateConversationDto, @Req() req: Request) {
+  async create(
+    @Body() createConversationDto: CreateConversationDto,
+    @Req() req: Request,
+  ) {
     try {
       createConversationDto.creator_id = req?.user?.userId;
       const conversation = await this.conversationService.create(
@@ -45,7 +48,9 @@ export class ConversationController {
   @Get()
   async findAll(@Req() req: Request) {
     try {
-      const conversations = await this.conversationService.findAll(req?.user?.userId);
+      const conversations = await this.conversationService.findAll(
+        req?.user?.userId,
+      );
       return conversations;
     } catch (error) {
       return {

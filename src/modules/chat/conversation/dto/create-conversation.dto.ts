@@ -32,7 +32,7 @@ export class CreateConversationDto {
 
   @IsNotEmpty()
   @IsString()
-  @IsIn(['traveller', 'package_owner'])  // Custom validation for allowed values
+  @IsIn(['traveller', 'package_owner']) // Custom validation for allowed values
   @ApiProperty({
     description: 'Who created the conversation',
   })

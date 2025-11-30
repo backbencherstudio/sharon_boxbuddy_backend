@@ -5,5 +5,5 @@ import { IsString, IsNotEmpty, IsNumber } from 'class-validator';
 export class SummaryDto {
   @IsString()
   @IsNotEmpty()
-  summary: string; 
+  summary: string;
 }

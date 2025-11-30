@@ -1,10 +1,17 @@
-import { BadRequestException, ForbiddenException, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Inject,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { StripePayment } from '../../../common/lib/Payment/stripe/StripePayment';
 import { PrismaService } from 'src/prisma/prisma.service';
 import Stripe from 'stripe';
 import appConfig from 'src/config/app.config';
 import { CreateAccountLinkDto } from './dto/create-account-link.dto';
-import config from 'src/config/app.config'
+import config from 'src/config/app.config';
 import { TransactionRepository } from 'src/common/repository/transaction/transaction.repository';
 import { TransactionStatus, TransactionType } from '@prisma/client';
 
@@ -13,18 +20,27 @@ export class StripeService {
   private stripe: Stripe;
   private readonly logger = new Logger(StripeService.name);
   constructor(private prisma: PrismaService) {
-
     this.stripe = new Stripe(appConfig().payment.stripe.secret_key, {
       apiVersion: '2025-03-31.basil',
     });
   }
 
-
   async handleWebhook(rawBody: string, sig: string | string[]) {
     return StripePayment.handleWebhook(rawBody, sig);
   }
 
+  async test() {
+    try {
+      const account = await this.stripe.accounts.retrieve();
+      console.log('Account retrieved:', account.id);
 
+      return account;
+    } catch (e) {
+      console.error('Error:', e.message);
+    }
+  }
+
+  // save card
   async saveCard(userId: string, paymentMethodId: string) {
     // 1. Find the user in your database
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
@@ -73,14 +89,14 @@ export class StripeService {
           select: {
             id: true,
             first_name: true,
-          }
+          },
         }, // Include related  details
         owner: {
           select: {
             id: true,
             billing_id: true,
             first_name: true,
-          }
+          },
         }, // Include user (booking placer) details
       },
     });
@@ -90,7 +106,7 @@ export class StripeService {
     }
 
     if (booking.payment_status == 'complated') {
-      throw new ForbiddenException('Payment already complated')
+      throw new ForbiddenException('Payment already complated');
     }
 
     // // 2. Fetch the service and order user details
@@ -130,27 +146,28 @@ export class StripeService {
       where: { id: booking_id },
       data: {
         payment_intent_id: paymentIntent.id,
-      }
-    })
+      },
+    });
 
     // 7. Return the PaymentIntent details along with the balance transaction
     return {
       success: true,
-      message: "Client secret retrieved successfully",
+      message: 'Client secret retrieved successfully',
       data: {
         // order,
         client_secret: paymentIntent.client_secret,
         // balanceTransactions,
-      }
+      },
     };
   }
 
   // Optional: A method to charge a customer using a saved card
   async createPayment(userId: string, amount: number, paymentMethodId: string) {
     const user = await this.prisma.user.findUnique({
-      where: { id: userId }
+      where: { id: userId },
     });
-    if (!user || !user.billing_id) { // user.paymentMethods.length === 0
+    if (!user || !user.billing_id) {
+      // user.paymentMethods.length === 0
       throw new NotFoundException('User not found');
     }
 
@@ -158,8 +175,8 @@ export class StripeService {
     // const defaultPaymentMethod = user.paymentMethods[0];
 
     const paymentMethod = await this.prisma.paymentMethod.findUnique({
-      where: { stripePaymentMethodId: paymentMethodId, userId }
-    })
+      where: { stripePaymentMethodId: paymentMethodId, userId },
+    });
 
     const paymentIntent = await this.stripe.paymentIntents.create({
       amount: amount,
@@ -170,12 +187,14 @@ export class StripeService {
       confirm: true,
     });
 
-
     return paymentIntent;
   }
 
-  async processPayment(userId: string, paymentMethodId: string, bookingId: string) {
-
+  async processPayment(
+    userId: string,
+    paymentMethodId: string,
+    bookingId: string,
+  ) {
     const booking = await this.prisma.booking.findUnique({
       where: { id: bookingId },
       include: {
@@ -183,14 +202,14 @@ export class StripeService {
           select: {
             id: true,
             first_name: true,
-          }
+          },
         },
-      }
-    })
+      },
+    });
 
     if (!booking) throw new NotFoundException('Booking not found');
     if (booking.payment_status == 'complated') {
-      throw new ForbiddenException('Payment already complated')
+      throw new ForbiddenException('Payment already complated');
     }
     // 1. Find the user and their Stripe Customer ID in your database
     const user = await this.prisma.user.findUnique({
@@ -213,7 +232,6 @@ export class StripeService {
         confirm: true,
       });
 
-
       if (paymentIntent.status === 'succeeded') {
         await this.prisma.booking.update({
           where: { id: bookingId },
@@ -221,8 +239,8 @@ export class StripeService {
             paid: true,
             payment_status: 'complated',
             payment_intent_id: paymentIntent.id,
-          }
-        })
+          },
+        });
 
         // transaction
         await TransactionRepository.createTransaction({
@@ -233,9 +251,7 @@ export class StripeService {
           description: `Payment for booking ${booking.id}`,
           reference_id: paymentIntent.id,
           booking_id: bookingId,
-        })
-
-
+        });
 
         await this.prisma.announcementRequest.create({
           data: {
@@ -246,29 +262,29 @@ export class StripeService {
         });
 
         await this.prisma.notification.createMany({
-          data: [{
-            notification_message: `Your booking request is pending. Waiting for ${booking.traveller.first_name}’s confirmation (up to 12h).`,
-            notification_type: 'pending',
-            receiver_id: userId
-          },
-          {
-            notification_message: `You have received a new booking request from ${user.first_name}. Respond within 12 hours.`,
-            notification_type: 'pending',
-            receiver_id: booking.traveller_id
-          }]
-        })
-
+          data: [
+            {
+              notification_message: `Your booking request is pending. Waiting for ${booking.traveller.first_name}’s confirmation (up to 12h).`,
+              notification_type: 'pending',
+              receiver_id: userId,
+            },
+            {
+              notification_message: `You have received a new booking request from ${user.first_name}. Respond within 12 hours.`,
+              notification_type: 'pending',
+              receiver_id: booking.traveller_id,
+            },
+          ],
+        });
 
         await this.prisma.conversation.updateMany({
           where: {
             travel_id: booking.travel_id,
-            package_id: booking.package_id
+            package_id: booking.package_id,
           },
           data: {
-            notification_type: 'pending'
-          }
-        })
-
+            notification_type: 'pending',
+          },
+        });
       } else {
         await TransactionRepository.createTransaction({
           user_id: userId,
@@ -278,7 +294,7 @@ export class StripeService {
           description: `Payment for booking ${booking.id}`,
           reference_id: paymentIntent.id,
           booking_id: bookingId,
-        })
+        });
       }
 
       // 3. Return the payment status to the client
@@ -296,7 +312,6 @@ export class StripeService {
       };
     }
   }
-
 
   async listSavedCards(userId: string) {
     // 1. Find the user and their Stripe Customer ID in your database
@@ -317,8 +332,6 @@ export class StripeService {
       },
     );
 
-
-
     // 3. Map the results to a simplified, secure object for the frontend
     const cards = paymentMethods.data.map((pm) => ({
       id: pm.id,
@@ -330,10 +343,9 @@ export class StripeService {
 
     return {
       success: true,
-      data: cards
-    }
+      data: cards,
+    };
   }
-
 
   // Create Stripe Connect account and onboarding link
   async createConnectedAccount(user_id: string) {
@@ -361,7 +373,6 @@ export class StripeService {
         const stripeAccount = await this.stripe.accounts.create({
           type: 'express',
           // Stripe will collect all other details during onboarding
-
         });
 
         // Store only the Stripe account ID
@@ -383,15 +394,21 @@ export class StripeService {
   }
 
   // Generate onboarding link
-  async createAccountLink(user_id: string, createAccountLinkDto: CreateAccountLinkDto) {
+  async createAccountLink(
+    user_id: string,
+    createAccountLinkDto: CreateAccountLinkDto,
+  ) {
     const account = await this.getActiveConnectedAccount(user_id);
 
     const accountLink = await this.stripe.accountLinks.create({
       account: account.stripe_account_id,
-      refresh_url: createAccountLinkDto.refresh_url || `${process.env.CLIENT_URL}/stripe/reauth`,
-      return_url: createAccountLinkDto.return_url || `${process.env.CLIENT_URL}/stripe/success`,
+      refresh_url:
+        createAccountLinkDto.refresh_url ||
+        `${process.env.CLIENT_URL}/stripe/reauth`,
+      return_url:
+        createAccountLinkDto.return_url ||
+        `${process.env.CLIENT_URL}/stripe/success`,
       type: 'account_onboarding',
-
     });
 
     return {
@@ -410,10 +427,10 @@ export class StripeService {
       include: {
         user: {
           include: {
-            wallet: true
-          }
-        }
-      }
+            wallet: true,
+          },
+        },
+      },
     });
 
     if (!account) {
@@ -425,28 +442,47 @@ export class StripeService {
 
   // Get account status from Stripe
   async getAccountStatus(user_id: string) {
-    const account = await this.getActiveConnectedAccount(user_id);
+    try {
+      const account = await this.getActiveConnectedAccount(user_id);
 
-    const stripeAccount = await this.stripe.accounts.retrieve(account.stripe_account_id);
+      console.log('account => ', account);
+      const stripeAccount = await this.stripe.accounts.retrieve(
+        account.stripe_account_id,
+      );
 
-    return {
-      stripe_account_id: account.stripe_account_id,
-      charges_enabled: stripeAccount.charges_enabled,
-      payouts_enabled: stripeAccount.payouts_enabled,
-      details_submitted: stripeAccount.details_submitted,
-      requirements: stripeAccount.requirements,
-    };
+      // const stripeAccount = await this.stripe.accounts.retrieve(
+      //   account.stripe_account_id,
+      // );
+
+      return {
+        stripe_account_id: account.stripe_account_id,
+        charges_enabled: stripeAccount.charges_enabled,
+        payouts_enabled: stripeAccount.payouts_enabled,
+        details_submitted: stripeAccount.details_submitted,
+        requirements: stripeAccount.requirements,
+      };
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
   }
-
   // Process payout to user's Stripe account
-  async processPayout(user_id: string, amount: number, currency: string = process.env.CURRENCY || 'EUR') {
+  async processPayout(
+    user_id: string,
+    amount: number,
+    currency: string = process.env.CURRENCY || 'EUR',
+  ) {
     try {
       const account = await this.getActiveConnectedAccount(user_id);
 
       // Verify the account can receive payouts
-      const stripeAccount = await this.stripe.accounts.retrieve(account.stripe_account_id);
+      const stripeAccount = await this.stripe.accounts.retrieve(
+        account.stripe_account_id,
+      );
       if (!stripeAccount.payouts_enabled) {
-        throw new BadRequestException('Account is not ready for payouts. Please complete verification on Stripe.');
+        throw new BadRequestException(
+          'Account is not ready for payouts. Please complete verification on Stripe.',
+        );
       }
 
       if (Number(account.user.wallet.balance) < amount) {
@@ -457,30 +493,31 @@ export class StripeService {
         throw new BadRequestException('Withdraw can not be less then 1');
       }
 
-
       const amountInCents = Math.round(amount * 100); // Convert to cents
 
       // need to check balance before transfer
       const balance = await this.stripe.balance.retrieve();
-      console.log(balance)
+      console.log(balance);
 
-//       {
-//   object: 'balance',
-//   available: [ { amount: 0, currency: 'usd', source_types: [Object] } ],
-//   connect_reserved: [ { amount: 0, currency: 'usd' } ],
-//   livemode: false,
-//   pending: [ { amount: 6359, currency: 'usd', source_types: [Object] } ],
-//   refund_and_dispute_prefunding: { available: [ [Object] ], pending: [ [Object] ] }
-// }
+      //       {
+      //   object: 'balance',
+      //   available: [ { amount: 0, currency: 'usd', source_types: [Object] } ],
+      //   connect_reserved: [ { amount: 0, currency: 'usd' } ],
+      //   livemode: false,
+      //   pending: [ { amount: 6359, currency: 'usd', source_types: [Object] } ],
+      //   refund_and_dispute_prefunding: { available: [ [Object] ], pending: [ [Object] ] }
+      // }
 
-      const availableBalance = balance.available.find(b => b.currency.toLowerCase() === currency.toLowerCase());
+      const availableBalance = balance.available.find(
+        (b) => b.currency.toLowerCase() === currency.toLowerCase(),
+      );
       if (!availableBalance || availableBalance.amount < amountInCents) {
-        throw new BadRequestException('Insufficient balance for this currency on the platform. Please try again later. Or contact support.');
+        throw new BadRequestException(
+          'Insufficient balance for this currency on the platform. Please try again later. Or contact support.',
+        );
       }
 
       console.log("availableBalance => ", availableBalance)
-
-      
 
       // Transfer funds to the connected account
       const transfer = await this.stripe.transfers.create({
@@ -495,10 +532,10 @@ export class StripeService {
         where: { id: account.user.wallet.id },
         data: {
           balance: {
-            decrement: amount
-          }
-        }
-      })
+            decrement: amount,
+          },
+        },
+      });
 
       // transction
       await TransactionRepository.createTransaction({
@@ -506,9 +543,8 @@ export class StripeService {
         wallet_id: account.user.wallet.id,
         type: TransactionType.WALLET_WITHDRAW,
         amount: amount,
-        status: TransactionStatus.COMPLETED
-      })
-
+        status: TransactionStatus.COMPLETED,
+      });
 
       // Initiate Stripe payout (convert amount to cents)
       // const payout = await this.stripe.payouts.create(
@@ -542,7 +578,7 @@ export class StripeService {
       //   this.logger.error(`Stripe error: ${error.message}`);
       //   throw new BadRequestException(`Stripe error: ${error.message}`);
       // }
-      console.log("error => ", error)
+           console.log('error => ', error);
       // // Handle known custom errors (optional)
       if (error instanceof BadRequestException) {
         throw error; // rethrow as is
@@ -550,7 +586,9 @@ export class StripeService {
 
       // Handle any other unexpected errors
       // this.logger.error(`Unexpected error in payout: ${error.message || error}`);
-      throw new BadRequestException('An unexpected error occurred while processing payout. Try again later.');
+      throw new BadRequestException(
+        'An unexpected error occurred while processing payout. Try again later.',
+      );
     }
   }
 
@@ -573,20 +611,28 @@ export class StripeService {
     const account = await this.getActiveConnectedAccount(user_id);
 
     const loginLink = await this.stripe.accounts.createLoginLink(
-      account.stripe_account_id
+      account.stripe_account_id,
     );
 
     return { url: loginLink.url };
   }
 
   // List payouts for the connected account
-  async listPayoutsForUser(userId: string, limit = 5, cursor?: { starting_after?: string; ending_before?: string }, status?: string) {
+  async listPayoutsForUser(
+    userId: string,
+    limit = 5,
+    cursor?: { starting_after?: string; ending_before?: string },
+    status?: string,
+  ) {
     try {
-      const { stripe_account_id } = await this.getActiveConnectedAccount(userId);
+      const { stripe_account_id } =
+        await this.getActiveConnectedAccount(userId);
 
       const listParams: Stripe.PayoutListParams = { limit };
-      if (cursor?.starting_after) listParams.starting_after = cursor.starting_after;
-      if (cursor?.ending_before) listParams.ending_before = cursor.ending_before;
+      if (cursor?.starting_after)
+        listParams.starting_after = cursor.starting_after;
+      if (cursor?.ending_before)
+        listParams.ending_before = cursor.ending_before;
       if (status) listParams.status = status;
 
       const payouts = await this.stripe.payouts.list(listParams, {
@@ -598,7 +644,7 @@ export class StripeService {
         account: stripe_account_id,
         count: payouts.data.length,
         has_more: payouts.has_more,
-        payouts: payouts.data.map(p => ({
+        payouts: payouts.data.map((p) => ({
           id: p.id,
           amount: p.amount / 100,
           currency: p.currency,
@@ -607,7 +653,10 @@ export class StripeService {
           arrival_date: p.arrival_date ? new Date(p.arrival_date * 1000) : null,
           created: new Date(p.created * 1000),
           description: p.description ?? null,
-          destination: typeof p.destination === 'string' ? p.destination : p.destination?.id ?? null,
+          destination:
+            typeof p.destination === 'string'
+              ? p.destination
+              : (p.destination?.id ?? null),
           failure_code: p.failure_code ?? null,
           failure_message: p.failure_message ?? null,
           statement_descriptor: p.statement_descriptor ?? null,
@@ -618,22 +667,28 @@ export class StripeService {
         this.logger.error(`Stripe error: ${error.message}`);
         throw new BadRequestException(`Stripe error: ${error.message}`);
       }
-      if (error instanceof NotFoundException || error instanceof BadRequestException) throw error;
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      )
+        throw error;
       this.logger.error(`Unexpected error: ${error?.message || error}`);
       throw new BadRequestException('Failed to list payouts.');
     }
   }
 
-  
   // get platform account
   async getPlatformAccount() {
     const platformAccount = await this.stripe.accounts.retrieve();
     return platformAccount;
   }
 
-
   // Platform Payout
-  async platformPayout(user_id: string, amount: number, currency: string = process.env.CURRENCY || 'EUR') {
+  async platformPayout(
+    user_id: string,
+    amount: number,
+    currency: string = process.env.CURRENCY || 'EUR',
+  ) {
     // check platform wallet balance
     const platformWallet = await this.prisma.platformWallet.findFirst({
       select: {
@@ -649,7 +704,6 @@ export class StripeService {
     }
 
     try {
-
       // const accounts = await this.getPlatformAccount();
       // console.log("accounts => ", accounts)
       // transfer
@@ -663,14 +717,16 @@ export class StripeService {
       // console.log("balance => ", balances)
 
       // check balance acording to currency
-      const balance = balances.available.find(b => b.currency === currency.toLowerCase());
+      const balance = balances.available.find(
+        (b) => b.currency === currency.toLowerCase(),
+      );
       // console.log("balance => ", balance)
-      if(!balance) {
+      if (!balance) {
         // throw error no account for this currency
         throw new BadRequestException('No account for this currency');
       }
 
-      if(balance.amount < amount) {
+      if (balance.amount < amount) {
         throw new BadRequestException('Insufficient balance');
       }
 
@@ -703,7 +759,6 @@ export class StripeService {
         success: true,
         message: 'Platform payout processed successfully',
       };
-
     } catch (error) {
       // transaction
       await TransactionRepository.createTransaction({
@@ -715,7 +770,7 @@ export class StripeService {
         reference_id: platformWallet.id,
       });
       // console.log("error => ", error)
-      if(error instanceof BadRequestException) {
+      if (error instanceof BadRequestException) {
         throw error;
       }
       throw new BadRequestException('Failed to process platform payout.');

@@ -62,7 +62,7 @@ export class UpdateUserDto extends PartialType(CreateUserDto) {
   @IsOptional()
   @ApiProperty({
     description: 'Date of birth',
-    example: "1992-08-20",
+    example: '1992-08-20',
   })
   date_of_birth?: string;
 
@@ -71,5 +71,5 @@ export class UpdateUserDto extends PartialType(CreateUserDto) {
     description: 'Bio',
     example: 'I am a software engineer',
   })
-  about_me?: string
+  about_me?: string;
 }

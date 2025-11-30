@@ -2,7 +2,6 @@
 import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 
-
 @Injectable()
 export class PlatformWalletService implements OnModuleInit {
   private readonly logger = new Logger(PlatformWalletService.name);
@@ -16,10 +15,10 @@ export class PlatformWalletService implements OnModuleInit {
   private async bootstrapPlatformWallet() {
     try {
       const existingWallet = await this.prisma.platformWallet.findFirst();
-      
+
       if (!existingWallet) {
         const newWallet = await this.prisma.platformWallet.create({
-          data: { total_earnings: 0 }
+          data: { total_earnings: 0 },
         });
         this.logger.log('Platform wallet created successfully');
         this.logger.log(`Wallet ID: ${newWallet.id}`);
@@ -34,15 +33,13 @@ export class PlatformWalletService implements OnModuleInit {
 
   async getPlatformWallet() {
     const wallet = await this.prisma.platformWallet.findFirstOrThrow({
-      where: { id: { not: undefined } } // Ensures we get the first record
+      where: { id: { not: undefined } }, // Ensures we get the first record
     });
 
     return {
       success: true,
-      message: "Plartform wallet retrived successfully",
-      data: wallet.total_earnings
-    }
+      message: 'Plartform wallet retrived successfully',
+      data: wallet.total_earnings,
+    };
   }
-
-  
 }

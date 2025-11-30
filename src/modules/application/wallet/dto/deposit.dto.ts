@@ -1,7 +1,6 @@
 import { IsNumber, IsPositive, IsString } from 'class-validator';
 
 export class DepositDto {
-  
   userId?: string;
 
   @IsNumber()

@@ -1,5 +1,5 @@
 import { Transform } from 'class-transformer';
-import { IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsNumber, IsOptional, IsString } from 'class-validator';
 import { BookingStatus } from '@prisma/client';
 
 export class GetBookingQueryDto {
@@ -32,4 +32,9 @@ export class GetBookingQueryDto {
   @IsOptional()
   @IsString()
   travel_id?: string;
+
+  @IsOptional()
+  @Transform(({ value }) => value === 'true' || value === true)
+  @IsBoolean()
+  problematic?: boolean;
 }

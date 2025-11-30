@@ -8,7 +8,7 @@ export class ProcessPaymentDto {
 
   @IsString()
   @IsNotEmpty()
-  bookingId: string
+  bookingId: string;
 
   // @IsNumber()
   // @IsNotEmpty()

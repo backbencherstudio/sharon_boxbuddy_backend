@@ -7,7 +7,7 @@ import appConfig from 'src/config/app.config';
 
 @Injectable()
 export class PackageService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   private parseWeight(input: string, defaultValue = 0) {
     if (!input || typeof input !== 'string') {
@@ -21,18 +21,19 @@ export class PackageService {
   }
 
   async create(createPackageDto: CreatePackageDto) {
-
     try {
       if (createPackageDto.weight) {
         // calculate booking amount
-        const weight = this.parseWeight(createPackageDto.weight)
-        if (!weight) throw new BadRequestException("Your package weight is missing or in wrong format. Format should be like 1kg, 2kg, 3kg, etc.")
+        const weight = this.parseWeight(createPackageDto.weight);
+        if (!weight)
+          throw new BadRequestException(
+            'Your package weight is missing or in wrong format. Format should be like 1kg, 2kg, 3kg, etc.',
+          );
       }
 
       const packageData = await this.prisma.package.create({
         data: createPackageDto as any,
       });
-
 
       if (createPackageDto.photo) {
         packageData['photo_url'] = SojebStorage.url(
@@ -47,13 +48,12 @@ export class PackageService {
     } catch (error) {
       // if error then delete the photo from storage and throw the error
       if (createPackageDto.photo) {
-        await SojebStorage.delete(appConfig().storageUrl.package + createPackageDto.photo);
+        await SojebStorage.delete(
+          appConfig().storageUrl.package + createPackageDto.photo,
+        );
       }
       throw error;
     }
-
-
-
   }
 
   async findMyPackages(owner_id: string) {
@@ -102,7 +102,6 @@ export class PackageService {
         };
       }
 
-
       const packages = await this.prisma.package.findMany({
         where,
         skip: (page - 1) * limit,
@@ -145,14 +144,16 @@ export class PackageService {
     }
   }
 
-  async findPackagesHistory(query: { page?: number, limit?: number }, userId: string) {
+  async findPackagesHistory(
+    query: { page?: number; limit?: number },
+    userId: string,
+  ) {
     try {
       const { page, limit } = query;
 
       const where = {
         owner_id: userId,
         status: 'completed',
-
       };
 
       const packages = await this.prisma.package.findMany({
@@ -187,7 +188,6 @@ export class PackageService {
           hasPreviousPage,
         },
       };
-     
     } catch (err) {
       return {
         success: false,

@@ -1,4 +1,15 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+  Req,
+  Query,
+} from '@nestjs/common';
 import { ReviewsService } from './reviews.service';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { UpdateReviewDto } from './dto/update-review.dto';
@@ -19,19 +30,41 @@ export class ReviewsController {
   }
 
   @Get('received')
-  async findAllRecevied(@Query('page') page: number, @Query('limit') limit: number, @Req() req: Request) {
+  async findAllRecevied(
+    @Query('page') page: number,
+    @Query('limit') limit: number,
+    @Req() req: Request,
+  ) {
     const userId = req?.user?.userId;
     const pageNumber = Math.max(1, parseInt(String(page), 10) || 1);
-    const limitNumber = Math.min(100, Math.max(1, parseInt(String(limit), 10) || 10));
-    return await this.reviewsService.findAllReceived(userId, limitNumber, pageNumber);
+    const limitNumber = Math.min(
+      100,
+      Math.max(1, parseInt(String(limit), 10) || 10),
+    );
+    return await this.reviewsService.findAllReceived(
+      userId,
+      limitNumber,
+      pageNumber,
+    );
   }
 
   @Get('left')
-  async findAllLefted(@Query('page') page: number, @Query('limit') limit: number, @Req() req: Request) {
+  async findAllLefted(
+    @Query('page') page: number,
+    @Query('limit') limit: number,
+    @Req() req: Request,
+  ) {
     const userId = req?.user?.userId;
     const pageNumber = Math.max(1, parseInt(String(page), 10) || 1);
-    const limitNumber = Math.min(100, Math.max(1, parseInt(String(limit), 10) || 10));
-    return await this.reviewsService.findAllLeft(userId, limitNumber, pageNumber);
+    const limitNumber = Math.min(
+      100,
+      Math.max(1, parseInt(String(limit), 10) || 10),
+    );
+    return await this.reviewsService.findAllLeft(
+      userId,
+      limitNumber,
+      pageNumber,
+    );
   }
 
   // @Get(':id')
