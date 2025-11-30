@@ -478,6 +478,8 @@ export class StripeService {
         throw new BadRequestException('Insufficient balance for this currency on the platform. Please try again later. Or contact support.');
       }
 
+      console.log("availableBalance => ", availableBalance)
+
       
 
       // Transfer funds to the connected account
@@ -509,24 +511,24 @@ export class StripeService {
 
 
       // Initiate Stripe payout (convert amount to cents)
-      const payout = await this.stripe.payouts.create(
-        {
-          amount: amountInCents, // Convert dollars to cents
-          currency: process.env.CURRENCY || 'EUR',
-          // destination: dto.destinationAccountId,
-          metadata: {
-            currency: currency,
-            destination: account.stripe_account_id,
-            description: `Payout for completed orders`,
-          },
-        },
-        {
-          stripeAccount: account.stripe_account_id,
-        },
-      );
+      // const payout = await this.stripe.payouts.create(
+      //   {
+      //     amount: amountInCents, // Convert dollars to cents
+      //     currency: process.env.CURRENCY || 'EUR',
+      //     // destination: dto.destinationAccountId,
+      //     metadata: {
+      //       currency: currency,
+      //       destination: account.stripe_account_id,
+      //       description: `Payout for completed orders`,
+      //     },
+      //   },
+      //   {
+      //     stripeAccount: account.stripe_account_id,
+      //   },
+      // );
 
-      this.logger.log(`Processed payout of ${amount} to user ${user_id}`);
-      // console.log(transfer)
+      this.logger.log(`Processed transfer of ${amount} to user ${user_id}`);
+      console.log(transfer)
 
       return {
         transfer_id: transfer.id,
@@ -540,7 +542,7 @@ export class StripeService {
       //   this.logger.error(`Stripe error: ${error.message}`);
       //   throw new BadRequestException(`Stripe error: ${error.message}`);
       // }
- console.log("error => ", error)
+      console.log("error => ", error)
       // // Handle known custom errors (optional)
       if (error instanceof BadRequestException) {
         throw error; // rethrow as is
