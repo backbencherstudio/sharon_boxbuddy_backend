@@ -26,7 +26,7 @@ async function main() {
     data: {
       email: adminEmail,
       password: hashedPassword,
-      username: 'admin',
+      username: 'sharon',
       name: 'Admin User',
       first_name: 'Admin',
       last_name: 'User',
