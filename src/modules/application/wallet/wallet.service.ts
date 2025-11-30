@@ -41,31 +41,73 @@ export class WalletService implements OnModuleInit {
   }
 
   async createCustomer(userId: string) {
-    const user = await this.prisma.user.findUniqueOrThrow({
-      where: { id: userId },
-    });
-
-    if (user.billing_id) {
-      return user.billing_id;
-    }
-
-    const customer = await StripePayment.createCustomer({
-      user_id: user.id,
-      email: user.email,
-      name: user.name,
-    });
-
-    if (customer) {
-      await this.prisma.user.update({
-        where: {
-          id: user.id,
-        },
-        data: {
-          billing_id: customer.id,
-        },
+    try {
+      const user = await this.prisma.user.findUniqueOrThrow({
+        where: { id: userId },
       });
+
+      if (user.billing_id) {
+        return user.billing_id;
+      }
+
+      const customer = await StripePayment.createCustomer({
+        user_id: user.id,
+        email: user.email,
+        name: user.name,
+      });
+
+      if (customer) {
+        await this.prisma.user.update({
+          where: {
+            id: user.id,
+          },
+          data: {
+            billing_id: customer.id,
+          },
+        });
+
+        // create wallet if not exists
+        const existingWallet = await this.prisma.wallet.findUnique({
+          where: {
+            user_id: user.id,
+          },
+        });
+        if (!existingWallet) {
+          await this.prisma.wallet.create({
+            data: {
+              user_id: user.id,
+              balance: 0,
+              currency: this.config.currency,
+            },
+          });
+        }
+
+        // const existingAccount = await this.prisma.stripeAccount.findUnique({
+        //   where: {
+        //     user_id: user.id,
+        //   },
+        // });
+
+        // if (existingAccount) {
+        //   await this.prisma.stripeAccount.update({
+        //     where: { id: existingAccount.id },
+        //     data: { stripe_account_id: customer.id },
+        //   });
+        // } else {
+        //   await this.prisma.stripeAccount.create({
+        //     data: {
+        //       user_id: user.id,
+        //       stripe_account_id: customer.id,
+        //       is_active: true,
+        //     },
+        //   });
+        // }
+      }
+      return customer.id;
+    } catch (error) {
+      console.log(error);
+      throw error;
     }
-    return customer.id;
   }
 
   async getTransactionsByUser(userId: string, limit: number, page: number) {

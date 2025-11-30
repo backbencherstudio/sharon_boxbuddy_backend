@@ -156,8 +156,9 @@ export class StripePayment {
    * @returns
    */
   static async createCheckoutSession() {
-    const success_url = `${appConfig().app.url
-      }/success?session_id={CHECKOUT_SESSION_ID}`;
+    const success_url = `${
+      appConfig().app.url
+    }/success?session_id={CHECKOUT_SESSION_ID}`;
     const cancel_url = `${appConfig().app.url}/failed`;
 
     const session = await Stripe.checkout.sessions.create({
@@ -193,8 +194,9 @@ export class StripePayment {
     customer: string,
     price: string,
   ) {
-    const success_url = `${appConfig().app.url
-      }/success?session_id={CHECKOUT_SESSION_ID}`;
+    const success_url = `${
+      appConfig().app.url
+    }/success?session_id={CHECKOUT_SESSION_ID}`;
     const cancel_url = `${appConfig().app.url}/failed`;
 
     const session = await Stripe.checkout.sessions.create({

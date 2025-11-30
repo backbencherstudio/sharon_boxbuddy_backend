@@ -1,422 +1,460 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Marketplace Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #f8fafc;
-            color: #334155;
-            line-height: 1.6;
-        }
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        .header {
-            background: white;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-        }
-        .card {
-            background: white;
-            padding: 24px;
-            border-radius: 12px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-        }
-        .btn {
-            background: #635bff;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 16px;
-            font-weight: 600;
-            transition: all 0.2s;
-        }
-        .btn:hover {
-            background: #5a54d9;
-            transform: translateY(-1px);
-        }
-        .btn:disabled {
-            background: #94a3b8;
-            cursor: not-allowed;
-            transform: none;
-        }
-        .btn-success {
-            background: #10b981;
-        }
-        .btn-success:hover {
-            background: #0da271;
-        }
-        .btn-warning {
-            background: #f59e0b;
-        }
-        .btn-warning:hover {
-            background: #e5900a;
-        }
-        .status-badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: 600;
-        }
-        .status-success {
-            background: #d1fae5;
-            color: #065f46;
-        }
-        .status-warning {
-            background: #fef3c7;
-            color: #92400e;
-        }
-        .status-error {
-            background: #fee2e2;
-            color: #991b1b;
-        }
-        .loading {
-            opacity: 0.6;
-            pointer-events: none;
-        }
-        .alert {
-            padding: 12px 16px;
-            border-radius: 8px;
-            margin-bottom: 16px;
-        }
-        .alert-success {
-            background: #d1fae5;
-            color: #065f46;
-            border: 1px solid #a7f3d0;
-        }
-        .alert-error {
-            background: #fee2e2;
-            color: #991b1b;
-            border: 1px solid #fca5a5;
-        }
-        .form-group {
-            margin-bottom: 16px;
-        }
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-        }
-        input {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #e2e8f0;
-            border-radius: 8px;
-            font-size: 16px;
-        }
-        input:focus {
-            outline: none;
-            border-color: #635bff;
-        }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+          sans-serif;
+        background: #f8fafc;
+        color: #334155;
+        line-height: 1.6;
+      }
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      .header {
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+      }
+      .card {
+        background: white;
+        padding: 24px;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+      }
+      .btn {
+        background: #635bff;
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: 600;
+        transition: all 0.2s;
+      }
+      .btn:hover {
+        background: #5a54d9;
+        transform: translateY(-1px);
+      }
+      .btn:disabled {
+        background: #94a3b8;
+        cursor: not-allowed;
+        transform: none;
+      }
+      .btn-success {
+        background: #10b981;
+      }
+      .btn-success:hover {
+        background: #0da271;
+      }
+      .btn-warning {
+        background: #f59e0b;
+      }
+      .btn-warning:hover {
+        background: #e5900a;
+      }
+      .status-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 14px;
+        font-weight: 600;
+      }
+      .status-success {
+        background: #d1fae5;
+        color: #065f46;
+      }
+      .status-warning {
+        background: #fef3c7;
+        color: #92400e;
+      }
+      .status-error {
+        background: #fee2e2;
+        color: #991b1b;
+      }
+      .loading {
+        opacity: 0.6;
+        pointer-events: none;
+      }
+      .alert {
+        padding: 12px 16px;
+        border-radius: 8px;
+        margin-bottom: 16px;
+      }
+      .alert-success {
+        background: #d1fae5;
+        color: #065f46;
+        border: 1px solid #a7f3d0;
+      }
+      .alert-error {
+        background: #fee2e2;
+        color: #991b1b;
+        border: 1px solid #fca5a5;
+      }
+      .form-group {
+        margin-bottom: 16px;
+      }
+      label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+      }
+      input {
+        width: 100%;
+        padding: 12px;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 16px;
+      }
+      input:focus {
+        outline: none;
+        border-color: #635bff;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+      }
+      @media (max-width: 768px) {
         .grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
+          grid-template-columns: 1fr;
         }
-        @media (max-width: 768px) {
-            .grid {
-                grid-template-columns: 1fr;
-            }
-        }
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="container">
-        <div class="header">
-            <h1>Marketplace Dashboard</h1>
-            <p>Manage your Stripe account and payouts</p>
-        </div>
+      <div class="header">
+        <h1>Marketplace Dashboard</h1>
+        <p>Manage your Stripe account and payouts</p>
+      </div>
 
-        <div id="alert-container"></div>
+      <div id="alert-container"></div>
 
-        <div class="grid">
-            <!-- Stripe Account Section -->
-            <div class="card">
-                <h2>Stripe Account</h2>
-                <div id="account-status">
-                    <p>Loading account status...</p>
-                </div>
-                <div style="margin-top: 20px;">
-                    <button class="btn" id="connect-stripe-btn" onclick="connectStripe()">
-                        Connect Stripe Account
-                    </button>
-                    <button class="btn btn-warning" id="stripe-dashboard-btn" onclick="openStripeDashboard()" style="display: none; margin-left: 10px;">
-                        Stripe Dashboard
-                    </button>
-                    <button class="btn" style="background: #ef4444; margin-left: 10px; display: none;" id="disconnect-btn" onclick="disconnectStripe()">
-                        Disconnect
-                    </button>
-                </div>
-            </div>
-
-            <!-- Payout Section -->
-            <div class="card">
-                <h2>Payouts</h2>
-                <div id="payout-status">
-                    <p>Connect Stripe to enable payouts</p>
-                </div>
-                
-                <div style="margin-top: 20px;">
-                    <div class="form-group">
-                        <label for="payout-amount">Payout Amount ($)</label>
-                        <input type="number" id="payout-amount" placeholder="100.00" min="1" step="0.01">
-                    </div>
-                    <button class="btn btn-success" id="payout-btn" onclick="processPayout()" disabled>
-                        Request Payout
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Payout History -->
+      <div class="grid">
+        <!-- Stripe Account Section -->
         <div class="card">
-            <h2>Payout History</h2>
-            <div id="payout-history">
-                <p>No payout history available</p>
-            </div>
-            <button class="btn" onclick="loadPayoutHistory()" style="margin-top: 16px;">
-                Refresh History
+          <h2>Stripe Account</h2>
+          <div id="account-status">
+            <p>Loading account status...</p>
+          </div>
+          <div style="margin-top: 20px">
+            <button
+              class="btn"
+              id="connect-stripe-btn"
+              onclick="connectStripe()"
+            >
+              Connect Stripe Account
             </button>
+            <button
+              class="btn btn-warning"
+              id="stripe-dashboard-btn"
+              onclick="openStripeDashboard()"
+              style="display: none; margin-left: 10px"
+            >
+              Stripe Dashboard
+            </button>
+            <button
+              class="btn"
+              style="background: #ef4444; margin-left: 10px; display: none"
+              id="disconnect-btn"
+              onclick="disconnectStripe()"
+            >
+              Disconnect
+            </button>
+          </div>
         </div>
 
-        <!-- Account History -->
+        <!-- Payout Section -->
         <div class="card">
-            <h2>Account History</h2>
-            <div id="account-history">
-                <p>No account history available</p>
+          <h2>Payouts</h2>
+          <div id="payout-status">
+            <p>Connect Stripe to enable payouts</p>
+          </div>
+
+          <div style="margin-top: 20px">
+            <div class="form-group">
+              <label for="payout-amount">Payout Amount ($)</label>
+              <input
+                type="number"
+                id="payout-amount"
+                placeholder="100.00"
+                min="1"
+                step="0.01"
+              />
             </div>
+            <button
+              class="btn btn-success"
+              id="payout-btn"
+              onclick="processPayout()"
+              disabled
+            >
+              Request Payout
+            </button>
+          </div>
         </div>
+      </div>
+
+      <!-- Payout History -->
+      <div class="card">
+        <h2>Payout History</h2>
+        <div id="payout-history">
+          <p>No payout history available</p>
+        </div>
+        <button
+          class="btn"
+          onclick="loadPayoutHistory()"
+          style="margin-top: 16px"
+        >
+          Refresh History
+        </button>
+      </div>
+
+      <!-- Account History -->
+      <div class="card">
+        <h2>Account History</h2>
+        <div id="account-history">
+          <p>No account history available</p>
+        </div>
+      </div>
     </div>
 
     <script>
-        const API_BASE = 'http://localhost:4000/api/payment/stripe'; // Update with your API URL
-        let accountStatus = null;
+      const API_BASE = 'http://localhost:4000/api/payment/stripe'; // Update with your API URL
+      let accountStatus = null;
 
-        // Utility functions
-        function showAlert(message, type = 'success') {
-            const alertContainer = document.getElementById('alert-container');
-            const alert = document.createElement('div');
-            alert.className = `alert alert-${type}`;
-            alert.textContent = message;
-            alertContainer.appendChild(alert);
-            setTimeout(() => alert.remove(), 5000);
+      // Utility functions
+      function showAlert(message, type = 'success') {
+        const alertContainer = document.getElementById('alert-container');
+        const alert = document.createElement('div');
+        alert.className = `alert alert-${type}`;
+        alert.textContent = message;
+        alertContainer.appendChild(alert);
+        setTimeout(() => alert.remove(), 5000);
+      }
+
+      function setLoading(button, isLoading) {
+        if (isLoading) {
+          button.classList.add('loading');
+          button.disabled = true;
+          const originalText = button.textContent;
+          button.setAttribute('data-original-text', originalText);
+          button.textContent = 'Loading...';
+        } else {
+          button.classList.remove('loading');
+          button.disabled = false;
+          const originalText = button.getAttribute('data-original-text');
+          if (originalText) {
+            button.textContent = originalText;
+          }
         }
+      }
 
-        function setLoading(button, isLoading) {
-            if (isLoading) {
-                button.classList.add('loading');
-                button.disabled = true;
-                const originalText = button.textContent;
-                button.setAttribute('data-original-text', originalText);
-                button.textContent = 'Loading...';
-            } else {
-                button.classList.remove('loading');
-                button.disabled = false;
-                const originalText = button.getAttribute('data-original-text');
-                if (originalText) {
-                    button.textContent = originalText;
-                }
-            }
+      // API Calls
+      async function apiCall(endpoint, options = {}) {
+        try {
+          // In a real app, you'd include your auth token
+          const config = {
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization:
+                'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImJic2Z1bGxzdGFja0BnbWFpbC5jb20iLCJzdWIiOiJjbWd5cGpyeXcwMDAwdmQ4NDlxMXZudmhyIiwiaWF0IjoxNzYyMDcyMjMwLCJleHAiOjE3NjIxNTg2MzB9.cowdv7c-br-XWqen_qXBir4RkCOGvcfVlMANVSXsAmE',
+            },
+            ...options,
+          };
+
+          const response = await axios(`${API_BASE}${endpoint}`, config);
+          return response.data;
+        } catch (error) {
+          console.error('API Error:', error);
+          const message =
+            error.response?.data?.message ||
+            error.message ||
+            'Something went wrong';
+          showAlert(message, 'error');
+          throw error;
         }
+      }
 
-        // API Calls
-        async function apiCall(endpoint, options = {}) {
-            try {
-                // In a real app, you'd include your auth token
-                const config = {
-                    headers: {
-                        'Content-Type': 'application/json',
-                        "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImJic2Z1bGxzdGFja0BnbWFpbC5jb20iLCJzdWIiOiJjbWc0cTF1MHEwMDAwdjJqazFoaXIxbzZwIiwiaWF0IjoxNzU5NTQ1NzU1LCJleHAiOjE3NTk2MzIxNTV9.1JkMpjNQ0udTEj-RXHfpjbPcATMqrgZZ3DkWTQkqSgo"
-                    },
-                    ...options
-                };
-                
-                const response = await axios(`${API_BASE}${endpoint}`, config);
-                return response.data;
-            } catch (error) {
-                console.error('API Error:', error);
-                const message = error.response?.data?.message || error.message || 'Something went wrong';
-                showAlert(message, 'error');
-                throw error;
-            }
+      // Account Management
+      async function connectStripe() {
+        const button = document.getElementById('connect-stripe-btn');
+        setLoading(button, true);
+
+        try {
+          // Step 1: Initialize Stripe Connect
+          await apiCall('/init-connect', { method: 'POST' });
+
+          // Step 2: Get onboarding link
+          const response = await apiCall('/onboarding-link', {
+            method: 'POST',
+            data: {
+              return_url: `${window.location.origin}/success.html`,
+              refresh_url: `${window.location.origin}/reauth.html`,
+            },
+          });
+
+          // Step 3: Redirect to Stripe
+          window.location.href = response.url;
+        } catch (error) {
+          setLoading(button, false);
         }
+      }
 
-        // Account Management
-        async function connectStripe() {
-            const button = document.getElementById('connect-stripe-btn');
-            setLoading(button, true);
-
-            try {
-                // Step 1: Initialize Stripe Connect
-                await apiCall('/init-connect', { method: 'POST' });
-                
-                // Step 2: Get onboarding link
-                const response = await apiCall('/onboarding-link', {
-                    method: 'POST',
-                    data: {
-                        return_url: `${window.location.origin}/success.html`,
-                        refresh_url: `${window.location.origin}/reauth.html`
-                    }
-                });
-                
-                // Step 3: Redirect to Stripe
-                window.location.href = response.url;
-            } catch (error) {
-                setLoading(button, false);
-            }
-        }
-
-        async function checkAccountStatus() {
-            try {
-                accountStatus = await apiCall('/account-status');
-                updateUI(accountStatus);
-            } catch (error) {
-                document.getElementById('account-status').innerHTML = `
+      async function checkAccountStatus() {
+        try {
+          accountStatus = await apiCall('/account-status');
+          updateUI(accountStatus);
+        } catch (error) {
+          document.getElementById('account-status').innerHTML = `
                     <p class="status-error">Error loading account status</p>
                 `;
-            }
+        }
+      }
+
+      async function openStripeDashboard() {
+        try {
+          const response = await apiCall('/login-link');
+          window.open(response.url, '_blank');
+        } catch (error) {
+          console.error('Failed to open Stripe dashboard:', error);
+        }
+      }
+
+      async function disconnectStripe() {
+        if (
+          !confirm('Are you sure you want to disconnect your Stripe account?')
+        ) {
+          return;
         }
 
-        async function openStripeDashboard() {
-            try {
-                const response = await apiCall('/login-link');
-                window.open(response.url, '_blank');
-            } catch (error) {
-                console.error('Failed to open Stripe dashboard:', error);
-            }
+        const button = document.getElementById('disconnect-btn');
+        setLoading(button, true);
+
+        try {
+          await apiCall('/account', { method: 'DELETE' });
+          showAlert('Stripe account disconnected successfully');
+          await checkAccountStatus();
+        } catch (error) {
+          setLoading(button, false);
+        }
+      }
+
+      // Payout Management
+      async function processPayout() {
+        const amountInput = document.getElementById('payout-amount');
+        const amount = parseFloat(amountInput.value);
+
+        if (!amount || amount <= 0) {
+          showAlert('Please enter a valid amount', 'error');
+          return;
         }
 
-        async function disconnectStripe() {
-            if (!confirm('Are you sure you want to disconnect your Stripe account?')) {
-                return;
-            }
+        const button = document.getElementById('payout-btn');
+        setLoading(button, true);
 
-            const button = document.getElementById('disconnect-btn');
-            setLoading(button, true);
+        try {
+          const response = await apiCall('/payout', {
+            method: 'POST',
+            data: { amount, currency: process.env.CURRENCY || 'EUR' },
+          });
 
-            try {
-                await apiCall('/account', { method: 'DELETE' });
-                showAlert('Stripe account disconnected successfully');
-                await checkAccountStatus();
-            } catch (error) {
-                setLoading(button, false);
-            }
+          showAlert(`Payout of $${amount} processed successfully!`);
+          amountInput.value = '';
+          await loadPayoutHistory();
+        } catch (error) {
+          setLoading(button, false);
         }
+      }
 
-        // Payout Management
-        async function processPayout() {
-            const amountInput = document.getElementById('payout-amount');
-            const amount = parseFloat(amountInput.value);
-            
-            if (!amount || amount <= 0) {
-                showAlert('Please enter a valid amount', 'error');
-                return;
-            }
-
-            const button = document.getElementById('payout-btn');
-            setLoading(button, true);
-
-            try {
-                const response = await apiCall('/payout', {
-                    method: 'POST',
-                    data: { amount, currency: process.env.CURRENCY || 'EUR' }
-                });
-                
-                showAlert(`Payout of $${amount} processed successfully!`);
-                amountInput.value = '';
-                await loadPayoutHistory();
-            } catch (error) {
-                setLoading(button, false);
-            }
-        }
-
-        async function loadPayoutHistory() {
-            try {
-                const history = await apiCall('/payouts?limit=5');
-                updatePayoutHistoryUI(history?.payouts);
-            } catch (error) {
-                document.getElementById('payout-history').innerHTML = `
+      async function loadPayoutHistory() {
+        try {
+          const history = await apiCall('/payouts?limit=5');
+          updatePayoutHistoryUI(history?.payouts);
+        } catch (error) {
+          document.getElementById('payout-history').innerHTML = `
                     <p>Error loading payout history</p>
                 `;
-            }
         }
+      }
 
-        // UI Updates
-        function updateUI(status) {
-            const accountStatusDiv = document.getElementById('account-status');
-            const connectBtn = document.getElementById('connect-stripe-btn');
-            const dashboardBtn = document.getElementById('stripe-dashboard-btn');
-            const disconnectBtn = document.getElementById('disconnect-btn');
-            const payoutBtn = document.getElementById('payout-btn');
-            const payoutStatusDiv = document.getElementById('payout-status');
+      // UI Updates
+      function updateUI(status) {
+        const accountStatusDiv = document.getElementById('account-status');
+        const connectBtn = document.getElementById('connect-stripe-btn');
+        const dashboardBtn = document.getElementById('stripe-dashboard-btn');
+        const disconnectBtn = document.getElementById('disconnect-btn');
+        const payoutBtn = document.getElementById('payout-btn');
+        const payoutStatusDiv = document.getElementById('payout-status');
 
-            if (status.charges_enabled && status.payouts_enabled) {
-                accountStatusDiv.innerHTML = `
+        if (status.charges_enabled && status.payouts_enabled) {
+          accountStatusDiv.innerHTML = `
                     <p><span class="status-badge status-success">Verified</span></p>
                     <p style="margin-top: 8px;">Your Stripe account is fully verified and ready for payouts.</p>
                 `;
-                payoutStatusDiv.innerHTML = `
+          payoutStatusDiv.innerHTML = `
                     <p><span class="status-badge status-success">Payouts Enabled</span></p>
                     <p style="margin-top: 8px;">You can receive payouts to your connected bank account.</p>
                 `;
-                connectBtn.style.display = 'none';
-                dashboardBtn.style.display = 'inline-block';
-                disconnectBtn.style.display = 'inline-block';
-                payoutBtn.disabled = false;
-            } else if (status.charges_enabled) {
-                accountStatusDiv.innerHTML = `
+          connectBtn.style.display = 'none';
+          dashboardBtn.style.display = 'inline-block';
+          disconnectBtn.style.display = 'inline-block';
+          payoutBtn.disabled = false;
+        } else if (status.charges_enabled) {
+          accountStatusDiv.innerHTML = `
                     <p><span class="status-badge status-warning">Verification Needed</span></p>
                     <p style="margin-top: 8px;">Additional verification required for payouts.</p>
                 `;
-                payoutStatusDiv.innerHTML = `
+          payoutStatusDiv.innerHTML = `
                     <p><span class="status-badge status-warning">Payouts Pending</span></p>
                     <p style="margin-top: 8px;">Complete verification on Stripe to enable payouts.</p>
                 `;
-                connectBtn.textContent = 'Complete Verification';
-                dashboardBtn.style.display = 'inline-block';
-                payoutBtn.disabled = true;
-            } else {
-                accountStatusDiv.innerHTML = `
+          connectBtn.textContent = 'Complete Verification';
+          dashboardBtn.style.display = 'inline-block';
+          payoutBtn.disabled = true;
+        } else {
+          accountStatusDiv.innerHTML = `
                     <p><span class="status-badge status-error">Not Connected</span></p>
                     <p style="margin-top: 8px;">Connect your Stripe account to receive payments.</p>
                 `;
-                payoutStatusDiv.innerHTML = `
+          payoutStatusDiv.innerHTML = `
                     <p><span class="status-badge status-error">Payouts Disabled</span></p>
                     <p style="margin-top: 8px;">Connect and verify Stripe to enable payouts.</p>
                 `;
-                connectBtn.style.display = 'inline-block';
-                dashboardBtn.style.display = 'none';
-                disconnectBtn.style.display = 'none';
-                payoutBtn.disabled = true;
-            }
+          connectBtn.style.display = 'inline-block';
+          dashboardBtn.style.display = 'none';
+          disconnectBtn.style.display = 'none';
+          payoutBtn.disabled = true;
+        }
+      }
+
+      function updatePayoutHistoryUI(history) {
+        const historyDiv = document.getElementById('payout-history');
+
+        if (!history || history.length === 0) {
+          historyDiv.innerHTML = '<p>No payout history available</p>';
+          return;
         }
 
-        function updatePayoutHistoryUI(history) {
-            const historyDiv = document.getElementById('payout-history');
-            
-            if (!history || history.length === 0) {
-                historyDiv.innerHTML = '<p>No payout history available</p>';
-                return;
-            }
-
-            historyDiv.innerHTML = history.map(payout => `
+        historyDiv.innerHTML = history
+          .map(
+            (payout) => `
                 <div style="padding: 12px; border-bottom: 1px solid #e2e8f0;">
                     <div style="display: flex; justify-content: between; align-items: center;">
                         <div>
@@ -429,14 +467,16 @@
                     </div>
                     ${payout.description ? `<div style="font-size: 14px; margin-top: 4px;">${payout.description}</div>` : ''}
                 </div>
-            `).join('');
-        }
+            `,
+          )
+          .join('');
+      }
 
-        // Initialize
-        document.addEventListener('DOMContentLoaded', function() {
-            checkAccountStatus();
-            loadPayoutHistory();
-        });
+      // Initialize
+      document.addEventListener('DOMContentLoaded', function () {
+        checkAccountStatus();
+        loadPayoutHistory();
+      });
     </script>
-</body>
+  </body>
 </html>

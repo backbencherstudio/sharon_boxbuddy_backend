@@ -27,14 +27,14 @@ async function bootstrap() {
     origin: [
       'https://colisr.com',
       'https://backend.colisr.com',
-      "http://colisr.com",
+      'http://colisr.com',
       'http://backend.colisr.com',
       appConfig().app.client_app_url,
-      'http://localhost:3000'
+      'http://localhost:3000',
+      'http://localhost:5500',
     ],
     // credentials: true,
   });
-
 
   app.use(helmet());
   // Enable it, if special charactrers not encoding perfectly
@@ -60,7 +60,10 @@ async function bootstrap() {
     }),
   );
 
-  app.useGlobalFilters(new PrismaExceptionFilter(), new CustomExceptionFilter());
+  app.useGlobalFilters(
+    new PrismaExceptionFilter(),
+    new CustomExceptionFilter(),
+  );
 
   // storage setup
   SojebStorage.config({
