@@ -28,10 +28,14 @@ jobs:
           VPS_HOST: ${{ secrets.VPS_HOST }}
 
       - name: Upload project to VPS
-        run: |
-          rsync -avz --delete \
-            -e "ssh -i ~/.ssh/id_ed25519" \
-            ./ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ secrets.APP_DIR }}
+
+    run: |
+      rsync -avz \
+        --exclude=".git" \
+        --exclude=".env" \
+        -e "ssh -i ~/.ssh/id_ed25519" \
+        ./ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ secrets.APP_DIR }}
+
 
       - name: Run deploy script on VPS
         run: |
