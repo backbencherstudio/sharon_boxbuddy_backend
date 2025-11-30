@@ -33,7 +33,6 @@ async function main() {
       status: 1,
       type: 'admin',
       email_verified_at: new Date(),
-      agree_term_conditions: 1,
     },
   });
 
