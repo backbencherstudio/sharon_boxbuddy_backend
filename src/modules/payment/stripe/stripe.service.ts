@@ -40,6 +40,7 @@ export class StripeService {
     }
   }
 
+  // save card
   async saveCard(userId: string, paymentMethodId: string) {
     // 1. Find the user in your database
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
