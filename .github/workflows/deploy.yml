@@ -1,50 +1,39 @@
-name: Deploy NestJS App
+name: VPS Deployment
 
 on:
   push:
-    branches:
-      - main
+    branches: ['main']
+  pull_request:
+    types: [closed]
+    branches: ['main']
 
 jobs:
   deploy:
-    runs-on: self-hosted
+    if: github.event.pull_request.merged == true || github.event_name == 'push'
+    runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Pull latest code
+      - name: Setup SSH
         run: |
-          cd /var/www/backend
-          git fetch --all
-          git reset --hard origin/main
-          git pull origin main
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts
 
-      - name: Set DATABASE_URL from GitHub Secrets
-        run: echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> $GITHUB_ENV
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
 
-      - name: Install dependencies
+      - name: Upload project to VPS
         run: |
-          yarn install
+          rsync -avz --delete \
+            -e "ssh -i ~/.ssh/id_ed25519" \
+            ./ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ secrets.APP_DIR }}
 
-      - name: Generate prisma client
+      - name: Run deploy script on VPS
         run: |
-          cd /var/www/backend
-          npx prisma generate
-
-      - name: Migrate prisma schema
-        run: |
-          cd /var/www/backend
-          npx prisma migrate deploy
-
-      - name: Build application
-        run: |
-          cd /var/www/backend
-          yarn build
-
-      - name: Deploy to VPS
-        run: |
-          cd /var/www/backend
-          pm2 stop backend || true
-          pm2 delete backend || true
-          pm2 start dist/main.js --name "backend"
-          pm2 save
+          ssh -i ~/.ssh/id_ed25519 ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} \
+            "cd ${{ secrets.APP_DIR }} && bash deploy.sh"
