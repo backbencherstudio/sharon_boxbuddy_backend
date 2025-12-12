@@ -218,6 +218,7 @@ export class AuthService {
           first_name: first_name,
           last_name: last_name,
           type: 'user',
+          email_verified_at: new Date(),
         });
         const payload = {
           email: email,
@@ -406,6 +407,7 @@ export class AuthService {
 
   async login({ email, userId }) {
     try {
+      
       const payload = { email: email, sub: userId };
       const token = this.jwtService.sign(payload);
       const user = await UserRepository.getUserDetails(userId);

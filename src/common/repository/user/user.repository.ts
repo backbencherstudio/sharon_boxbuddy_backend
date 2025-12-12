@@ -208,6 +208,7 @@ export class UserRepository {
     facebook_id,
     role_id = null,
     type = 'user',
+    email_verified_at,
   }: {
     name?: string;
     first_name?: string;
@@ -218,6 +219,7 @@ export class UserRepository {
     facebook_id?: string;
     role_id?: string;
     type?: string;
+    email_verified_at?: Date;
   }) {
     try {
       const data = {};
@@ -235,6 +237,9 @@ export class UserRepository {
       }
       if (facebook_id) {
         data['facebook_id'] = facebook_id;
+      }
+      if (email_verified_at) {
+        data['email_verified_at'] = email_verified_at;
       }
       if (email) {
         // Check if email already exist

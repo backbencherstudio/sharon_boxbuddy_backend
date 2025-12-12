@@ -45,14 +45,27 @@ async function bootstrap() {
   //   }
   //   next();
   // });
+
   app.useStaticAssets(path.join(process.cwd(), '..', 'public'), {
     index: false,
     prefix: '/public',
   });
+
   app.useStaticAssets(path.join(process.cwd(), '..', 'public/storage'), {
     index: false,
     prefix: '/storage',
   });
+
+  app.useStaticAssets(path.join(process.cwd(), 'public'), {
+    index: false,
+    prefix: '/public',
+  });
+
+  app.useStaticAssets(path.join(process.cwd(), 'public/storage'), {
+    index: false,
+    prefix: '/storage',
+  });
+
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,
