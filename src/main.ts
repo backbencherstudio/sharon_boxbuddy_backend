@@ -4,7 +4,7 @@ import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
-import { join } from 'path';
+import * as path from 'path';
 // import express from 'express';
 // internal imports
 import { AppModule } from './app.module';
@@ -45,11 +45,11 @@ async function bootstrap() {
   //   }
   //   next();
   // });
-  app.useStaticAssets(join(__dirname, '..', 'public'), {
+  app.useStaticAssets(path.join(process.cwd(), '..', 'public'), {
     index: false,
     prefix: '/public',
   });
-  app.useStaticAssets(join(__dirname, '..', 'public/storage'), {
+  app.useStaticAssets(path.join(process.cwd(), '..', 'public/storage'), {
     index: false,
     prefix: '/storage',
   });
