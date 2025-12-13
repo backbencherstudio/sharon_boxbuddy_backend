@@ -6,6 +6,8 @@ import { FindAllDto } from './dto/find-all-query.dto';
 import { DateHelper } from 'src/common/helper/date.helper';
 import { AnnouncementRequestDto } from './dto/announcement-request.dto';
 import { MessageGateway } from 'src/modules/chat/message/message.gateway';
+import appConfig from 'src/config/app.config';
+import { SojebStorage } from 'src/common/lib/Disk/SojebStorage';
 
 @Injectable()
 export class TravelService {
@@ -117,6 +119,14 @@ export class TravelService {
       const totalPages = Math.ceil(total / findAllDto.limit);
       const hasNextPage = findAllDto.page * findAllDto.limit < total;
       const hasPreviousPage = findAllDto.page > 1;
+
+      travels.forEach((travel) => {
+        if (travel.user.avatar) {
+          travel.user['avatar_url'] = SojebStorage.url(
+            appConfig().storageUrl.avatar + travel.user.avatar,
+          );
+        }
+      });
 
       return {
         success: true,
