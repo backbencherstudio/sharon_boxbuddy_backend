@@ -215,7 +215,7 @@ export class WalletWebhookController {
       where: { id: metadata.booking_id },
       data: {
         paid: true,
-        payment_status: 'complated',
+        payment_status: 'completed',
         payment_intent_id: paymentIntent.id,
         amount: (paymentIntent.amount / 100).toFixed(4) || 0,
       },
