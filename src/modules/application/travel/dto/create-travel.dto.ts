@@ -18,9 +18,9 @@ export class CreateTravelDto {
   @IsString()
   airline: string;
 
-  @IsNotEmpty()
-  @IsString()
-  duration: string;
+  // @IsNotEmpty()
+  // @IsString()
+  // duration: string;
 
   @IsNotEmpty()
   @IsString()
