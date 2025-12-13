@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { GetTransactionQueryDto } from './dto/query-transaction.dto';
+import { TransactionStatus, TransactionType } from '@prisma/client';
 
 @Injectable()
 export class TransactionService {
@@ -174,30 +175,81 @@ export class TransactionService {
   }
 
   async getStats() {
+    // ================= TOTAL TRANSACTIONS =================
     const totalTransactions = await this.prisma.transaction.count();
-    const totalAmount = await this.prisma.transaction.aggregate({
-      _sum: {
-        amount: true,
+
+    // ================= TOTAL TRANSACTIONS AMOUNT =================
+    const totalTransactionsAmount = await this.prisma.transaction.aggregate({
+      where: {
+        status: TransactionStatus.COMPLETED,
       },
+      _sum: { amount: true },
     });
 
-    const statusCounts = await this.prisma.transaction.groupBy({
-      by: ['status'],
-      _count: {
-        status: true,
+    // ================= TRANSACTIONS IN =================
+    const transactionsIn = await this.prisma.transaction.aggregate({
+      where: {
+        status: TransactionStatus.COMPLETED,
+        type: {
+          in: [
+            TransactionType.WALLET_TOPUP,
+            TransactionType.BOOKING_PAYMENT,
+            TransactionType.CASHBACK,
+            TransactionType.COMMISSION,
+          ],
+        },
       },
+      _sum: { amount: true },
     });
+
+    // ================= TRANSACTIONS OUT =================
+    const transactionsOut = await this.prisma.transaction.aggregate({
+      where: {
+        status: TransactionStatus.COMPLETED,
+        type: {
+          in: [
+            TransactionType.WALLET_WITHDRAW,
+            TransactionType.WALLET_REFUND,
+            TransactionType.PLATFORM_PAYOUT,
+          ],
+        },
+      },
+      _sum: { amount: true },
+    });
+
+    // ================= STATUS COUNTS =================
+    const totalCompletedTransactions = await this.prisma.transaction.count({
+      where: { status: TransactionStatus.COMPLETED },
+    });
+
+    const totalPendingTransactions = await this.prisma.transaction.count({
+      where: { status: TransactionStatus.PENDING },
+    });
+
+    // ================= CURRENT BALANCE =================
+    const currentBalance =
+      Number(transactionsIn._sum.amount || 0) -
+      Number(transactionsOut._sum.amount || 0);
 
     return {
       success: true,
-      message: 'Transaction stats retrieved successfully',
+      message: 'Admin transaction stats retrieved successfully',
       data: {
-        totalTransactions,
-        totalAmount: +totalAmount._sum.amount,
-        statusCounts: statusCounts.map((statusCount) => ({
-          status: statusCount.status,
-          count: statusCount._count.status,
-        })),
+        total_transactions: totalTransactions,
+
+        total_transactions_amount: Number(
+          totalTransactionsAmount._sum.amount || 0,
+        ),
+
+        transactions_in_amount: Number(transactionsIn._sum.amount || 0),
+
+        transactions_out_amount: Number(transactionsOut._sum.amount || 0),
+
+        total_completed_transactions: totalCompletedTransactions,
+
+        total_pending_transactions: totalPendingTransactions,
+
+        current_balance: currentBalance,
       },
     };
   }

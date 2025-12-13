@@ -24,6 +24,11 @@ import { UpdateBookingStatusDto } from './dto/update-booking-status.dto';
 export class BookingController {
   constructor(private readonly bookingService: BookingService) {}
 
+  @Get('stats')
+  stats() {
+    return this.bookingService.stats();
+  }
+
   @Get()
   findAll(@Query() query: GetBookingQueryDto) {
     return this.bookingService.findAll(query);

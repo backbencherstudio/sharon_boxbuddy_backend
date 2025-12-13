@@ -78,6 +78,46 @@ export class BookingService {
     };
   }
 
+  async stats() {
+    const total = await this.prisma.booking.count();
+    const paid = await this.prisma.booking.count({ where: { paid: true } });
+    const unpaid = await this.prisma.booking.count({ where: { paid: false } });
+    const cancelled = await this.prisma.booking.count({
+      where: { status: BookingStatus.cancel },
+    });
+    const completed = await this.prisma.booking.count({
+      where: { status: BookingStatus.completed },
+    });
+    const pending = await this.prisma.booking.count({
+      where: { status: BookingStatus.pending },
+    });
+    const problematic = await this.prisma.booking.count({
+      where: { status: BookingStatus.problem_with_the_package },
+    });
+    const all_conditions_are_not_met = await this.prisma.booking.count({
+      where: { status: BookingStatus.all_conditions_are_not_met },
+    });
+    const amount = await this.prisma.booking.aggregate({
+      _sum: { amount: true },
+    });
+    const completed_amount = await this.prisma.booking.aggregate({
+      _sum: { amount: true },
+      where: { status: BookingStatus.completed },
+    });
+    return {
+      total,
+      paid,
+      unpaid,
+      cancelled,
+      completed,
+      pending,
+      problematic,
+      all_conditions_are_not_met,
+      amount: amount._sum.amount || 0,
+      completed_amount: completed_amount._sum.amount || 0,
+    };
+  }
+
   async findAll(query: GetBookingQueryDto) {
     const {
       q,
