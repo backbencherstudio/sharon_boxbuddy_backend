@@ -104,6 +104,16 @@ export class PackageService {
 
       const packages = await this.prisma.package.findMany({
         where,
+        include: {
+          owner: {
+            select: {
+              first_name: true,
+              last_name: true,
+              name: true,
+              avatar: true,
+            },
+          },
+        },
         skip: (page - 1) * limit,
         take: limit,
       });
@@ -112,6 +122,11 @@ export class PackageService {
         if (packageData.photo) {
           packageData['photo_url'] = SojebStorage.url(
             appConfig().storageUrl.package + packageData.photo,
+          );
+        }
+        if (packageData.owner.avatar) {
+          packageData.owner['avatar_url'] = SojebStorage.url(
+            appConfig().storageUrl.avatar + packageData.owner.avatar,
           );
         }
       });
