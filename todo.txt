@@ -26,4 +26,8 @@ done => 19. need to add traveller location search
 20. notification need to send in email
 21. message notification/counter, read, unread
 
+************************
+
+22. delete otp console from case 'sendSmsOtpCode' and uncomment this.smsService.sendSms
+
 

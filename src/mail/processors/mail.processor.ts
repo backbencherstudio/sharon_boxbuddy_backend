@@ -2,11 +2,13 @@ import { MailerService } from '@nestjs-modules/mailer';
 import { Processor, WorkerHost, OnWorkerEvent } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
+import appConfig from 'src/config/app.config';
+import { SmsService } from 'src/sms/sms.service';
 
 @Processor('mail-queue')
 export class MailProcessor extends WorkerHost {
   private readonly logger = new Logger(MailProcessor.name);
-  constructor(private mailerService: MailerService) {
+  constructor(private mailerService: MailerService, private smsService: SmsService) {
     super();
   }
 
@@ -48,12 +50,21 @@ export class MailProcessor extends WorkerHost {
           break;
         case 'sendVerificationLink':
           this.logger.log('Sending verification link');
-          await this.mailerService.sendMail({
+          const mail = await this.mailerService.sendMail({
             to: job.data.to,
             subject: job.data.subject,
             template: job.data.template,
             context: job.data.context,
           });
+
+          break;
+
+        case 'sendSmsOtpCode':
+          this.logger.log('Sending SMS OTP code');
+          console.log("SMS OTP code => ", job.data.otp);
+//           await this.smsService.sendSms(job.data.to,`${job.data.otp} is your ${appConfig().app.name} verification code.
+// Do not share it. Expires in 5 minutes.`
+//           );
           break;
         default:
           this.logger.log('Unknown job name');

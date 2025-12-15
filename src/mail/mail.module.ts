@@ -5,6 +5,7 @@ import { MailService } from './mail.service';
 import appConfig from 'src/config/app.config';
 import { BullModule } from '@nestjs/bullmq';
 import { MailProcessor } from './processors/mail.processor';
+import { SmsModule } from 'src/sms/sms.module';
 
 @Global()
 @Module({
@@ -34,6 +35,7 @@ import { MailProcessor } from './processors/mail.processor';
         },
       },
     }),
+    SmsModule,
     BullModule.registerQueue({
       name: 'mail-queue',
     }),

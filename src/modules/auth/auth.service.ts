@@ -21,7 +21,7 @@ export class AuthService {
     private prisma: PrismaService,
     private mailService: MailService,
     private readonly walletService: WalletService,
-  ) {}
+  ) { }
 
   async me(userId: string) {
     try {
@@ -407,7 +407,7 @@ export class AuthService {
 
   async login({ email, userId }) {
     try {
-      
+
       const payload = { email: email, sub: userId };
       const token = this.jwtService.sign(payload);
       const user = await UserRepository.getUserDetails(userId);
@@ -948,4 +948,46 @@ export class AuthService {
     }
   }
   // --------- end 2FA ---------
+
+
+  // --------- send phone number verification code ---------
+  async sendPhoneNumberVerificationCode(user_id: string, phone: string) {
+    const code = await UcodeRepository.createPhoneNumberVerificationToken({
+      userId: user_id,
+      phone: phone
+    });
+    if (code) {
+      await this.mailService.sendSmsOtpCode(phone, code);
+      return {
+        success: true,
+        message: 'We have sent a verification code to your phone number',
+      };
+    }
+    throw new UnauthorizedException('Failed to send verification code');
+  }
+
+  // --------- verify phone number ---------
+  async verifyPhoneNumber(user_id: string, phone: string, code: string) {
+    const existToken = await UcodeRepository.validatePhoneNumberVerificationToken({
+      userId: user_id,
+      phone: phone,
+      token: code,
+    });
+    if (existToken) {
+      await this.prisma.user.update({
+        where: {
+          id: user_id,
+        },
+        data: {
+          phone_number: phone,
+        },
+      });
+      return {
+        success: true,
+        message: 'Phone number verified successfully',
+      };
+    }
+    
+    throw new UnauthorizedException('Invalid/Expired verification code');
+  }
 }

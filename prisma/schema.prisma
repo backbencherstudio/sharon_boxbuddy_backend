@@ -162,6 +162,7 @@ model Ucode {
 
   token      String?
   email      String?
+  phone_number      String?
   expired_at DateTime?
 
   @@map("ucodes")

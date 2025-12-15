@@ -29,7 +29,7 @@ import { LocalAuthGuard } from './guards/local-auth.guard';
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(private authService: AuthService) { }
 
   @ApiOperation({ summary: 'Get user details' })
   @ApiBearerAuth()
@@ -263,6 +263,43 @@ export class AuthController {
         message: 'Failed to update user',
       };
     }
+  }
+
+  // send phone number verification code
+  @ApiOperation({ summary: 'Send phone number verification code' })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Post('send-phone-number-verification-code')
+  async sendPhoneNumberVerificationCode(@Req() req: Request, @Body() data: { phone: string }) {
+    const user_id = req.user.userId;
+    const phone = data?.phone;
+    if (!phone) {
+      throw new HttpException('Phone number not provided', HttpStatus.UNAUTHORIZED);
+    }
+
+    // validate phone number format + country code + space or without space
+    if (!phone.match(/^[+][0-9]{1,3}[ ]?[0-9]{10}$/)) {
+      throw new HttpException('Invalid phone number', HttpStatus.UNAUTHORIZED);
+    }
+
+    return await this.authService.sendPhoneNumberVerificationCode(user_id, phone);
+  }
+
+  // verify phone number
+  @ApiOperation({ summary: 'Verify phone number' })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Post('verify-phone-number')
+  async verifyPhoneNumber(@Req() req: Request, @Body() data: { phone: string, code: string }) {
+    const phone = data?.phone;  
+    const code = data?.code;
+    if (!phone) {
+      throw new HttpException('Phone number not provided', HttpStatus.UNAUTHORIZED);
+    }
+    if (!code) {
+      throw new HttpException('Code not provided', HttpStatus.UNAUTHORIZED);
+    }
+    return await this.authService.verifyPhoneNumber(req.user.userId, phone, code);
   }
 
   // --------------change password---------

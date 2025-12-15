@@ -78,4 +78,15 @@ export class MailService {
       console.log(error);
     }
   }
+
+  async sendSmsOtpCode(to: string, otp: string) {
+    try {
+      await this.queue.add('sendSmsOtpCode', {
+        to: to,
+        otp: otp,
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  }
 }

@@ -8,6 +8,12 @@ export default () => ({
     currency: process.env.CURRENCY || 'EUR',
   },
 
+  sms: {
+    from: process.env.TWILIO_PHONE,
+    sid: process.env.TWILIO_SID,
+    authToken: process.env.TWILIO_AUTH_TOKEN,
+  },
+
   fileSystems: {
     public: {},
     s3: {

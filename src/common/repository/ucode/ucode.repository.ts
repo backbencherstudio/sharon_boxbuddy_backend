@@ -141,6 +141,8 @@ export class UcodeRepository {
     });
   }
 
+
+
   static async createVerificationToken(params: {
     userId: string;
     email: string;
@@ -163,4 +165,77 @@ export class UcodeRepository {
       return null;
     }
   }
-}
+
+  /**
+   * create phone number verification token
+   * @returns
+   */
+  static async createPhoneNumberVerificationToken(params: {
+    userId: string;
+    phone: string;
+  }) {
+    try {
+      const otpExpiryTime = 5 * 60 * 1000;
+      const expired_at = new Date(Date.now() + otpExpiryTime);
+      const token = String(randomInt(100000, 1000000));
+
+      // delete existing token
+      await prisma.ucode.deleteMany({
+        where: {
+          user_id: params.userId,
+          phone_number: params.phone,
+        },
+      });
+
+      await prisma.ucode.create({
+        data: {
+          user_id: params.userId,
+          phone_number: params.phone,
+          token: token,
+          expired_at: expired_at,
+        },
+      });
+      return token;
+    } catch (error) {
+      return null;
+    }
+  }
+
+   /**
+   * validate phone number verification token
+   * @returns
+   */
+   static async validatePhoneNumberVerificationToken(params: {
+    userId: string;
+    phone: string;
+    token: string;
+  }) {
+    try {
+      const ucode = await prisma.ucode.findFirst({
+        where: {
+          user_id: params.userId,
+          token: params.token,
+          phone_number: params.phone,
+        },
+      });
+      if (ucode) {
+        if (ucode.expired_at && ucode.expired_at > new Date()) {
+          await prisma.ucode.delete({
+            where: {
+              id: ucode.id,
+            },
+          });
+          return true;
+        } 
+      } 
+
+      return false;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  }
+
+ 
+
