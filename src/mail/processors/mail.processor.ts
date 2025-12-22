@@ -61,7 +61,7 @@ export class MailProcessor extends WorkerHost {
 
         case 'sendSmsOtpCode':
           this.logger.log('Sending SMS OTP code');
-          console.log("SMS OTP code => ", job.data.otp);
+          // console.log("SMS OTP code => ", job.data.otp);
 //           await this.smsService.sendSms(job.data.to,`${job.data.otp} is your ${appConfig().app.name} verification code.
 // Do not share it. Expires in 5 minutes.`
 //           );

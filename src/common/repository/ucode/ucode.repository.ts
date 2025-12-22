@@ -177,7 +177,8 @@ export class UcodeRepository {
     try {
       const otpExpiryTime = 5 * 60 * 1000;
       const expired_at = new Date(Date.now() + otpExpiryTime);
-      const token = String(randomInt(100000, 1000000));
+      // const token = String(randomInt(100000, 1000000));
+      const token = '000000';
 
       // delete existing token
       await prisma.ucode.deleteMany({

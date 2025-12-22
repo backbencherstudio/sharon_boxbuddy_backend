@@ -28,6 +28,6 @@ done => 19. need to add traveller location search
 
 ************************
 
-22. delete otp console from case 'sendSmsOtpCode' and uncomment this.smsService.sendSms
+22. add dynamic otp and remove 000000 which used for testing
 
 
