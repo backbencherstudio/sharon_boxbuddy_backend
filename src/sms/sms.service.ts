@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import appConfig from 'src/config/app.config';
-import Twilio from 'twilio';
+import * as Twilio from 'twilio';
 
 @Injectable()
 export class SmsService {

@@ -6,6 +6,8 @@ import { BillingService } from './billing.service';
 export class BillingController {
   constructor(private billing: BillingService) {}
 
+ 
+
   @Post('setup-intent')
   createSetupIntent(@Body() body: { userId: string }) {
     return this.billing.createSetupIntent(body.userId);

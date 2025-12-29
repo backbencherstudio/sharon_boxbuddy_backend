@@ -65,6 +65,7 @@ export class MailProcessor extends WorkerHost {
 //           await this.smsService.sendSms(job.data.to,`${job.data.otp} is your ${appConfig().app.name} verification code.
 // Do not share it. Expires in 5 minutes.`
 //           );
+
           break;
         default:
           this.logger.log('Unknown job name');
@@ -75,6 +76,7 @@ export class MailProcessor extends WorkerHost {
         `Error processing job ${job.id} with name ${job.name}`,
         error,
       );
+      console.log(error);
       throw error;
     }
   }

@@ -31,6 +31,14 @@ import { LocalAuthGuard } from './guards/local-auth.guard';
 export class AuthController {
   constructor(private authService: AuthService) { }
 
+
+  // send test mail
+  @ApiOperation({ summary: 'Send test mail' })
+  @Post('send-test-mail')
+  async sendTestMail(@Body() data: { email: string }) {
+    return await this.authService.sendTestMail(data.email);
+  }
+
   @ApiOperation({ summary: 'Get user details' })
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)

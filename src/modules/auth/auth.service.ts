@@ -990,4 +990,26 @@ export class AuthService {
     
     throw new UnauthorizedException('Invalid/Expired verification code');
   }
+
+  // send test mail
+  async sendTestMail(email: string) {
+    try {
+      await this.mailService.sendVerificationLink({
+        email,
+        name: email,
+        token: "this is a test token",
+        type: "user",
+      });
+      return {
+        success: true,
+        message: 'Test mail sent successfully',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+
 }

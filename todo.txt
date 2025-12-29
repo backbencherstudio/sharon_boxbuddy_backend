@@ -28,6 +28,10 @@ done => 19. need to add traveller location search
 
 ************************
 
-22. add dynamic otp and remove 000000 which used for testing
+22. add dynamic otp and remove 000000 which used for testing also need to call actual sms service which twillo credentials provided by client
 
+23. need to check amount distribution on delivery
+24. need to check twillo 
+25. conversation disable on delivery
+26. on booking in progress need to show personal info otherwize hide them from backend
 

@@ -15,12 +15,16 @@ import { SmsModule } from 'src/sms/sms.module';
       // or
       transport: {
         host: appConfig().mail.host,
-        port: +appConfig().mail.port,
+        port:  +appConfig().mail.port || 587,
         secure: false,
         auth: {
           user: appConfig().mail.user,
           pass: appConfig().mail.password,
         },
+        // tls: {
+        //   servername: "mail.ovh.net",
+        //   rejectUnauthorized: false,
+        // }
       },
       defaults: {
         from: appConfig().mail.from,
