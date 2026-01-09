@@ -34,6 +34,10 @@ export class NotificationService {
           receiver_id: true,
           entity_id: true,
           created_at: true,
+          owner_id: true,
+          traveller_id: true,
+          conversation_id: true,
+          booking_id: true,
           sender: {
             select: {
               id: true,

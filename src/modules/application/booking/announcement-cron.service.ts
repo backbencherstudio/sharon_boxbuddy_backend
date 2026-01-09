@@ -172,4 +172,23 @@ export class AnnouncementCronService {
 
     this.logger.log(`Processed ${requests.length} requests`);
   }
+
+  // write a cron job that runs every 10 minutes to delete unverified users older than 24 hours
+  @Cron(CronExpression.EVERY_MINUTE)
+  async handleDeleteUnverifiedUsers() {
+    this.logger.log('Cron job started: Deleting unverified users');
+
+    const unverifiedUsers = await this.prisma.user.findMany({
+      where: {
+        email_verified_at: null,
+        created_at: { lt: new Date(Date.now() - 10 * 60 * 1000) },
+      },
+    });
+    this.logger.log(`Found ${unverifiedUsers.length} unverified users`);
+    for (const user of unverifiedUsers) {
+      await this.prisma.user.delete({
+        where: { id: user.id },
+      });
+    }
+  }
 }

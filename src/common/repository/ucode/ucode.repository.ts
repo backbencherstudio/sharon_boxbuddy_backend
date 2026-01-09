@@ -155,7 +155,7 @@ export class UcodeRepository {
           user_id: params.userId,
           email: params.email,
           token: token,
-          expired_at: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+          expired_at: new Date(Date.now() +  10 * 60 * 1000), // 10 minutes
           status: 1,
         },
       });

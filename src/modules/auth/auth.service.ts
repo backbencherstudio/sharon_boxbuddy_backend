@@ -524,7 +524,7 @@ export class AuthService {
         email,
         name: email,
         token: token.token,
-        type: type,
+        type: 'user',
       });
 
       // create wallet
