@@ -351,6 +351,7 @@ export class BookingService {
             departure: true,
           },
         },
+        
       },
     });
 
@@ -380,8 +381,17 @@ export class BookingService {
       cancel_at: new Date(),
     };
 
+    const conversation = await this.prisma.conversation.findFirst({
+      where: {
+        travel_id: booking_data.travel_id,
+        package_id: booking_data.package_id,
+      },
+    });
+
     if (booking_data.traveller_id === user_id) {
       data['cancel_by_who'] = 'traveller';
+
+      
 
       // notification
       const notifications = await this.prisma.notification.createManyAndReturn({
@@ -390,6 +400,10 @@ export class BookingService {
             notification_message: `${booking_data.traveller.first_name} has canceled the booking. You have been refunded.`,
             notification_type: 'canceled',
             receiver_id: booking_data.owner_id,
+            owner_id: booking_data.owner_id,
+            traveller_id: booking_data.traveller_id,
+            conversation_id: conversation?.id,
+            booking_id: booking_data.id,
           },
           // {
           //   notification_message: `You canceled ${booking_data.owner.first_name}'s booking request.`,
@@ -464,6 +478,10 @@ export class BookingService {
             notification_message: `${booking_data.owner.first_name} canceled their booking request.`,
             notification_type: 'canceled',
             receiver_id: booking_data.traveller_id,
+            owner_id: booking_data.owner_id,
+            traveller_id: booking_data.traveller_id,
+            conversation_id: conversation?.id,
+            booking_id: booking_data.id,
           },
         ],
       });
@@ -854,6 +872,15 @@ export class BookingService {
       reference_id: booking_data.id,
     });
 
+
+    // find conversation
+    const conversation = await this.prisma.conversation.findFirst({
+      where: {
+        travel_id: booking_data.travel_id,
+        package_id: booking_data.package_id,
+      },
+    });
+
     // create notification for traveller and owner use createManyAndReturn
     const notifications = await this.prisma.notification.createManyAndReturn({
       data: [
@@ -861,11 +888,19 @@ export class BookingService {
           notification_message: `You delivered ${updated_booking_data.owner.first_name}'s package`,
           notification_type: 'delivered',
           receiver_id: booking_data.traveller_id,
+          owner_id: booking_data.owner_id,
+          traveller_id: booking_data.traveller_id,
+          conversation_id: conversation?.id,
+          booking_id: booking_data.id,
         },
         {
           notification_message: `Your package has been delivered by ${updated_booking_data.traveller.first_name}`,
           notification_type: 'delivered',
           receiver_id: booking_data.owner_id,
+          owner_id: booking_data.owner_id,
+          traveller_id: booking_data.traveller_id,
+          conversation_id: conversation?.id,
+          booking_id: booking_data.id,
         },
       ],
     });

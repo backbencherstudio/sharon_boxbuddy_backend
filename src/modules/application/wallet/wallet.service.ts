@@ -923,17 +923,32 @@ export class WalletService implements OnModuleInit {
         },
       });
 
+      const conversation = await this.prisma.conversation.findFirst({
+        where: {
+          travel_id: existingBooking.travel_id,
+          package_id: existingBooking.package_id,
+        },
+      });
+
       const notifications = await this.prisma.notification.createManyAndReturn({
         data: [
           {
             notification_message: `Your booking request is pending. Waiting for ${existingBooking.traveller.first_name}’s confirmation (up to 12h).`,
             notification_type: 'pending',
             receiver_id: existingBooking.owner_id,
+            owner_id: existingBooking.owner_id,
+            traveller_id: existingBooking.traveller_id,
+            conversation_id: conversation?.id,
+            booking_id: existingBooking.id,
           },
           {
             notification_message: `You have received a new booking request from ${existingBooking.owner.first_name}. Respond within 12 hours.`,
             notification_type: 'pending',
             receiver_id: existingBooking.traveller_id,
+            owner_id: existingBooking.owner_id,
+            traveller_id: existingBooking.traveller_id,
+            conversation_id: conversation?.id,
+            booking_id: existingBooking.id,
           },
         ],
       });

@@ -272,6 +272,12 @@ model Notification {
   notification_type     String?            @default("") //  pending, declined, accepted, canceled, expired
   notification_message  String?
   entity_id             String?
+  
+  // package owner id, traveller id
+  owner_id String?
+  traveller_id String?
+  conversation_id String?
+  booking_id String?
 
   @@map("notifications")
 }

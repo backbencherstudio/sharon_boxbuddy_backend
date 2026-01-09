@@ -261,17 +261,32 @@ export class StripeService {
           },
         });
 
+        const conversation = await this.prisma.conversation.findFirst({
+          where: {
+            travel_id: booking.travel_id,
+            package_id: booking.package_id,
+          },
+        });
+
         await this.prisma.notification.createMany({
           data: [
             {
               notification_message: `Your booking request is pending. Waiting for ${booking.traveller.first_name}’s confirmation (up to 12h).`,
               notification_type: 'pending',
               receiver_id: userId,
+              owner_id: userId,
+              traveller_id: booking.traveller_id,
+              conversation_id: conversation?.id,
+              booking_id: booking.id,
             },
             {
               notification_message: `You have received a new booking request from ${user.first_name}. Respond within 12 hours.`,
               notification_type: 'pending',
               receiver_id: booking.traveller_id,
+              owner_id: userId,
+              traveller_id: booking.traveller_id,
+              conversation_id: conversation?.id,
+              booking_id: booking.id,
             },
           ],
         });
