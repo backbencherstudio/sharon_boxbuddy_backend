@@ -63,6 +63,9 @@ export class PackageService {
           owner_id: owner_id,
           status: 'new',
         },
+        orderBy: {
+          updated_at: 'desc',
+        },
       });
 
       packages.forEach((packageData) => {
@@ -175,6 +178,9 @@ export class PackageService {
         where,
         skip: (page - 1) * limit,
         take: limit,
+        orderBy: {
+          updated_at: 'desc',
+        },
       });
 
       packages.forEach((packageData) => {

@@ -107,10 +107,10 @@ export class TravelService {
         },
         orderBy: [
           {
-            departure: 'asc', // First ordering by departure date
+            departure: 'desc', // First ordering by departure date
           },
           {
-            arrival: 'asc', // Then ordering by arrival date
+            arrival: 'desc', // Then ordering by arrival date
           },
         ],
       });
@@ -178,10 +178,10 @@ export class TravelService {
         },
         orderBy: [
           {
-            departure: 'asc', // First ordering by departure date
+            departure: 'desc', // First ordering by departure date
           },
           {
-            arrival: 'asc', // Then ordering by arrival date
+            arrival: 'desc', // Then ordering by arrival date
           },
         ],
       });

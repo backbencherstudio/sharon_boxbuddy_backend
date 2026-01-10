@@ -1160,6 +1160,9 @@ export class BookingService {
         package: true,
         reviews: true,
       },
+      orderBy: {
+        updated_at: 'desc',
+      },
     });
 
     const total = await this.prisma.booking.count({ where });
@@ -1208,6 +1211,9 @@ export class BookingService {
         travel: true,
         package: true,
         reviews: true,
+      },
+      orderBy: {
+        updated_at: 'desc',
       },
     });
     const total = await this.prisma.booking.count({ where });
