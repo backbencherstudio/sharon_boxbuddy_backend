@@ -184,22 +184,24 @@ export class AnnouncementCronService {
         created_at: { lt: new Date(Date.now() - 10 * 60 * 1000) },
       },
     });
+
+    // delete all the conversation which does not have user 
+    await this.prisma.conversation.deleteMany({
+      where: {
+        OR: [
+          { creator: null },
+          { participant: null },
+          { package: null },
+          { travel: null },
+        ],
+      },
+    });
+
     this.logger.log(`Found ${unverifiedUsers.length} unverified users`);
     for (const user of unverifiedUsers) {
       try {
 
 
-        // delete all conversations related to this user
-        await this.prisma.conversation.deleteMany({
-          where: {
-            OR: [
-              { creator_id: user.id },
-              { participant_id: user.id },
-            ],
-          },
-        });
-
-        
         // Use a transaction to ensure all deletions succeed or none do
         await this.prisma.$transaction(async (tx) => {
           // Get all travels and packages for this user
