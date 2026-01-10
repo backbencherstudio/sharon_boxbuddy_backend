@@ -82,16 +82,36 @@ export class BookingService {
       traveller_id: travel.user_id,
       owner_id: user_id,
     };
-    // check with this data already any booking is exist or not with status in_progress
+
+    // check alread booked package or not
     let booking_data = await this.prisma.booking.findFirst({
       where: {
-        travel_id: createBookingDto.travel_id,
         package_id: createBookingDto.package_id,
         status: {
           in: ['pending', 'in_progress', 'pick_up', 'on_the_way', 'delivered'],
         },
       },
     });
+
+    if (booking_data && booking_data.travel_id !== createBookingDto.travel_id) {
+      throw new BadRequestException('This package is already booked for another travel');
+    }
+
+    // check travel is already booked or not
+    // check with this data already any booking is exist or not with status in_progress
+    // let booking_data = await this.prisma.booking.findFirst({
+    //   where: {
+    //     travel_id: createBookingDto.travel_id,
+    //     package_id: createBookingDto.package_id,
+    //     status: {
+    //       in: ['pending', 'in_progress', 'pick_up', 'on_the_way', 'delivered'],
+    //     },
+    //   },
+    // });
+
+
+
+    // 
 
     if (booking_data) {
       return {
@@ -185,7 +205,7 @@ export class BookingService {
     const bookings = await this.prisma.booking.findMany({
       where: {
         owner_id: user_id,
-        confirmed: true,
+        // confirmed: true,
         status: {
           in: [
             BookingStatus.pending,
@@ -332,7 +352,7 @@ export class BookingService {
       where: {
         id,
         paid: true,
-        confirmed: true,
+        // confirmed: true,
         payment_status: 'completed',
       },
       include: {
@@ -390,7 +410,6 @@ export class BookingService {
 
     if (booking_data.traveller_id === user_id) {
       data['cancel_by_who'] = 'traveller';
-
       
 
       // notification
