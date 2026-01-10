@@ -204,6 +204,12 @@ export class StripeService {
             first_name: true,
           },
         },
+        owner: {
+          select: {
+            id: true,
+            first_name: true,
+          },
+        },
       },
     });
 
@@ -230,6 +236,15 @@ export class StripeService {
         payment_method: paymentMethodId,
         off_session: true, // This is crucial for payments where the user is not actively on the checkout page
         confirm: true,
+        metadata: {
+          owner_id: booking.owner_id,
+          traveller_id: booking.traveller_id,
+          package_id: booking.package_id,
+          travel_id: booking.travel_id,
+          booking_id: bookingId,
+          owner_first_name: booking.owner.first_name,
+          traveller_first_name: booking.traveller.first_name,
+        },
       });
 
       if (paymentIntent.status === 'succeeded') {
