@@ -186,7 +186,8 @@ export class WalletWebhookController {
   }
 
   private async handlePaymentSuccess(event: any) {
-    const paymentIntent = event.data.object;
+    try {
+      const paymentIntent = event.data.object;
     const metadata = paymentIntent.metadata;
 
     // if (metadata.transactionId) {
@@ -318,6 +319,9 @@ export class WalletWebhookController {
           notification_type: conv.notification_type,
         });
     });
+    } catch (error) {
+      console.log("error => ", error);
+    }
   }
 
   private async handlePaymentFailed(event: any) {
