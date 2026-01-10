@@ -186,7 +186,8 @@ export class AnnouncementCronService {
     });
 
     // delete all the conversation which does not have user 
-    await this.prisma.conversation.deleteMany({
+    // First, find conversations to delete
+    const conversationsToDelete = await this.prisma.conversation.findMany({
       where: {
         OR: [
           { creator: null },
@@ -195,7 +196,37 @@ export class AnnouncementCronService {
           { travel: null },
         ],
       },
+      select: { id: true },
     });
+
+    if (conversationsToDelete.length > 0) {
+      const conversationIds = conversationsToDelete.map((c) => c.id);
+
+      // Get all messages in these conversations
+      const messages = await this.prisma.message.findMany({
+        where: {
+          conversation_id: { in: conversationIds },
+        },
+        select: { id: true },
+      });
+      const messageIds = messages.map((m) => m.id);
+
+      // Delete attachments first (they block message deletion)
+      if (messageIds.length > 0) {
+        await this.prisma.attachment.deleteMany({
+          where: {
+            message_id: { in: messageIds },
+          },
+        });
+      }
+
+      // Delete conversations (this will cascade delete messages due to onDelete: Cascade)
+      await this.prisma.conversation.deleteMany({
+        where: {
+          id: { in: conversationIds },
+        },
+      });
+    }
 
     this.logger.log(`Found ${unverifiedUsers.length} unverified users`);
     for (const user of unverifiedUsers) {
