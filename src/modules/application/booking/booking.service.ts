@@ -206,14 +206,14 @@ export class BookingService {
       where: {
         owner_id: user_id,
         // confirmed: true,
-        status: {
-          in: [
-            BookingStatus.pending,
-            BookingStatus.in_progress,
-            BookingStatus.pick_up,
-            BookingStatus.on_the_way,
-          ],
-        },
+        // status: {
+        //   in: [
+        //     BookingStatus.pending,
+        //     BookingStatus.in_progress,
+        //     BookingStatus.pick_up,
+        //     BookingStatus.on_the_way,
+        //   ],
+        // },
       },
       include: {
         travel: true,
