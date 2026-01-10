@@ -379,7 +379,7 @@ model Attachment {
   file_alt String?
 
   message_id String
-  message    Message @relation(fields: [message_id], references: [id])
+  message    Message @relation(fields: [message_id], references: [id], onDelete: Cascade)
 
   @@map("attachments")
 }

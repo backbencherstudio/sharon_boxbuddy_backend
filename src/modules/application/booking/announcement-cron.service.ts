@@ -199,6 +199,8 @@ export class AnnouncementCronService {
       select: { id: true },
     });
 
+    this.logger.log(`Found ${conversationsToDelete.length} conversations to delete`);
+
     if (conversationsToDelete.length > 0) {
       const conversationIds = conversationsToDelete.map((c) => c.id);
 
@@ -209,6 +211,7 @@ export class AnnouncementCronService {
         },
         select: { id: true },
       });
+      this.logger.log(`Found ${messages.length} messages to delete`);
       const messageIds = messages.map((m) => m.id);
 
       // Delete attachments first (they block message deletion)
@@ -226,6 +229,7 @@ export class AnnouncementCronService {
           id: { in: conversationIds },
         },
       });
+      this.logger.log(`Deleted ${conversationsToDelete.length} conversations`);
     }
 
     this.logger.log(`Found ${unverifiedUsers.length} unverified users`);
