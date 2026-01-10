@@ -223,11 +223,22 @@ export class WalletWebhookController {
       },
     });
 
-    await this.walletService['prisma'].announcementRequest.create({
-      data: {
+    // Use upsert to handle webhook retries - preserve is_processed, is_accepted, is_refused if exists
+    await this.walletService['prisma'].announcementRequest.upsert({
+      where: { booking_id: metadata.booking_id },
+      update: {
+        // Only update package_id and travel_id, preserve is_processed, is_accepted, is_refused
+        package_id: metadata.package_id,
+        travel_id: metadata.travel_id,
+        is_processed: false,
+        is_accepted: false,
+        is_refused: false,
+      },
+      create: {
         package_id: metadata.package_id,
         travel_id: metadata.travel_id,
         booking_id: metadata.booking_id,
+        // is_processed, is_accepted, is_refused will default to false
       },
     });
 
