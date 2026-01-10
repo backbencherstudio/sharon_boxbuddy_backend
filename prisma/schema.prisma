@@ -673,7 +673,7 @@ model Booking {
   travel    Travel @relation(fields: [travel_id], references: [id])
 
   reviews     Review[]
-  announcment AnnouncementRequest?
+  announcment AnnouncementRequest[]
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -772,7 +772,7 @@ model AnnouncementRequest {
   travel_id   String
   travel      Travel  @relation(fields: [travel_id], references: [id], onDelete: Cascade)
 
-  booking_id String?  @unique
+  booking_id String?  
   booking    Booking? @relation(fields: [booking_id], references: [id], onDelete: Cascade)
 
   is_processed Boolean @default(false)
