@@ -187,6 +187,19 @@ export class AnnouncementCronService {
     this.logger.log(`Found ${unverifiedUsers.length} unverified users`);
     for (const user of unverifiedUsers) {
       try {
+
+
+        // delete all conversations related to this user
+        await this.prisma.conversation.deleteMany({
+          where: {
+            OR: [
+              { creator_id: user.id },
+              { participant_id: user.id },
+            ],
+          },
+        });
+
+        
         // Use a transaction to ensure all deletions succeed or none do
         await this.prisma.$transaction(async (tx) => {
           // Get all travels and packages for this user
