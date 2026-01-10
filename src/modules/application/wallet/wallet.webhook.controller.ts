@@ -287,19 +287,31 @@ export class WalletWebhookController {
       reference_id: paymentIntent.id,
     });
 
+    console.log("notifications => ", notifications.length);
+
     // sending notification for notification and conversation
     // notification
     notifications.forEach((notification) => {
       this.gateway.server
         .to(notification.receiver_id)
         .emit('notification', notification);
+      console.log("notification => ", notification.receiver_id, "notification type => ", notification.notification_type);
     });
+
+    
 
     // conversation
     conversations.forEach((conv) => {
       // sending to package owner
       this.gateway.server
         .to(conv.package.owner_id)
+        .emit('conversation-notification-update', {
+          id: conv.id,
+          notification_type: conv.notification_type,
+        });
+
+      this.gateway.server
+        .to(conv.travel.user_id)
         .emit('conversation-notification-update', {
           id: conv.id,
           notification_type: conv.notification_type,
