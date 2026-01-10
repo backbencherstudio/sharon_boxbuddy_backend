@@ -208,7 +208,8 @@ export class WalletWebhookController {
     //   });
     // }
 
-    // console.log(JSON.stringify(paymentIntent, null, 4))
+    console.log("paymentIntent => ", JSON.stringify(paymentIntent, null, 4));
+    console.log("metadata => ", JSON.stringify(metadata, null, 4));
     // console.log("amount => ", paymentIntent.amount, parseFloat(paymentIntent.amount) / 100)
 
     await this.walletService['prisma'].booking.update({

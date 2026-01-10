@@ -35,3 +35,7 @@ done => 19. need to add traveller location search
 25. conversation disable on delivery
 26. on booking in progress need to show personal info otherwize hide them from backend
 
+
+in progress package should not display to select list
+check History
+
