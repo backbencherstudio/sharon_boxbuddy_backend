@@ -186,9 +186,96 @@ export class AnnouncementCronService {
     });
     this.logger.log(`Found ${unverifiedUsers.length} unverified users`);
     for (const user of unverifiedUsers) {
-      await this.prisma.user.delete({
-        where: { id: user.id },
-      });
+      try {
+        // Use a transaction to ensure all deletions succeed or none do
+        await this.prisma.$transaction(async (tx) => {
+          // Get all travels and packages for this user
+          const travels = await tx.travel.findMany({
+            where: { user_id: user.id },
+            select: { id: true },
+          });
+          const packages = await tx.package.findMany({
+            where: { owner_id: user.id },
+            select: { id: true },
+          });
+
+          const travelIds = travels.map((t) => t.id);
+          const packageIds = packages.map((p) => p.id);
+
+          // Get bookings related to these travels and packages
+          const bookingConditions = [];
+          if (travelIds.length > 0) {
+            bookingConditions.push({ travel_id: { in: travelIds } });
+          }
+          if (packageIds.length > 0) {
+            bookingConditions.push({ package_id: { in: packageIds } });
+          }
+
+          let bookingIds: string[] = [];
+          if (bookingConditions.length > 0) {
+            const bookings = await tx.booking.findMany({
+              where: { OR: bookingConditions },
+              select: { id: true },
+            });
+            bookingIds = bookings.map((b) => b.id);
+          }
+
+          // Delete in order: child records first, then parent records
+          // 1. Delete reviews (related to bookings)
+          if (bookingIds.length > 0) {
+            await tx.review.deleteMany({
+              where: { booking_id: { in: bookingIds } },
+            });
+          }
+
+          // 2. Delete bookings (related to travels and packages)
+          if (bookingIds.length > 0) {
+            await tx.booking.deleteMany({
+              where: { id: { in: bookingIds } },
+            });
+          }
+
+          // 3. Delete reports (related to travels and packages)
+          const reportConditions = [];
+          if (travelIds.length > 0) {
+            reportConditions.push({ travel_id: { in: travelIds } });
+          }
+          if (packageIds.length > 0) {
+            reportConditions.push({ package_id: { in: packageIds } });
+          }
+          if (reportConditions.length > 0) {
+            await tx.report.deleteMany({
+              where: { OR: reportConditions },
+            });
+          }
+
+          // 4. Delete travels (AnnouncementRequests and Conversations have cascade/setNull, so they're handled automatically)
+          if (travelIds.length > 0) {
+            await tx.travel.deleteMany({
+              where: { id: { in: travelIds } },
+            });
+          }
+
+          // 5. Delete packages (AnnouncementRequests and Conversations have cascade/setNull, so they're handled automatically)
+          if (packageIds.length > 0) {
+            await tx.package.deleteMany({
+              where: { id: { in: packageIds } },
+            });
+          }
+
+          // 6. Delete the user
+          await tx.user.delete({
+            where: { id: user.id },
+          });
+        });
+
+        this.logger.log(`Successfully deleted user ${user.id}`);
+      } catch (error) {
+        this.logger.error(
+          `Failed to delete user ${user.id}: ${error.message}`,
+          error.stack,
+        );
+      }
     }
   }
 }
