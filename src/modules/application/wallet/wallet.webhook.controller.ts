@@ -209,8 +209,7 @@ export class WalletWebhookController {
     //   });
     // }
 
-    console.log("paymentIntent => ", JSON.stringify(paymentIntent, null, 4));
-    console.log("metadata => ", JSON.stringify(metadata, null, 4));
+   
     // console.log("amount => ", paymentIntent.amount, parseFloat(paymentIntent.amount) / 100)
 
     await this.walletService['prisma'].booking.update({
@@ -223,22 +222,12 @@ export class WalletWebhookController {
       },
     });
 
-    // Use upsert to handle webhook retries - preserve is_processed, is_accepted, is_refused if exists
-    await this.walletService['prisma'].announcementRequest.upsert({
-      where: { booking_id: metadata.booking_id },
-      update: {
-        // Only update package_id and travel_id, preserve is_processed, is_accepted, is_refused
+    // create announcement
+    await this.walletService['prisma'].announcementRequest.create({
+      data: {
         package_id: metadata.package_id,
         travel_id: metadata.travel_id,
-        is_processed: false,
-        is_accepted: false,
-        is_refused: false,
-      },
-      create: {
-        package_id: metadata.package_id,
-        travel_id: metadata.travel_id,
-        booking_id: metadata.booking_id,
-        // is_processed, is_accepted, is_refused will default to false
+        booking_id: metadata.id,
       },
     });
 
@@ -298,9 +287,9 @@ export class WalletWebhookController {
       status: TransactionStatus.COMPLETED,
       description: `Payment for booking ${metadata.booking_id}`,
       reference_id: paymentIntent.id,
+      booking_id: metadata.booking_id
     });
 
-    console.log("notifications => ", notifications.length);
 
     // sending notification for notification and conversation
     // notification

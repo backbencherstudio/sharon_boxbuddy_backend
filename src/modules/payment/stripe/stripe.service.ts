@@ -3,6 +3,7 @@ import {
   ForbiddenException,
   Inject,
   Injectable,
+  InternalServerErrorException,
   Logger,
   NotFoundException,
 } from '@nestjs/common';
@@ -247,83 +248,97 @@ export class StripeService {
         },
       });
 
-      console.log("creating announcement inside payment from saved card", paymentIntent)
+      
 
-      if (paymentIntent.status === 'succeeded') {
-        await this.prisma.booking.update({
-          where: { id: bookingId },
-          data: {
-            paid: true,
-            payment_status: 'complated',
-            payment_intent_id: paymentIntent.id,
-          },
-        });
+      // if (paymentIntent.status === 'succeeded') {
+      //   await this.prisma.booking.update({
+      //     where: { id: bookingId },
+      //     data: {
+      //       paid: true,
+      //       payment_status: 'complated',
+      //       payment_intent_id: paymentIntent.id,
+      //     },
+      //   });
 
-        // transaction
-        await TransactionRepository.createTransaction({
-          user_id: userId,
-          type: TransactionType.BOOKING_PAYMENT,
-          amount: booking.amount.toNumber(),
-          status: TransactionStatus.COMPLETED,
-          description: `Payment for booking ${booking.id}`,
-          reference_id: paymentIntent.id,
-          booking_id: bookingId,
-        });
+      //   // transaction
+      //   await TransactionRepository.createTransaction({
+      //     user_id: userId,
+      //     type: TransactionType.BOOKING_PAYMENT,
+      //     amount: booking.amount.toNumber(),
+      //     status: TransactionStatus.COMPLETED,
+      //     description: `Payment for booking ${booking.id}`,
+      //     reference_id: paymentIntent.id,
+      //     booking_id: bookingId,
+      //   });
 
-        console.log("creating announcement inside payment from saved card")
+      //   console.log("creating announcement inside payment from saved card")
 
-        await this.prisma.announcementRequest.create({
-          data: {
-            package_id: booking.package_id,
-            travel_id: booking.travel_id,
-            booking_id: booking.id,
-          },
-        });
+      //   await this.prisma.announcementRequest.create({
+      //     data: {
+      //       package_id: booking.package_id,
+      //       travel_id: booking.travel_id,
+      //       booking_id: booking.id,
+      //     },
+      //   });
 
-        const conversation = await this.prisma.conversation.findFirst({
-          where: {
-            travel_id: booking.travel_id,
-            package_id: booking.package_id,
-          },
-        });
+      //   const conversation = await this.prisma.conversation.findFirst({
+      //     where: {
+      //       travel_id: booking.travel_id,
+      //       package_id: booking.package_id,
+      //     },
+      //   });
 
-        await this.prisma.notification.createMany({
-          data: [
-            {
-              notification_message: `Your booking request is pending. Waiting for ${booking.traveller.first_name}’s confirmation (up to 12h).`,
-              notification_type: 'pending',
-              receiver_id: userId,
-              owner_id: userId,
-              traveller_id: booking.traveller_id,
-              conversation_id: conversation?.id,
-              booking_id: booking.id,
-            },
-            {
-              notification_message: `You have received a new booking request from ${user.first_name}. Respond within 12 hours.`,
-              notification_type: 'pending',
-              receiver_id: booking.traveller_id,
-              owner_id: userId,
-              traveller_id: booking.traveller_id,
-              conversation_id: conversation?.id,
-              booking_id: booking.id,
-            },
-          ],
-        });
+      //   await this.prisma.notification.createMany({
+      //     data: [
+      //       {
+      //         notification_message: `Your booking request is pending. Waiting for ${booking.traveller.first_name}’s confirmation (up to 12h).`,
+      //         notification_type: 'pending',
+      //         receiver_id: userId,
+      //         owner_id: userId,
+      //         traveller_id: booking.traveller_id,
+      //         conversation_id: conversation?.id,
+      //         booking_id: booking.id,
+      //       },
+      //       {
+      //         notification_message: `You have received a new booking request from ${user.first_name}. Respond within 12 hours.`,
+      //         notification_type: 'pending',
+      //         receiver_id: booking.traveller_id,
+      //         owner_id: userId,
+      //         traveller_id: booking.traveller_id,
+      //         conversation_id: conversation?.id,
+      //         booking_id: booking.id,
+      //       },
+      //     ],
+      //   });
 
-        await this.prisma.conversation.updateMany({
-          where: {
-            travel_id: booking.travel_id,
-            package_id: booking.package_id,
-          },
-          data: {
-            notification_type: 'pending',
-          },
-        });
+      //   await this.prisma.conversation.updateMany({
+      //     where: {
+      //       travel_id: booking.travel_id,
+      //       package_id: booking.package_id,
+      //     },
+      //     data: {
+      //       notification_type: 'pending',
+      //     },
+      //   });
 
 
-        // need to send realtime notification
+      //   // need to send realtime notification
 
-      } else {
+      // } else {
+      //   await TransactionRepository.createTransaction({
+      //     user_id: userId,
+      //     type: TransactionType.BOOKING_PAYMENT,
+      //     amount: booking.amount.toNumber(),
+      //     status: TransactionStatus.FAILED,
+      //     description: `Payment for booking ${booking.id}`,
+      //     reference_id: paymentIntent.id,
+      //     booking_id: bookingId,
+      //   });
+      // }
+
+      // 3. Return the payment status to the client
+      
+      if(paymentIntent.status !== 'succeeded'){
         await TransactionRepository.createTransaction({
           user_id: userId,
           type: TransactionType.BOOKING_PAYMENT,
@@ -333,9 +348,11 @@ export class StripeService {
           reference_id: paymentIntent.id,
           booking_id: bookingId,
         });
+
+        throw new InternalServerErrorException("payment failed")
       }
 
-      // 3. Return the payment status to the client
+      
       return {
         success: paymentIntent.status === 'succeeded',
         status: paymentIntent.status,
