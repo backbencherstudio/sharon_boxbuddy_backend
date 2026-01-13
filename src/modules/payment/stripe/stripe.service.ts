@@ -268,6 +268,8 @@ export class StripeService {
           booking_id: bookingId,
         });
 
+        console.log("creating announcement inside payment from saved card")
+
         await this.prisma.announcementRequest.create({
           data: {
             package_id: booking.package_id,
@@ -315,6 +317,10 @@ export class StripeService {
             notification_type: 'pending',
           },
         });
+
+
+        // need to send realtime notification
+
       } else {
         await TransactionRepository.createTransaction({
           user_id: userId,
