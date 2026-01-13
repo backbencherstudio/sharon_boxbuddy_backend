@@ -247,6 +247,8 @@ export class StripeService {
         },
       });
 
+      console.log("creating announcement inside payment from saved card", paymentIntent)
+
       if (paymentIntent.status === 'succeeded') {
         await this.prisma.booking.update({
           where: { id: bookingId },
