@@ -36,9 +36,9 @@ done => 19. need to add traveller location search
 26. on booking in progress need to show personal info otherwize hide them from backend
 
 
-=> in progress package should not display to select list
+done => in progress package should not display to select list
 => check History
-=> need to check re booking
-=> need to check processPayment function stripe.service.ts
+done => need to check re booking
+done => need to check processPayment function stripe.service.ts
 
-=> problem with the package er por taka ferot jasse na.
+=> problem with the package er por taka ferot jasse na. need to ask client 

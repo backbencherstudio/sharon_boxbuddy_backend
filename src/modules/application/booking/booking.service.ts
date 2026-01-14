@@ -16,7 +16,6 @@ import { StripePayment } from 'src/common/lib/Payment/stripe/StripePayment';
 import { MessageGateway } from 'src/modules/chat/message/message.gateway';
 import { DateHelper } from 'src/common/helper/date.helper';
 import { randomInt } from 'crypto';
-import { TransactionRepository } from 'src/common/repository/transaction/transaction.repository';
 import { BookingStatus, TransactionType } from '@prisma/client';
 
 @Injectable()
@@ -24,7 +23,7 @@ export class BookingService {
   constructor(
     private readonly prisma: PrismaService,
     private gateway: MessageGateway,
-  ) {}
+  ) { }
   async create(createBookingDto: CreateBookingDto, user_id: string) {
     // check travel is exist or not
     const travel = await this.prisma.travel.findUnique({
@@ -371,7 +370,7 @@ export class BookingService {
             departure: true,
           },
         },
-        
+
       },
     });
 
@@ -410,7 +409,7 @@ export class BookingService {
 
     if (booking_data.traveller_id === user_id) {
       data['cancel_by_who'] = 'traveller';
-      
+
 
       // notification
       const notifications = await this.prisma.notification.createManyAndReturn({
@@ -872,24 +871,93 @@ export class BookingService {
       throw new BadRequestException('Delivery failed try again');
     }
 
-    // update traveller wallet
-    await this.prisma.wallet.update({
-      where: {
-        user_id: booking_data.traveller_id,
-      },
-      data: {
-        balance: { increment: booking_data.amount },
-      },
+    // need to distibute amount between platform and traveller
+    const grossAmount = booking_data.amount?.toNumber() || 0;
+    if (grossAmount <= 0) {
+      throw new BadRequestException('Invalid booking amount');
+    }
+
+    const platformPercentage = appConfig().cost.platform_cost_percentage || 0;
+    const normalizedPlatformPercentage = Math.min(
+      Math.max(platformPercentage, 0),
+      100,
+    );
+    const roundAmount = (value: number) => Number(value.toFixed(4));
+    const platformAmount = roundAmount(
+      (grossAmount * normalizedPlatformPercentage) / 100,
+    );
+    const travellerAmount = roundAmount(grossAmount - platformAmount);
+    const platformUserId = process.env.CENTRAL_WALLET_USER_ID;
+
+    await this.prisma.$transaction(async (tx) => {
+      if (travellerAmount > 0) {
+        await tx.wallet.update({
+          where: {
+            user_id: booking_data.traveller_id,
+          },
+          data: {
+            balance: { increment: travellerAmount },
+          },
+        });
+
+        await tx.transaction.create({
+          data: {
+            user_id: booking_data.traveller_id,
+            amount: travellerAmount,
+            type: TransactionType.CASHBACK,
+            description: 'Delivery completed',
+            reference_id: booking_data.id,
+            booking_id: booking_data.id,
+          },
+        });
+      }
+
+      if (platformAmount > 0) {
+        if (!platformUserId) {
+          throw new BadRequestException(
+            'Central wallet user id is not configured',
+          );
+        }
+
+        await tx.platformWallet.updateMany({
+          data: {
+            total_earnings: {
+              increment: platformAmount,
+            },
+          },
+        });
+
+        await tx.transaction.create({
+          data: {
+            user_id: platformUserId,
+            amount: platformAmount,
+            type: TransactionType.COMMISSION,
+            description: 'Platform commission from delivery',
+            reference_id: booking_data.id,
+            booking_id: booking_data.id,
+          },
+        });
+      }
     });
 
-    // create transaction
-    await TransactionRepository.createTransaction({
-      user_id: booking_data.traveller_id,
-      amount: booking_data.amount.toNumber(),
-      type: TransactionType.CASHBACK,
-      description: 'Delivery completed',
-      reference_id: booking_data.id,
-    });
+
+    // await this.prisma.wallet.update({
+    //   where: {
+    //     user_id: booking_data.traveller_id,
+    //   },
+    //   data: {
+    //     balance: { increment: booking_data.amount },
+    //   },
+    // });
+
+    // // create transaction
+    // await TransactionRepository.createTransaction({
+    //   user_id: booking_data.traveller_id,
+    //   amount: booking_data.amount.toNumber(),
+    //   type: TransactionType.CASHBACK,
+    //   description: 'Delivery completed',
+    //   reference_id: booking_data.id,
+    // });
 
 
     // find conversation

@@ -76,6 +76,9 @@ export default () => ({
   cost: {
     fixed_cost: parseInt(process.env.FIXED_COST, 10) || 20,
     per_kg_cost: parseInt(process.env.PER_KG_COST, 10) || 6,
+    platform_cost_percentage: parseFloat(
+      process.env.PLATFORM_COST_PERCENTAGE || '0',
+    ),
   },
 
   /**

@@ -1,5 +1,8 @@
 {
     "editor.wordWrapColumn": 40,
     "editor.wordWrap": "on",
-    "editor.wrapOnEscapedLineFeeds": true
+    "editor.wrapOnEscapedLineFeeds": true,
+    "editor.fontSize": 16,
+    "files.autoSave": "onFocusChange",
+    "editor.fontFamily": "'Fira Code', Consolas, 'Courier New', monospace"
 }

@@ -297,7 +297,7 @@ export class WalletWebhookController {
       this.gateway.server
         .to(notification.receiver_id)
         .emit('notification', notification);
-      console.log("notification => ", notification.receiver_id, "notification type => ", notification.notification_type);
+      // console.log("notification => ", notification.receiver_id, "notification type => ", notification.notification_type);
     });
 
     
